@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, keepPreviousData, queryOptions, type QueryClient } from "@tanstack/react-query";
 import {
   EMPTY_CARD_FILTERS,
+  type SetCardTagsRequest,
   type CardScanOrigin,
   type CollectionCardPosition,
   type CollectionCardsQuery,
@@ -26,7 +27,7 @@ function cardsParams(search: string, page?: number, review = false): string {
   return params.toString();
 }
 
-function queryParams(query: CollectionCardsQuery, page: number): string {
+export function collectionCardsQueryParams(query: CollectionCardsQuery, page: number): string {
   const params = new URLSearchParams({ filters: JSON.stringify(query.filters), page: String(page) });
   if (query.grouped) params.set("grouped", "1");
   if (query.search) params.set("search", query.search);
@@ -38,7 +39,7 @@ export const collectionCardsQueryOptions = (guid: string, query: CollectionCards
   infiniteQueryOptions({
     queryKey: ["collection-cards", guid, "list", query] as const,
     queryFn: ({ pageParam }) =>
-      unwrap(apiGet<Result<CollectionCardsPage>>(`/api/collections/${guid}/cards?${queryParams(query, pageParam)}`)),
+      unwrap(apiGet<Result<CollectionCardsPage>>(`/api/collections/${guid}/cards?${collectionCardsQueryParams(query, pageParam)}`)),
     initialPageParam: 0,
     getNextPageParam: (last) =>
       (last.page + 1) * last.pageSize < last.totalEntries ? last.page + 1 : undefined,
@@ -74,6 +75,10 @@ export const reviewQueueQueryOptions = (guid: string) =>
 
 export function updateCollectionCard(guid: string, scanId: string, body: CardUpdateBody): Promise<unknown> {
   return unwrap(apiPut<Result<unknown>>(`/api/collections/${guid}/cards/${scanId}`, body));
+}
+
+export function setCollectionCardTags(guid: string, request: SetCardTagsRequest): Promise<unknown> {
+  return unwrap(apiPost<Result<unknown>>(`/api/collections/${guid}/cards/tags`, request));
 }
 
 export function invalidateCollectionCards(queryClient: QueryClient, guid: string): void {
@@ -124,6 +129,16 @@ export function removeCollectionCard(guid: string, scanId: string): Promise<unkn
 
 export function removeCollectionCards(guid: string, scanIds: string[]): Promise<unknown> {
   return unwrap(apiPost<Result<unknown>>(`/api/collections/${guid}/cards/remove-bulk`, { scanIds }));
+}
+
+export function moveCollectionCardsToCollection(
+  guid: string,
+  scanIds: string[],
+  targetCollectionGuid: string,
+): Promise<unknown> {
+  return unwrap(
+    apiPost<Result<unknown>>(`/api/collections/${guid}/cards/move-to-collection`, { scanIds, targetCollectionGuid }),
+  );
 }
 
 export function fetchCollectionCardCopies(guid: string, cardIds: string[]): Promise<ScannedCard[]> {

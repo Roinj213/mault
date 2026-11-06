@@ -56,6 +56,9 @@ export function AutoAssignPanel() {
   const isAlphabetMode = effectiveMode.isAlphabetMode;
   const isChaosMode = effectiveMode.isChaosMode;
   const disableToggles = isPresetMutating || isSavingMode;
+  const hasLearnedBins = configs.some(
+    (config) => !config.isCatchAll && config.rules.conditions.length > 0,
+  );
   const chaosLocked = billing?.chaosSort === false && !selectedSet.isChaosMode;
   const repackLocked =
     billing?.repacks === false && !selectedSet.isRepackMode;
@@ -88,7 +91,7 @@ export function AutoAssignPanel() {
       />
 
       {isEnabled && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2">
           <FieldLabel className="sr-only">
             {t("autoAssignPanel.fieldPlaceholder")}
           </FieldLabel>
@@ -99,7 +102,8 @@ export function AutoAssignPanel() {
             }
           >
             <SelectTrigger
-              className="flex-1 overflow-hidden"
+              aria-label={t("autoAssignPanel.fieldPlaceholder")}
+              className="w-full overflow-hidden"
               disabled={disableToggles}
             >
               <SelectValue
@@ -116,11 +120,11 @@ export function AutoAssignPanel() {
           </Select>
           <Button
             variant="outline"
-            size="icon"
-            disabled={disableToggles}
+            disabled={disableToggles || isModeDirty || !hasLearnedBins}
             onClick={() => setResetDialogOpen(true)}
           >
             <IconRefresh />
+            {t("presetSelector.resetAutoAssign")}
           </Button>
         </div>
       )}
@@ -275,7 +279,26 @@ export function AutoAssignPanel() {
         description={t("skipSavingPanel.description")}
         checked={effectiveMode.skipSaving}
         disabled={disableToggles}
-        onCheckedChange={(checked) => stageMode({ skipSaving: checked })}
+        onCheckedChange={(checked) =>
+          stageMode({
+            skipSaving: checked,
+            ...(checked ? { isResortMode: false } : {}),
+          })
+        }
+      />
+
+      <SortingModeToggleRow
+        className="border-t pt-2"
+        label={t("resortPanel.heading")}
+        description={t("resortPanel.description")}
+        checked={effectiveMode.isResortMode}
+        disabled={disableToggles}
+        onCheckedChange={(checked) =>
+          stageMode({
+            isResortMode: checked,
+            ...(checked ? { skipSaving: false } : {}),
+          })
+        }
       />
 
       <SaveBar

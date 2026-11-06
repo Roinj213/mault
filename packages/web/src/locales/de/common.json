@@ -103,7 +103,8 @@
     "exitButton": "Imitation beenden",
     "hardwareBlocked": "Sortierer und Kameras können nicht verbunden werden, während du einen Benutzer imitierst.",
     "scanningBlockedTitle": "Scannen ist während der Benutzer-Imitation deaktiviert",
-    "scanningBlockedDescription": "Beende die Imitation, um Karten zu scannen, einen Sortierer zu verbinden oder eine Kamera zu verwenden."
+    "scanningBlockedDescription": "Beende die Imitation, um Karten zu scannen, einen Sortierer zu verbinden oder eine Kamera zu verwenden.",
+    "calibrationReadOnly": "Die Kalibrierung ist während der Imitation schreibgeschützt. Beende die Imitation, um sie zu ändern oder einen Sortierer zu verbinden."
   },
   "theme": {
     "toggle": "Design umschalten",
@@ -122,7 +123,8 @@
     "delete": "Löschen",
     "save": "Speichern",
     "create": "Erstellen",
-    "search": "Suchen"
+    "search": "Suchen",
+    "chooseFile": "Datei wählen"
   },
   "unsavedChanges": {
     "message": "Du hast ungespeicherte Änderungen",
@@ -198,6 +200,8 @@
       "ctrl": "Strg",
       "left": "←",
       "right": "→",
+      "up": "↑",
+      "down": "↓",
       "escape": "Esc",
       "enter": "Enter",
       "delete": "Entf"
@@ -207,7 +211,8 @@
       "navigation": "Navigation",
       "scanner": "Scanner",
       "cardDetail": "Kartendetails",
-      "intake": "Ankauf"
+      "intake": "Ankauf",
+      "foilLabeling": "Foil-Kennzeichnung"
     },
     "actions": {
       "showShortcuts": "Tastenkürzel anzeigen",
@@ -222,6 +227,7 @@
       "goCalibrate": "Zur Sortierer-Einrichtung",
       "goSettings": "Zu den Einstellungen",
       "goAdmin": "Zum Admin-Bereich",
+      "goNextSorterNeedingAttention": "Zum nächsten Sortierer, der Hilfe braucht",
       "scanPauseResume": "Scannen pausieren oder fortsetzen",
       "scanNow": "Jetzt scannen",
       "scanFeed": "Nächste Karte zuführen",
@@ -241,9 +247,18 @@
       "cardClose": "Karte schließen oder Korrektur abbrechen",
       "cardRemove": "Karte entfernen (aus ihrer Box, wenn aus dem Lager geöffnet)",
       "reviewStart": "Karten einzeln prüfen",
-      "reviewAccept": "Beim Prüfen: Karte stimmt, weiter",
+      "reviewAccept": "Beim Prüfen: markierten Treffer übernehmen, weiter",
+      "reviewPreviousMatch": "Beim Prüfen: vorherigen ähnlichen Treffer markieren",
+      "reviewNextMatch": "Beim Prüfen: nächsten ähnlichen Treffer markieren",
+      "reviewCycleFoil": "Beim Prüfen: Foil-Arten durchschalten",
+      "reviewCycleCondition": "Beim Prüfen: Zustände durchschalten",
+      "reviewCycleLanguage": "Beim Prüfen: Sprachen durchschalten",
       "goSortingRules": "Zu den Sortierregeln",
-      "intakeOpenScanner": "Scanner für diesen Ankauf öffnen"
+      "intakeOpenScanner": "Scanner für diesen Ankauf öffnen",
+      "foilLabelFoil": "Beim Kennzeichnen: als Foil markieren",
+      "foilLabelNotFoil": "Beim Kennzeichnen: als Nicht-Foil markieren",
+      "foilLabelSkip": "Beim Kennzeichnen: diese Karte überspringen",
+      "foilLabelBack": "Beim Kennzeichnen: zurück zur vorherigen Karte"
     }
   },
   "mobileMenu": {
@@ -313,6 +328,7 @@
     "customerNameRequired": "Gib den Namen der Kundin oder des Kunden ein.",
     "orderTextRequired": "Füge eine Bestellung ein oder wähle eine Datei.",
     "orderLinesRequired": "Lass mindestens eine Karte in der Pickliste.",
+    "decklistRequired": "Gib mindestens eine Karte ein, eine pro Zeile.",
     "cardCountRequired": "Gib eine Kartenanzahl ein.",
     "storageLocationRequired": "Wähle, wohin die Karten gekommen sind.",
     "commandRequired": "Gib einen Befehl ein.",
@@ -339,6 +355,41 @@
       "enthusiast": "Enthusiast",
       "business": "Business",
       "legacyBusiness": "Business (Legacy)"
+    }
+  },
+  "a11y": {
+    "skipToContent": "Zum Hauptinhalt springen",
+    "close": "Schließen",
+    "clear": "Leeren",
+    "openOptions": "Optionen anzeigen",
+    "remove": "Entfernen",
+    "copy": "In die Zwischenablage kopieren",
+    "retry": "Erneut versuchen",
+    "removeCondition": "Bedingung entfernen",
+    "removeGroup": "Gruppe entfernen",
+    "removeMember": "{{name}} entfernen",
+    "cancelInvite": "Einladung für {{email}} zurückziehen",
+    "removeItem": "{{name}} entfernen",
+    "resizePanel": "Bereichsgröße ändern",
+    "notifications": "Benachrichtigungen",
+    "closeNotification": "Benachrichtigung schließen",
+    "notificationsWithCount_one": "Benachrichtigungen, {{count}} ungelesen",
+    "notificationsWithCount_other": "Benachrichtigungen, {{count}} ungelesen",
+    "watching": "Schauen zu",
+    "watchersCount_one": "{{count}} Person schaut zu",
+    "watchersCount_other": "{{count}} Personen schauen zu",
+    "details": "Details",
+    "liveSession": "Scan läuft live",
+    "mainNavigation": "Haupt",
+    "settingsNavigation": "Einstellungen",
+    "selected": "Ausgewählt",
+    "loading": "Wird geladen",
+    "live": "Live",
+    "notLive": "Nicht live",
+    "severity": {
+      "info": "Hinweis:",
+      "warning": "Warnung:",
+      "danger": "Fehler:"
     }
   }
 }

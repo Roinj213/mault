@@ -14,7 +14,10 @@
     "discardTitle": "Discard changes?",
     "discardDescription": "Your changes to this bin haven't been saved.",
     "keepEditing": "Keep editing",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "decreaseBy": "Decrease by {{step}}",
+    "increaseBy": "Increase by {{step}}",
+    "changesSaved": "Changes saved"
   },
   "tabs": {
     "collections": "Collections",
@@ -100,6 +103,8 @@
   "cards": {
     "bin": "Bin {{number}}",
     "needsReview": "Needs review",
+    "reviewed": "Reviewed",
+    "cardActions": "Card actions",
     "quantity_one": "{{count}} copy",
     "quantity_other": "{{count}} copies"
   },
@@ -573,6 +578,7 @@
     "sorterNotReadyDescription": "Connect your sorter to feed and route cards. You can still scan cards by hand.",
     "openSorter": "Connect sorter",
     "modelErrorTitle": "Couldn't load the card recognition models",
+    "cameraPreview": "Camera preview",
     "phase": {
       "idle": "Idle",
       "loading-models": "Loading models",
@@ -750,7 +756,7 @@
       "noBin": "No bin",
       "status": "Status",
       "needsReview": "Needs review",
-      "showDownloaded": "Show downloaded",
+      "hideDownloaded": "Hide downloaded",
       "reset": "Reset"
     },
     "sort": {
@@ -766,7 +772,12 @@
       "removeTitle_other": "Remove {{count}} copies?"
     },
     "viewOptions": "View options",
-    "display": "Display"
+    "display": "Display",
+    "layout": "Layout",
+    "viewModes": {
+      "list": "List",
+      "grid": "Grid"
+    }
   },
   "cardDetail": {
     "pricePaid": "Price paid ({{currency}})",
@@ -796,7 +807,6 @@
     "acceptNext": "Looks right",
     "acceptFinish": "Looks right",
     "reviewProgress": "Reviewing {{index}} of {{total}}",
-    "reviewed": "Reviewed",
     "similarMatches": "Similar matches",
     "similarMatchesHint": "Several close matches. Tap the right version.",
     "thisScan": "This scan",
@@ -936,7 +946,9 @@
       "repackSaveFirst": "Save to switch to repacks, then set up the pack slots.",
       "alphabetHint": "After saving, the Rules tab shows which letters each bin gets and lets you move to the next pass.",
       "skipSaving": "Don't save cards",
-      "skipSavingDescription": "Cards are identified and sorted as usual, but nothing is added to the collection. Scans still count toward your daily limit."
+      "skipSavingDescription": "Cards are identified and sorted as usual, but nothing is added to the collection. Scans still count toward your daily limit.",
+      "resort": "Re-sort saved cards",
+      "resortDescription": "Each scan moves a copy that is already in this collection into its new bin instead of adding another copy. The copy keeps its foil and condition and leaves its old storage location. Cards not in the collection yet are added as usual."
     },
     "modes": {
       "rules": {
@@ -985,6 +997,36 @@
       "addSlot": "Add slot",
       "multiplePacksLabel": "Multiple packs per bin",
       "multiplePacksDescription": "When a bin finishes a pack, it starts a new one on top of it and keeps going until the bin is full. A bin only starts a new pack if it has room for the whole pack, so packs are never cut short."
+    },
+    "transfer": {
+      "button": "Copy or move",
+      "title": "Copy or move rules to",
+      "catchAllBin": "Bin {{number}} (catch-all)",
+      "confirmTitle": "Rules to {{bin}}",
+      "confirmDescription": "Copy keeps the rules on this bin too. Move clears them from this bin.",
+      "replaceWarning": "{{bin}} already has rules. They will be replaced.",
+      "copy": "Copy",
+      "move": "Move"
+    },
+    "stages": {
+      "badge": "Multi-stage",
+      "missingPreset": "Deleted preset",
+      "pageTitle": "Stages",
+      "pageDescription": "Every stage of this multi-stage preset, in order. Tap a stage to switch to it. Add and change stages in the web app.",
+      "noWorkflowTitle": "No multi-stage preset running",
+      "noWorkflowDescription": "Choose a multi-stage preset to see its stages.",
+      "viewStages": "All stages",
+      "stageHeading": "Stage {{number}}",
+      "current": "Current",
+      "resort": "Re-sort",
+      "confirmMoveTitle": "Switch to {{name}}?",
+      "confirmMoveDescription": "Empty every bin first, setting storage locations if you want them. Then put the cards for {{name}} in the feeder. Bins still holding cards are marked as emptied.",
+      "confirm": "Bins are empty",
+      "switchFailed": "Couldn't switch stages",
+      "stageOf": "Stage {{number}} of {{count}}",
+      "previousStage": "Previous stage",
+      "nextStage": "Next stage",
+      "lastStage": "Last stage"
     },
     "alphabet": {
       "needBins": "Alphabetical sort needs at least one bin besides the catch-all.",
@@ -1086,6 +1128,24 @@
       "reverseSpeedLabel": "Roll Back Speed",
       "off": "Off"
     },
+    "feederTest": {
+      "heading": "Feeder test",
+      "description": "Feed cards straight to the bottom bin without scanning, using the saved feeder settings.",
+      "runUntilStoppedLabel": "Feed until stopped",
+      "cardsToSendLabel": "Cards to send",
+      "start": "Start feeding",
+      "stop": "Stop",
+      "stopping": "Stopping after this card",
+      "progress": "Cards sent: {{count}}",
+      "progressOfTotal": "Cards sent: {{count}} of {{total}}",
+      "results": {
+        "completed": "Feeder test finished. Cards sent: {{count}}",
+        "stopped": "Feeder test stopped. Cards sent: {{count}}",
+        "hopperEmpty": "Hopper is empty. Cards sent: {{count}}",
+        "feedFailed": "Feeder test stopped on an error. Cards sent: {{count}}",
+        "routeFailed": "Feeder test stopped on an error. Cards sent: {{count}}"
+      }
+    },
     "runTest": "Run Test",
     "testing": "Testing…",
     "feed": "Feed",
@@ -1130,7 +1190,14 @@
       "description": "How many physical sorting modules are wired up. Changes the number of bins available and the sections below.",
       "reduceTitle": "Reduce module count?",
       "reduceDescription": "Dropping to {{count}} modules will remove the sorting rules and calibration data for modules and bins beyond that count, across every bin preset.",
-      "reduceConfirm": "Change module count"
+      "reduceConfirm": "Change module count",
+      "detect": {
+        "button": "Detect",
+        "found_one": "Found {{count}} module from the wired IR sensors.",
+        "found_other": "Found {{count}} modules from the wired IR sensors.",
+        "noneFound": "No IR sensors found. Check that module 1's sensor is wired.",
+        "failed": "Couldn't read the IR sensors from the sorter."
+      }
     },
     "bins": {
       "label": "Bin configurations",
@@ -1234,6 +1301,9 @@
     "location": "Storage",
     "removeFromLocation": "Remove from location",
     "noCardsTitle": "This location is empty",
+    "searchCardsPlaceholder": "Search cards in this location",
+    "positionOrder": "Position in the box",
+    "noMatchingCards": "No cards match your search or filters",
     "businessOnly": "Storage locations aren't included in your plan.",
     "locked": "Record which box every card goes into, and where in it, when you empty a bin.",
     "lockedWithLocations": "You can still view and search your locations and the cards in them. Changing anything needs a plan that includes storage.",
@@ -1245,8 +1315,77 @@
       "startFailed": "Couldn't start the review"
     },
     "moveToLocation": "Move to location",
+    "moveToCollection": "Move to collection",
+    "moveToCollectionFailed": "Couldn't move the cards",
     "moveToOtherLocation": "Move to another location",
-    "searchLocations": "Search locations"
+    "searchLocations": "Search locations",
+    "searchCollections": "Search collections",
+    "pickList": {
+      "open": "Pick list",
+      "title": "Pick list",
+      "description": "Paste a decklist to see where each card is stored, then tick cards off as you pull them.",
+      "decklistLabel": "Cards to pull",
+      "decklistPlaceholder": "4 Lightning Bolt\n2 Counterspell",
+      "decklistHint": "One card per line. Quantities, set codes and section headers are fine.",
+      "findCards": "Find cards",
+      "editList": "Edit list",
+      "clear": "Clear list",
+      "progress": "{{picked}} of {{total}} picked",
+      "emptyTitle": "None of these cards are stored",
+      "emptyDescription": "Only cards in a storage location show up on a pick list.",
+      "loadFailed": "The pick list couldn't be loaded.",
+      "finish": "Remove picked from locations",
+      "finishTitle_one": "Remove {{count}} picked card from its location?",
+      "finishTitle_other": "Remove {{count}} picked cards from their locations?",
+      "finishDescription": "They stay in your collection. The pick list is cleared afterwards.",
+      "finishConfirm": "Remove",
+      "scan": {
+        "button": "Scan to pick",
+        "noMatch": "No card recognized. Try again with the whole card in view.",
+        "notOnList": "{{name}} isn't left on your pick list.",
+        "picked": "Picked {{name}} from {{location}}, position {{position}}",
+        "failed": "Scanning failed. Try again.",
+        "title": "Scan to pick",
+        "hint": "Hold one card in the frame and tap the shutter.",
+        "done": "Done",
+        "remaining": "{{count}} left to pick",
+        "loadingModels": "Preparing the scanner",
+        "alreadyPicked": "Every copy of {{name}} on your pick list is already picked."
+      },
+      "finishFailed": "The picked cards couldn't be removed. Try again.",
+      "notStored": "Not stored",
+      "missingCount_one": "{{count}} copy not stored",
+      "missingCount_other": "{{count}} copies not stored",
+      "moreActions": "More actions",
+      "picked": "Picked"
+    },
+    "verify": {
+      "tabs": {
+        "cards": "Cards",
+        "verify": "Verify"
+      },
+      "description": "Scan the cards in this location to check everything that should be here is.",
+      "progress": "{{verified}} of {{total}} verified",
+      "verified": "Verified",
+      "startOver": "Start over",
+      "emptyTitle": "Nothing to verify",
+      "emptyDescription": "This location has no cards stored in it yet.",
+      "loadFailed": "This location's cards couldn't be loaded.",
+      "truncated": "Only the first {{max}} cards in this location can be verified.",
+      "complete": "Every card in this location is verified.",
+      "notInLocationTitle": "Scanned but not stored here",
+      "notInLocationDescription": "These cards aren't recorded in this location. Put them where they belong, or move them here.",
+      "scan": {
+        "button": "Scan to verify",
+        "stop": "Stop scanning",
+        "verified": "Verified {{name}}, position {{position}}",
+        "alreadyVerified": "Every copy of {{name}} in this location is already verified.",
+        "notInLocation": "{{name}} isn't stored in this location.",
+        "hint": "Hold one card from this location in the frame and tap the shutter.",
+        "title": "Verify cards",
+        "remaining": "{{count}} left to verify"
+      }
+    }
   },
   "settings": {
     "title": "Settings",
@@ -1309,14 +1448,7 @@
     "ocr": {
       "heading": "Text recognition (OCR)",
       "description": "When a scan isn't a confident match, read the card's name and set line to find it. Applies to every scanner in this organization, for games with text regions set up.",
-      "toggleLabel": "Enable OCR text matching",
-      "badge": "Beta"
-    },
-    "ocrBetaDialog": {
-      "title": "OCR text matching (beta)",
-      "description": "When a scan isn't a confident match, this reads the card's name and set line to find the card or pick the right printing. Confident matches skip it, so scanning speed is unchanged. It's still in beta and can misread text. Turn it back off if it seems to be making matches worse.",
-      "confirm": "Enable OCR",
-      "cancel": "Cancel"
+      "toggleLabel": "Enable OCR text matching"
     },
     "correctionAutoClose": {
       "heading": "Card correction prompt",
@@ -1549,6 +1681,9 @@
         "none": "Don't post",
         "sameScan": "Same as every scan",
         "sameError": "Same as errors",
+        "scanRole": "Ping role for scans",
+        "errorRole": "Ping role for errors",
+        "roleHint": "Pick a role to mention with each post, including posts to collection override channels. The role must be mentionable by the bot.",
         "saved": "Channel saved.",
         "saveFailed": "Couldn't save the channel."
       },
@@ -1878,11 +2013,22 @@
     "customerNameRequired": "Enter the customer's name.",
     "orderTextRequired": "Paste an order or choose a file.",
     "orderLinesRequired": "Keep at least one card on the pick.",
+    "decklistRequired": "Enter at least one card, one per line.",
     "cardCountRequired": "Enter a number of cards.",
     "storageLocationRequired": "Choose where the cards went.",
     "commandRequired": "Enter a command.",
     "verificationCodeLength": "Enter the {{length}}-digit code.",
     "verificationCodeNumeric": "The code can only contain numbers.",
     "controlCardActionRequired": "Pick at least one thing for the card to change."
+  },
+  "cardTags": {
+    "title": "Tags",
+    "edit": "Edit tags",
+    "saveFailed": "Couldn't update the tag",
+    "names": {
+      "downloaded": "Downloaded",
+      "reviewed": "Reviewed",
+      "corrected": "Corrected"
+    }
   }
 }

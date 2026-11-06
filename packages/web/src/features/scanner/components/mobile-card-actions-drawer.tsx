@@ -40,8 +40,11 @@ function MobileCardActionsBody({
     copyName,
     remove,
     canMoveToLocation,
+    canMove,
+    sourceCollectionGuid,
     isMovingToLocation,
     moveToLocation,
+    moveToCollection,
   } = useCardActions(entry);
   const [moveToLocationOpen, setMoveToLocationOpen] = useState(false);
   const run = (action: () => void) => () => {
@@ -101,7 +104,7 @@ function MobileCardActionsBody({
             {t("cardContextMenu.markCorrect")}
           </Button>
         )}
-        {canMoveToLocation && (
+        {canMove && (
           <Button
             variant="ghost"
             className={actionClass}
@@ -130,6 +133,7 @@ function MobileCardActionsBody({
             <Button
               key={option ?? "none"}
               variant={currentFoil === option ? "outline-selected" : "outline"}
+              aria-pressed={currentFoil === option}
               onClick={run(() => setFoil(option))}
             >
               {option ?? t("cardContextMenu.nonFoil")}
@@ -149,6 +153,7 @@ function MobileCardActionsBody({
               variant={
                 currentCondition === option ? "outline-selected" : "outline"
               }
+              aria-pressed={currentCondition === option}
               onClick={run(() => setCondition(option))}
             >
               {option}
@@ -179,8 +184,15 @@ function MobileCardActionsBody({
         count={entry.scanIds.length}
         isMoving={isMovingToLocation}
         onOpenChange={setMoveToLocationOpen}
+        showLocations={canMoveToLocation}
+        sourceCollectionGuid={sourceCollectionGuid}
         onMove={async (locationGuid) => {
           const moved = await moveToLocation(locationGuid);
+          if (moved) onClose();
+          return moved;
+        }}
+        onMoveToCollection={async (collectionGuid) => {
+          const moved = await moveToCollection(collectionGuid);
           if (moved) onClose();
           return moved;
         }}

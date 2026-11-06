@@ -3,6 +3,7 @@ import { waitForPiScanResume } from "./recovery";
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import {
+  scanFoilType,
   COLOR_BAR_REGIONS_BY_GAME_KEY,
   DEFAULT_CAPTURE_SETTLE_DELAY_MS,
   DEFAULT_FEEDER_CALIBRATION,
@@ -27,7 +28,6 @@ import {
   hasMaxCopiesBins,
   isRulesMode,
   reservePickListBins,
-  scanFoilType,
   toRuleCard,
   withScanRuleFields,
   type CornerDetection,
@@ -364,11 +364,13 @@ async function prepareContext(
     const heights = new Map<number, number>();
     for (const row of heightRows) heights.set(row.binNumber, row.height);
 
+    const foilTypes =
+      (collection.foilTypes as string[] | null) ?? active.game?.foilTypes ?? [];
     const fieldDefinitions = withScanRuleFields(
       (collection.fieldDefinitions as FieldMeta[] | null) ??
         active.game?.fieldDefinitions ??
         [],
-      (collection.foilTypes as string[] | null) ?? active.game?.foilTypes ?? [],
+      foilTypes,
     );
     const trackContents = active.isRepackMode || hasMaxCopiesBins(active.bins);
     const windows = trackContents

@@ -14,6 +14,7 @@ import {
   removeCollectionCards,
   updateCollectionCard,
 } from "@/features/collections/api/collection-cards";
+import { useMoveCardsToCollection } from "@/features/collections/api/use-move-cards-to-collection";
 import { billingQueryOptions } from "@/features/org/api/billing";
 import { moveCardsToStorageLocation, storageLocationsQueryOptions } from "@/features/storage/api/storage";
 import { useActiveOrgId } from "@/hooks/use-org";
@@ -27,7 +28,7 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
   const colors = useTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const [picker, setPicker] = useState<"foil" | "condition" | "location" | null>(null);
+  const [picker, setPicker] = useState<"foil" | "condition" | "location" | "collection" | null>(null);
   const activeOrgId = useActiveOrgId();
   const billing = useQuery(billingQueryOptions(activeOrgId));
   const canMoveToLocation = !!billing.data && billing.data.storage !== false;
@@ -46,6 +47,11 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
     mutationFn: () => removeCollectionCards(collectionGuid, scanIds),
     onSettled: () => invalidateCollectionCards(queryClient, collectionGuid),
     onSuccess: onClose,
+  });
+
+  const { targetCollections, moveToCollection } = useMoveCardsToCollection({
+    sourceCollectionGuid: collectionGuid,
+    onMoved: onClose,
   });
 
   const moveToLocation = useMutation({
@@ -71,8 +77,8 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
   return (
     <>
       <Modal visible={!!entry && picker == null} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-        <Pressable accessibilityLabel={t("common.dismiss")} onPress={onClose} style={{ flex: 1, backgroundColor: colors.overlay }} />
-        <View
+        <Pressable accessibilityRole="button" accessibilityLabel={t("common.dismiss")} onPress={onClose} style={{ flex: 1, backgroundColor: colors.overlay }} />
+        <View accessibilityViewIsModal onAccessibilityEscape={onClose}
           style={{
             backgroundColor: colors.background,
             borderTopLeftRadius: RADIUS.xl,
@@ -90,7 +96,7 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SCREEN_GUTTER, paddingVertical: SPACING.md }}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <AppText size="lg" heading weight="bold" numberOfLines={1}>
+              <AppText size="lg" heading weight="bold" accessibilityRole="header" numberOfLines={1}>
                 {entry?.card.name ?? ""}
               </AppText>
               {scanIds.length > 1 ? (
@@ -119,6 +125,14 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
                   title={t("storage.moveToLocation")}
                   disabled={moveToLocation.isPending}
                   onPress={() => setPicker("location")}
+                />
+              ) : null}
+              {targetCollections.length > 0 ? (
+                <ListRow
+                  icon="collections"
+                  title={t("storage.moveToCollection")}
+                  disabled={moveToCollection.isPending}
+                  onPress={() => setPicker("collection")}
                 />
               ) : null}
               <ListRow icon="trash" tone="destructive" title={t("cardDetail.remove")} onPress={confirmRemove} />
@@ -157,6 +171,18 @@ export function CardActionsSheet({ entry, collectionGuid, foilOptions, onClose }
         onSelect={(locationGuid) => {
           setPicker(null);
           moveToLocation.mutate(locationGuid);
+        }}
+        onClose={() => setPicker(null)}
+      />
+      <OptionSheet
+        visible={picker === "collection"}
+        title={t("storage.moveToCollection")}
+        options={targetCollections.map((collection) => ({ value: collection.guid, label: collection.name }))}
+        selected={[]}
+        searchPlaceholder={t("storage.searchCollections")}
+        onSelect={(targetCollectionGuid) => {
+          setPicker(null);
+          moveToCollection.mutate({ scanIds, targetCollectionGuid });
         }}
         onClose={() => setPicker(null)}
       />

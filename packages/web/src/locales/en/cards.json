@@ -16,7 +16,8 @@
     "allSetsCount": "All sets ({{count}})",
     "noMatchingSets": "No matching sets",
     "startTyping": "Start typing to search for cards",
-    "noCardsFound": "No cards found"
+    "noCardsFound": "No cards found",
+    "searchLabel": "Search cards"
   },
   "priceTable": {
     "heading": "TCGplayer",
@@ -76,6 +77,7 @@
     "showOcrRegions": "Show OCR regions",
     "noOcrRegions": "This game has no OCR regions.",
     "ocrFallback": "{{field}} (fallback)",
+    "ocrFixedBox": "{{field}} (fixed box)",
     "ocrFields": {
       "name": "Name",
       "setLine": "Set line",
@@ -95,6 +97,7 @@
     "status": "Status",
     "needsAttention": "Needs attention",
     "showDownloadedCards": "Show downloaded cards",
+    "hideDownloadedCards": "Hide downloaded cards",
     "sets": "Sets",
     "resetFilters": "Reset filters"
   },
@@ -309,7 +312,14 @@
     "copied": "Card JSON copied.",
     "copyFailed": "Couldn't copy the card JSON.",
     "detectedColor": "Detected color bar",
-    "noColor": "None"
+    "foilDetection": "Foil detection",
+    "foilDetected": "Foil ({{method}} {{score}})",
+    "foilNotDetected": "Not foil ({{method}} {{score}})",
+    "noColor": "None",
+    "foilMethod": {
+      "rainbow": "rainbow score",
+      "nudge": "nudge change"
+    }
   },
   "cardContextMenu": {
     "open": "Open details",
@@ -321,7 +331,7 @@
     "copyName": "Copy name",
     "copied": "Name copied.",
     "copyFailed": "Couldn't copy the name.",
-    "moveToLocation": "Move to location",
+    "moveToLocation": "Move",
     "remove_one": "Remove card",
     "remove_other": "Remove {{count}} cards"
   },
@@ -332,6 +342,8 @@
     "correctNext": "correct and go to next",
     "correctFinish": "correct and finish",
     "correctStay": "correct and stay on this card",
+    "pickMatch": "pick a match",
+    "jumpToSearch": "search for the right card",
     "keys": {
       "enter": "Enter",
       "shiftEnter": "Shift Enter"
@@ -340,6 +352,16 @@
     "complete_other": "Review complete: {{count}} cards checked",
     "nothingLeft": "Nothing left to review. Every card here has already been reviewed.",
     "startFailed": "Couldn't start the review. Try again."
+  },
+  "reviewQueue": {
+    "title": "Cards to review",
+    "progress": "{{checked}} of {{total}} reviewed",
+    "exit": "Exit review",
+    "loadFailed": "Couldn't load the cards to review.",
+    "notShown_one": "{{count}} more card isn't shown here.",
+    "notShown_other": "{{count}} more cards aren't shown here.",
+    "statusRemoved": "Removed",
+    "statusPending": "Not reviewed yet"
   },
   "reviewGrid": {
     "title": "Review cards",
@@ -432,5 +454,17 @@
     "importMore": "Import more",
     "unreadable": "Couldn't read this image.",
     "identifyFailed": "Couldn't identify this image."
+  },
+  "cardTags": {
+    "title": "Tags",
+    "edit": "Edit tags",
+    "editWithTags": "Edit tags: {{tags}}",
+    "bulkAdd": "Add tag",
+    "bulkRemove": "Remove tag",
+    "names": {
+      "downloaded": "Downloaded",
+      "reviewed": "Reviewed",
+      "corrected": "Corrected"
+    }
   }
 }

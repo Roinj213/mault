@@ -5,6 +5,8 @@ import type { SessionViewer } from "@/lib/interfaces/collections";
 import type {
   BinConfig,
   CardCondition,
+  FoilNudgeFirmwareLimits,
+  CardTag,
   CardFilters,
   CommLogEntry,
   EmptyBinOptions,
@@ -35,7 +37,12 @@ import type {
   UnmatchedCard,
 } from "@magic-vault/shared";
 import type { ComponentProps, ReactNode } from "react";
-import type { PreTestHook } from "@/lib/interfaces/stations";
+import type {
+  PreTestHook,
+  SorterLimitReason,
+  StationAttention,
+  StationAttentionDetails,
+} from "@/lib/interfaces/stations";
 import type { Device } from "@/lib/interfaces/calibration";
 import type { TFunction } from "i18next";
 
@@ -162,11 +169,19 @@ export interface ScannedCardsContextValue {
   registerPauseHook: (fn: () => void) => () => void;
   registerResumeHook: (fn: () => void) => () => void;
   pause: () => void;
+  pauseForAttention: (attention: StationAttentionDetails) => void;
+  resume: () => void;
+  attention: StationAttention | null;
+  reopenAttention: () => void;
+  reportScannerError: (message: string | null) => void;
   isFeedHalted: () => boolean;
   clearFeedHalt: () => void;
   showJamToast: (options: JamToastOptions) => void;
   removeCard: (scanId: string) => void;
   removeCards: (scanIds: string[]) => Promise<boolean>;
+  moveCardsToCollection: (
+    input: MoveCardsToCollectionInput,
+  ) => Promise<number | null>;
   correctCard: (scanId: string, card: PlayingCard) => void;
   confirmCard: (scanId: string) => void;
   markCardReviewed: (scanId: string) => void;
@@ -175,6 +190,7 @@ export interface ScannedCardsContextValue {
   setCardCondition: (scanId: string, condition: CardCondition) => void;
   setCardsCondition: (scanIds: string[], condition: CardCondition) => void;
   setCardLanguage: (scanId: string, language: string) => void;
+  setCardsTags: (scanIds: string[], tags: CardTag[], enabled: boolean) => void;
   clearCards: () => void;
 }
 
@@ -248,6 +264,7 @@ export interface SerialContextValue {
   sensorBlockedModule: number | null;
   reopenSensorBlockedToast: () => void;
   firmwareVersion: string | null;
+  foilNudgeFirmwareLimits: FoilNudgeFirmwareLimits | null;
   board: SerialBoardType | null;
   hasWifi: boolean;
   deviceId: string | null;
@@ -279,6 +296,7 @@ export interface SerialContextValue {
     command: object,
     timeoutMs?: number,
   ) => Promise<SerialRequestResult>;
+  runWhenIdle: <T>(task: () => Promise<T>) => Promise<T | null>;
   subscribe: (listener: SerialMessageListener) => () => void;
   registerPreTestHook: (fn: PreTestHook) => () => void;
   getCommLog: () => CommLogEntry[];
@@ -729,6 +747,7 @@ export interface ScanAttemptOutcome extends ScanAttemptResult {
   debugImageUrl: string;
   detectedContour: CardContour | null;
   vectorizedOn: ScanVectorizeSource;
+  dewarpedCardImage: ImageData | null;
 }
 
 export interface ScanOutcome {
@@ -737,6 +756,7 @@ export interface ScanOutcome {
   debugImageUrl: string;
   detectedContour: CardContour | null;
   vectorizedOn: ScanVectorizeSource;
+  dewarpedCardImage: ImageData | null;
   matched: MatchedScanDetails | null;
   noMatch: UnmatchedScanDetails | null;
 }
@@ -890,6 +910,91 @@ export interface RouteCardToBinParams {
 
 export type OnnxExecutionProviderPreference = "webgpu" | "wasm";
 
+export interface VisionModelRunOptions {
+  alwaysRunOnCpu?: boolean;
+}
+
+export interface VisionModelOutputs {
+  outputs: Record<string, Float32Array>;
+  outputNames: string[];
+}
+
+export interface InferenceWorkerInitRequest {
+  type: "init";
+  modelBuffer: ArrayBuffer;
+  executionProvider: OnnxExecutionProviderPreference;
+}
+
+export interface InferenceWorkerRunRequest {
+  type: "run";
+  runId: number;
+  pixels: ArrayBuffer;
+  width: number;
+  height: number;
+}
+
+export type InferenceWorkerRequest =
+  | InferenceWorkerInitRequest
+  | InferenceWorkerRunRequest;
+
+export interface InferenceWorkerReadyMessage {
+  type: "ready";
+  executionProvider: OnnxExecutionProviderPreference;
+  webgpuFailureMessage: string | null;
+}
+
+export interface InferenceWorkerInitErrorMessage {
+  type: "init-error";
+  message: string;
+  isWasmRuntimeError: boolean;
+}
+
+export interface InferenceWorkerResultMessage {
+  type: "result";
+  runId: number;
+  outputs: Record<string, Float32Array>;
+  outputNames: string[];
+}
+
+export interface InferenceWorkerRunErrorMessage {
+  type: "run-error";
+  runId: number;
+  message: string;
+  isWasmRuntimeError: boolean;
+}
+
+export type InferenceWorkerMessage =
+  | InferenceWorkerReadyMessage
+  | InferenceWorkerInitErrorMessage
+  | InferenceWorkerResultMessage
+  | InferenceWorkerRunErrorMessage;
+
+export interface InferenceWorkerScope {
+  onmessage: ((event: MessageEvent<InferenceWorkerRequest>) => void) | null;
+  postMessage(message: InferenceWorkerMessage, transfer?: Transferable[]): void;
+}
+
+export interface PendingInferenceRun {
+  resolve: (outputs: VisionModelOutputs) => void;
+  reject: (error: Error) => void;
+}
+
+export interface InferenceWorkerWaiter<TWorker> {
+  resolve: (worker: TWorker) => void;
+  reject: (error: Error) => void;
+}
+
+export interface VideoPreviewLoopOptions {
+  video: HTMLVideoElement;
+  drawFrame: () => boolean;
+  isForeground: () => boolean;
+}
+
+export interface VideoPreviewLoop {
+  drawNow: () => void;
+  stop: () => void;
+}
+
 export interface AutoFeedSerial {
   sendRequest: (
     command: object,
@@ -902,12 +1007,6 @@ export interface PendingCapture {
   requestId: string;
   resolve: (dataUrl: string | null) => void;
   timeout: ReturnType<typeof setTimeout>;
-}
-
-export interface OcrBetaDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
 }
 
 export interface PhoneCameraPairingDialogProps {
@@ -961,7 +1060,7 @@ export interface ScannerStatusBarProps {
   onConnectAnotherBluetooth: () => void;
   onConnectAnotherCloud: (deviceGuid: string) => void;
   canConnectAnotherSorter: boolean;
-  sorterLimitIsHardCap: boolean;
+  sorterLimitReason: SorterLimitReason;
   onUpgrade: () => void;
   handScan: boolean;
   onHandScanChange: (enabled: boolean) => void;
@@ -1118,6 +1217,11 @@ export interface ScannerPipPreviewAction {
   onClick: () => void;
 }
 
+export interface DesktopPipHostSnapshot {
+  container: HTMLElement | null;
+  hasContent: boolean;
+}
+
 export interface ScannerPipPreviewProps {
   variant: "overlay" | "window";
   className?: string;
@@ -1171,4 +1275,10 @@ export interface ScanImageImportRowProps {
 export interface ScanImageCanvas {
   canvas: HTMLCanvasElement;
   imageContour: CardContour;
+}
+
+export interface MoveCardsToCollectionInput {
+  sourceCollectionGuid: string;
+  targetCollectionGuid: string;
+  scanIds: string[];
 }

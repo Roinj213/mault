@@ -2,14 +2,19 @@ import { billingQueryOptions } from "@/features/billing/api/billing";
 import { useDevice } from "@/features/calibration/api/use-device";
 import { useCollections } from "@/features/collections/api/use-collections";
 import { useScannedCards } from "@/features/scanner/api/use-scanned-cards";
+import { useStation } from "@/features/scanner/api/use-stations";
 import { orgSettingsQueryOptions } from "@/features/companies/api/org-settings";
 import { useOrg } from "@/features/companies/api/use-organization";
 import { useCameraContext } from "@/features/scanner/api/use-camera";
 import { drawDetectionOverlay } from "@/features/scanner/lib/card-detection";
-import { searchCardImageWithConsensus } from "@/features/scanner/lib/card-image-search";
+import {
+  captureDewarpedCardImage,
+  searchCardImageWithConsensus,
+} from "@/features/scanner/lib/card-image-search";
 import { detectCardCorners } from "@/features/scanner/lib/cornelius";
 import { getOnnxRuntimeFailure } from "@/features/scanner/lib/onnx-runtime";
 import { createOutlineAnimator } from "@/features/scanner/lib/outline-animator";
+import { startVideoPreviewLoop } from "@/features/scanner/lib/video-preview-loop";
 import {
   contourFingerprint,
   fingerprintDistance,
@@ -28,6 +33,7 @@ import {
   observeContainerResize,
 } from "@/features/scanner/lib/canvas-fit";
 import { scanLog } from "@/lib/scan-log";
+import type { VideoPreviewLoop } from "@/lib/interfaces/scanner";
 import {
   COLOR_BAR_REGIONS_BY_GAME_KEY,
   type ColorBarRegion,
@@ -88,6 +94,7 @@ export function useCardScanner({
   onSearchResults,
   onNoMatch,
   onControlCode,
+  checkFoilByNudge,
   onError,
   rotated = true,
   scanRegion: scanRegionProp,
@@ -120,6 +127,9 @@ export function useCardScanner({
   const { forceSetCodes: preferredSetCodes } = useScannedCards();
   const { activeOrg } = useOrg();
   const device = useDevice();
+  const { isActive: isActiveStation } = useStation();
+  const isActiveStationRef = useRef(isActiveStation);
+  isActiveStationRef.current = isActiveStation;
   const { data: billingData } = useQuery(billingQueryOptions(activeOrg?.id));
 
   const isAtScanLimit =
@@ -180,7 +190,8 @@ export function useCardScanner({
   const [outlineAnimator] = useState(() =>
     createOutlineAnimator(() => overlayCanvasRef.current),
   );
-  const rafRef = useRef<number>(0);
+  const previewLoopRef = useRef<VideoPreviewLoop | null>(null);
+  const liveOutlineShownRef = useRef(false);
 
   const statusRef = useRef<ScannerStatus>("initializing");
   const lastScannedCardIdRef = useRef<string | null>(null);
@@ -189,6 +200,8 @@ export function useCardScanner({
   const onSearchResultsRef = useRef(onSearchResults);
   const onNoMatchRef = useRef(onNoMatch);
   const onControlCodeRef = useRef(onControlCode);
+  const checkFoilByNudgeRef = useRef(checkFoilByNudge);
+  checkFoilByNudgeRef.current = checkFoilByNudge;
   const handleErrorRef = useRef<(msg: string) => void>(() => {});
 
   const [status, setStatus] = useState<ScannerStatus>("initializing");
@@ -289,6 +302,7 @@ export function useCardScanner({
       }
 
       try {
+        if (fromLiveVideo) drawLatestVideoFrame();
         const controlCode = readScannerControlCode(canvas);
         if (controlCode) {
           lastScannedCardIdRef.current = null;
@@ -303,6 +317,7 @@ export function useCardScanner({
           debugImageUrl,
           detectedContour,
           vectorizedOn,
+          dewarpedCardImage,
           matched,
           noMatch,
         } = await searchCardImageWithConsensus(
@@ -352,11 +367,25 @@ export function useCardScanner({
                 `[scanner] OCR name match used without an embedding match, flagged for review: ${card.name} (${card.id})`,
               );
             }
+            const foilDetection =
+              fromLiveVideo && matched && dewarpedCardImage
+                ? await checkFoilByNudgeRef.current?.(
+                    card,
+                    () =>
+                      captureDewarpedCardImage(canvas, drawLatestVideoFrame),
+                    dewarpedCardImage,
+                  )
+                : null;
             onSearchResultsRef.current?.(
               [card, ...alternativeMatches],
               debugImageUrl,
               vectorizedOn,
-              matched ?? undefined,
+              matched && foilDetection
+                ? {
+                    ...matched,
+                    diagnostics: { ...matched.diagnostics, foilDetection },
+                  }
+                : (matched ?? undefined),
             );
             if (!pausedMidSearch) updateStatus("scanning");
           }
@@ -377,32 +406,16 @@ export function useCardScanner({
         isCapturingRef.current = false;
       }
     },
-    [
-      updateStatus,
-      allowDuplicates,
-      drawLatestVideoFrame,
-      outlineAnimator,
-      t,
-    ],
+    [updateStatus, allowDuplicates, drawLatestVideoFrame, outlineAnimator, t],
   );
 
-  const detectionLoop = useCallback(() => {
-    const video = videoRef.current;
-    const displayCanvas = displayCanvasRef.current;
-
-    if (!video || !displayCanvas) return;
-    if (video.readyState < video.HAVE_ENOUGH_DATA) {
-      rafRef.current = requestAnimationFrame(detectionLoop);
-      return;
-    }
-
-    const displayCtx = displayCanvas.getContext("2d");
-    if (!displayCtx) return;
-
-    drawVideoFrame(displayCtx, video, flipCameraRef.current);
-
-    rafRef.current = requestAnimationFrame(detectionLoop);
-  }, []);
+  useEffect(() => {
+    const redrawForVisibility = () => previewLoopRef.current?.drawNow();
+    redrawForVisibility();
+    document.addEventListener("visibilitychange", redrawForVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", redrawForVisibility);
+  }, [isActiveStation]);
 
   useEffect(() => {
     if (!stream) return;
@@ -442,7 +455,18 @@ export function useCardScanner({
         );
 
         updateStatus("paused");
-        rafRef.current = requestAnimationFrame(detectionLoop);
+        previewLoopRef.current = startVideoPreviewLoop({
+          video,
+          drawFrame: () => {
+            const displayCtx = displayCanvasRef.current?.getContext("2d");
+            if (!displayCtx) return false;
+            drawVideoFrame(displayCtx, video, flipCameraRef.current);
+            return true;
+          },
+          isForeground: () =>
+            isActiveStationRef.current &&
+            document.visibilityState === "visible",
+        });
       } catch (err) {
         if (!cancelled) {
           handleErrorRef.current(
@@ -458,8 +482,8 @@ export function useCardScanner({
       cancelled = true;
       stopObservingResize();
       outlineAnimator.cancel();
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
+      previewLoopRef.current?.stop();
+      previewLoopRef.current = null;
       if (settleTimeoutRef.current) {
         clearTimeout(settleTimeoutRef.current);
         settleTimeoutRef.current = null;
@@ -467,7 +491,7 @@ export function useCardScanner({
       }
       video.srcObject = null;
     };
-  }, [stream, updateStatus, detectionLoop, outlineAnimator]);
+  }, [stream, updateStatus, outlineAnimator]);
 
   const liveDetectingRef = useRef(false);
   useEffect(() => {
@@ -475,21 +499,33 @@ export function useCardScanner({
 
     const intervalId = setInterval(() => {
       if (liveDetectingRef.current || getOnnxRuntimeFailure()) return;
+      const outlineVisible = stationIsVisible();
+      if (!outlineVisible || statusRef.current === "paused") {
+        clearLiveOutline();
+      }
       if (!isTrackedStatus()) return;
+      if (!outlineVisible && !autoCaptureRef.current) return;
 
       const canvas = displayCanvasRef.current;
       const overlayCanvas = overlayCanvasRef.current;
       if (!canvas || !overlayCanvas || !canvas.width || !canvas.height) return;
+      if (!outlineVisible) drawLatestVideoFrame();
 
       liveDetectingRef.current = true;
       detectCardCorners(canvas)
         .then((detection) => {
           if (!isTrackedStatus()) return;
           if (autoCaptureRef.current) trackHandScan(detection, canvas);
-          if (!LIVE_DETECTION_STATUSES.includes(statusRef.current)) return;
+          if (
+            !LIVE_DETECTION_STATUSES.includes(statusRef.current) ||
+            !stationIsVisible()
+          ) {
+            return;
+          }
           outlineAnimator.setTarget(
             detection.cardPresent ? detection.contour : null,
           );
+          liveOutlineShownRef.current = detection.cardPresent;
         })
         .catch((err) => {
           if (!getOnnxRuntimeFailure()) {
@@ -500,6 +536,18 @@ export function useCardScanner({
           liveDetectingRef.current = false;
         });
     }, SCANNER_LIVE_DETECTION_INTERVAL_MS);
+
+    function stationIsVisible() {
+      return (
+        isActiveStationRef.current && document.visibilityState === "visible"
+      );
+    }
+
+    function clearLiveOutline() {
+      if (!liveOutlineShownRef.current) return;
+      liveOutlineShownRef.current = false;
+      outlineAnimator.setTarget(null);
+    }
 
     function isTrackedStatus() {
       return autoCaptureRef.current
@@ -576,7 +624,7 @@ export function useCardScanner({
     }
 
     return () => clearInterval(intervalId);
-  }, [stream, outlineAnimator]);
+  }, [stream, outlineAnimator, drawLatestVideoFrame]);
 
   const handleForceAddDuplicate = useCallback(() => {
     if (duplicateCard) {

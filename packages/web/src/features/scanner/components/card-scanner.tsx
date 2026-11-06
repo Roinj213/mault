@@ -12,6 +12,7 @@ import { useCardScanner } from "@/features/scanner/api/use-card-scanner";
 import { usePiScanSession } from "@/features/scanner/api/use-pi-scan-session";
 import { piScanStatusText } from "@/features/scanner/lib/pi-scan-status";
 import { useDesktopScannerControls } from "@/features/scanner/api/use-desktop-scanner-controls";
+import { useFoilNudgeCheck } from "@/features/scanner/api/use-foil-nudge-check";
 import { useScannedCards } from "@/features/scanner/api/use-scanned-cards";
 import { useScanRemoval } from "@/features/scanner/api/use-scan-removal";
 import { useBinFillLevels } from "@/features/scanner/api/use-bin-fill-levels";
@@ -32,6 +33,7 @@ import { useRole } from "@/hooks/use-role";
 import {
   PAUSE_WHEN_HIDDEN_STATUSES,
   SESSION_TIMER_RUNNING_STATUSES,
+  STATION_ATTENTION_FIXES,
 } from "@/lib/constants/scanner";
 import { cn } from "@/lib/utils";
 import type {
@@ -86,6 +88,10 @@ export function CardScanner({
     registerPauseHook,
     registerResumeHook,
     pause,
+    pauseForAttention,
+    reportScannerError,
+    attention,
+    reopenAttention,
     isFeedHalted,
     clearFeedHalt,
     showJamToast,
@@ -110,7 +116,7 @@ export function CardScanner({
     connectAnotherSorter,
     connectAnotherSorterCloud,
     canConnectAnotherSorter,
-    sorterLimitIsHardCap,
+    sorterLimitReason,
   } = useStations();
   const {
     isConnected,
@@ -174,6 +180,7 @@ export function CardScanner({
       [],
     ),
   );
+  const checkFoilByNudge = useFoilNudgeCheck();
   const {
     status,
     errorMessage,
@@ -228,6 +235,7 @@ export function CardScanner({
     },
     rotated: previewRotated,
     onControlCode: (command) => void applyControlCode(command),
+    checkFoilByNudge: isRemoveModeActive ? undefined : checkFoilByNudge,
     autoCapture: handScanActive,
     skipDuplicateCheck: isRemoveModeActive,
   });
@@ -316,6 +324,26 @@ export function CardScanner({
 
   useSupportPrompt(status);
 
+  useEffect(() => {
+    reportScannerError(status === "error" ? errorMessage : null);
+  }, [status, errorMessage, reportScannerError]);
+  useEffect(() => () => reportScannerError(null), [reportScannerError]);
+
+  const wasActiveStationRef = useRef(isActive);
+  useEffect(() => {
+    const becameActive = isActive && !wasActiveStationRef.current;
+    wasActiveStationRef.current = isActive;
+    if (
+      becameActive &&
+      attention &&
+      STATION_ATTENTION_FIXES[attention.kind] === "emptyBin" &&
+      !binLimitReached &&
+      !fullBins
+    ) {
+      reopenAttention();
+    }
+  }, [isActive, attention, binLimitReached, fullBins, reopenAttention]);
+
   const statusRef = useRef(status);
   statusRef.current = status;
 
@@ -386,7 +414,7 @@ export function CardScanner({
       try {
         const parsed = JSON.parse(response) as Record<string, unknown>;
         if (parsed.empty && !ignoreIrSensors) {
-          pause();
+          pauseForAttention({ kind: "hopperEmpty" });
           toast.error(t("feederEmpty.title"), {
             description: t("feederEmpty.description"),
             duration: Infinity,
@@ -413,7 +441,7 @@ export function CardScanner({
             deviceGuid: device?.guid,
           });
         } else if (parsed.detected === false && !ignoreIrSensors) {
-          pause();
+          pauseForAttention({ kind: "noCardDetected" });
           toast.error(t("cardScanner.noCardDetected.title"), {
             description: t("cardScanner.noCardDetected.description"),
           });
@@ -450,7 +478,7 @@ export function CardScanner({
     prepareDevice,
     sendRequest,
     handleCardArrived,
-    pause,
+    pauseForAttention,
     t,
     activeCollection?.guid,
     device?.guid,
@@ -691,9 +719,14 @@ export function CardScanner({
         className={cn("relative isolate overflow-hidden bg-black", className)}
       >
         <video ref={videoRef} className="hidden" playsInline muted />
-        <canvas ref={displayCanvasRef} className="absolute" />
+        <canvas
+          ref={displayCanvasRef}
+          aria-label={t("a11y.cameraPreview")}
+          className="absolute"
+        />
         <canvas
           ref={overlayCanvasRef}
+          aria-hidden
           className="absolute z-20 pointer-events-none"
         />
         {renderChrome({
@@ -802,6 +835,7 @@ export function CardScanner({
           )}
           <canvas
             ref={displayCanvasRef}
+            aria-label={t("a11y.cameraPreview")}
             className={cn(
               "absolute",
               piRemote && "hidden",
@@ -810,6 +844,7 @@ export function CardScanner({
           />
           <canvas
             ref={overlayCanvasRef}
+            aria-hidden
             className={cn(
               "absolute z-20 pointer-events-none",
               piRemote && "hidden",
@@ -818,7 +853,9 @@ export function CardScanner({
           />
           {isAdmin && debugImageUrl && (
             <Tooltip>
-              <TooltipTrigger className="absolute bottom-2 left-2 z-30 flex items-center justify-center size-7 rounded-lg bg-background/70 text-foreground backdrop-blur-sm hover:bg-background/90 transition-colors">
+              <TooltipTrigger
+                aria-label={t("a11y.showLastSearchImage")}
+                className="absolute bottom-2 left-2 z-30 flex items-center justify-center size-7 rounded-lg bg-background/70 text-foreground backdrop-blur-sm hover:bg-background/90 transition-colors">
                 <IconEye size={16} />
               </TooltipTrigger>
               <TooltipContent
@@ -864,7 +901,7 @@ export function CardScanner({
             onConnectAnotherBluetooth={() => connectAnotherSorter("bluetooth")}
             onConnectAnotherCloud={connectAnotherSorterCloud}
             canConnectAnotherSorter={canConnectAnotherSorter}
-            sorterLimitIsHardCap={sorterLimitIsHardCap}
+            sorterLimitReason={sorterLimitReason}
             onUpgrade={() => navigate(SETTINGS_PATHS.billing)}
             isReady={isReady}
             isClearingDevice={isClearingDevice}

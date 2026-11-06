@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { router, useIsFocused } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import {
   binSetMode,
   CARD_CONDITIONS,
   DEFAULT_SCAN_REGION,
-  gameAbbreviation,
+  collectionGameLabel,
   isCardCondition,
   listScannerControlActions,
 } from "@magic-vault/shared";
@@ -30,11 +30,12 @@ import { cardSetsQueryOptions } from "@/features/cards/api/card-sets";
 import { collectionsQueryOptions } from "@/features/collections/api/collections";
 import { useActivateCollection } from "@/features/collections/api/use-activate-collection";
 import { binSetsQueryOptions } from "@/features/devices/api/devices";
-import { activateBinSet } from "@/features/rules/api/bin-sets";
+import { usePresetPicker } from "@/features/rules/api/use-preset-picker";
 import { useRulesData } from "@/features/rules/api/use-rules-data";
 import { useLiveCorners } from "@/features/scanner/api/use-live-corners";
 import { useCameraChoice } from "@/features/scanner/api/use-camera-choice";
 import { useScanSession } from "@/features/scanner/api/use-scan-session";
+import { useScanResultAnnouncements } from "@/features/scanner/api/use-scan-result-announcements";
 import { CameraChip } from "@/features/scanner/components/camera-chip";
 import { BinBadge } from "@/features/scanner/components/bin-badge";
 import { CameraNotice } from "@/features/scanner/components/camera-notice";
@@ -72,29 +73,20 @@ export default function ScanScreen() {
   const focused = useIsFocused();
   const appState = useAppState();
   const sorter = useSorter();
-  const queryClient = useQueryClient();
   const orgId = useActiveOrgId();
   const { data: collections } = useQuery(collectionsQueryOptions(orgId));
   const collection = collections?.find((c) => c.isActive) ?? null;
-  const collectionLabel = collection
-    ? [collection.name, collection.game ? gameAbbreviation(collection.game.key) : null, collection.lang.toUpperCase()]
-        .filter(Boolean)
-        .join(" · ")
-    : null;
+  const collectionLabel = collection ? `${collection.name} · ${collectionGameLabel(collection)}` : null;
   const foilTypes = collection?.game?.foilTypes ?? [];
   const { sets: presets, activeSet } = useRulesData();
   const activePreset = activeSet?.isActive ? activeSet : null;
   const activePresetMode = binSetMode(activePreset);
-  const presetLabel = activePreset
-    ? activePresetMode === "rules"
-      ? activePreset.name
-      : `${activePreset.name} · ${t(`rules.modes.${activePresetMode}.title`)}`
-    : null;
+  const presetPicker = usePresetPicker();
+  const presetLabel =
+    presetPicker.label && activePresetMode !== "rules"
+      ? `${presetPicker.label} · ${t(`rules.modes.${activePresetMode}.title`)}`
+      : presetPicker.label;
   const switchCollection = useActivateCollection(orgId);
-  const switchPreset = useMutation({
-    mutationFn: activateBinSet,
-    onSuccess: (next) => queryClient.setQueryData(binSetsQueryOptions(orgId).queryKey, next),
-  });
   const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
   const [presetPickerOpen, setPresetPickerOpen] = useState(false);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
@@ -118,6 +110,7 @@ export default function ScanScreen() {
     return frame;
   }, [photoOutput]);
   const session = useScanSession({ capture });
+  useScanResultAnnouncements(session.feed);
   const { data: cardSets } = useQuery({
     ...cardSetsQueryOptions(collection?.guid ?? null),
     enabled: !!collection?.guid && (setPickerOpen || session.forcedSetCodes.length > 0),
@@ -240,7 +233,7 @@ export default function ScanScreen() {
     />
   ) : switchCollection.isError ? (
     <CameraNotice tone="destructive" title={t("collections.activateFailed")} />
-  ) : switchPreset.isError ? (
+  ) : presetPicker.isError ? (
     <CameraNotice tone="destructive" title={t("rules.activateFailed")} />
   ) : sorter.notice ? (
     <CameraNotice
@@ -471,7 +464,7 @@ export default function ScanScreen() {
       <OptionSheet
         visible={collectionPickerOpen}
         title={t("scan.chooseCollection")}
-        options={(collections ?? []).map((c) => ({ value: c.guid, label: c.name }))}
+        options={(collections ?? []).map((c) => ({ value: c.guid, label: c.name, badge: collectionGameLabel(c) }))}
         selected={collection ? [collection.guid] : []}
         onSelect={(guid) => {
           setCollectionPickerOpen(false);
@@ -482,11 +475,11 @@ export default function ScanScreen() {
       <OptionSheet
         visible={presetPickerOpen}
         title={t("rules.presets")}
-        options={presets.map((preset) => ({ value: preset.guid, label: preset.name }))}
-        selected={activePreset ? [activePreset.guid] : []}
-        onSelect={(guid) => {
+        options={presetPicker.options}
+        selected={presetPicker.selected}
+        onSelect={(value) => {
           setPresetPickerOpen(false);
-          if (guid !== activePreset?.guid) switchPreset.mutate(guid);
+          presetPicker.choose(value);
         }}
         onClose={() => setPresetPickerOpen(false)}
       />

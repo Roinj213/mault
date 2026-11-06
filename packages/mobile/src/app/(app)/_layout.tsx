@@ -43,10 +43,16 @@ export default function AppLayout() {
           <Stack.Screen name="rules/[binNumber]" />
           <Stack.Screen name="rules/mode" />
           <Stack.Screen name="rules/repack" />
+          <Stack.Screen name="rules/stages" />
           <Stack.Screen name="stats" />
           <Stack.Screen name="collection-new" options={{ presentation: "modal", contentStyle: modalStyle }} />
           <Stack.Screen name="collection-rename" options={{ presentation: "modal", contentStyle: modalStyle }} />
           <Stack.Screen name="storage-name" options={{ presentation: "modal", contentStyle: modalStyle }} />
+          <Stack.Screen name="storage-pick-list" />
+          <Stack.Screen
+            name="storage-card-scan"
+            options={{ contentStyle: { backgroundColor: colors.background } }}
+          />
           <Stack.Screen
             name="desktop-camera/[guid]"
             options={{ gestureEnabled: false, contentStyle: { backgroundColor: colors.background } }}

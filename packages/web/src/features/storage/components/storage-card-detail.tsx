@@ -1,8 +1,8 @@
-import { DeleteDialog } from "@/components/delete-dialog";
 import { CardDetailScopeContext } from "@/features/cards/api/use-card-detail-scope";
 import { CardDetailPanelSkeleton } from "@/features/cards/components/card-detail-panel-skeleton";
 import { CardDetailPanel } from "@/features/cards/components/card-detail-panel";
 import {
+  fetchPrefetchQueryData,
   loadCollectionPositionStep,
   usePrefetchDetailCards,
 } from "@/features/cards/api/use-prefetch-detail-cards";
@@ -15,10 +15,10 @@ import {
   useStoredCardActions,
 } from "@/features/storage/api/use-storage-locations";
 import { MoveToLocationDialog } from "@/features/storage/components/move-to-location-dialog";
+import { RemoveFromLocationDialog } from "@/features/storage/components/remove-from-location-dialog";
 import { useStorageAccess } from "@/features/storage/api/use-storage-access";
 import { useReviewSession } from "@/hooks/use-review-session";
-import { CARD_LOOKUP_QUERY } from "@/lib/constants/card-filters";
-import { DETAIL_PREFETCH_STALE_MS } from "@/lib/constants/cards";
+import { ALL_CARDS_QUERY } from "@/lib/constants/card-filters";
 import type { StorageCardDetailProps } from "@/lib/interfaces/storage";
 import { toast } from "@/lib/toast";
 import { IconBoxOff, IconTransfer } from "@tabler/icons-react";
@@ -28,11 +28,14 @@ import { useTranslation } from "react-i18next";
 
 export function StorageCardDetail({
   location,
+  cardsQuery,
   scanId,
   reviewMode,
   onNavigate,
   onShowReviewGrid,
   onClose,
+  onReviewed,
+  onRemoved,
 }: StorageCardDetailProps) {
   const { t } = useTranslation("cards");
   const { t: tStorage } = useTranslation("storage");
@@ -43,8 +46,14 @@ export function StorageCardDetail({
   const [moveOpen, setMoveOpen] = useState(false);
   const queryClient = useQueryClient();
   const { collections } = useCollections();
+  const navigationQuery = reviewMode ? ALL_CARDS_QUERY : cardsQuery;
   const { data: context, isPending } = useQuery(
-    storageLocationCardContextQueryOptions(location.guid, scanId, reviewMode),
+    storageLocationCardContextQueryOptions(
+      location.guid,
+      scanId,
+      reviewMode,
+      navigationQuery,
+    ),
   );
 
   const stored = context?.card;
@@ -74,7 +83,7 @@ export function StorageCardDetail({
     collectionCardPositionQueryOptions(
       stored?.collectionGuid,
       scanId,
-      CARD_LOOKUP_QUERY,
+      ALL_CARDS_QUERY,
     ),
   );
   const scanned = position?.entry.scanId === scanId ? position.entry : null;
@@ -96,52 +105,64 @@ export function StorageCardDetail({
           location.guid,
           neighbor.scanId,
           reviewMode,
+          navigationQuery,
         ),
       );
       void queryClient.prefetchQuery(
         collectionCardPositionQueryOptions(
           neighbor.collectionGuid,
           neighbor.scanId,
-          CARD_LOOKUP_QUERY,
+          ALL_CARDS_QUERY,
         ),
       );
     }
-  }, [next, previous, location.guid, reviewMode, queryClient]);
+  }, [next, previous, location.guid, reviewMode, navigationQuery, queryClient]);
 
   const loadPrefetchStep = useCallback(
     async (nextScanId: string) => {
-      const nextContext = await queryClient.fetchQuery({
-        ...storageLocationCardContextQueryOptions(
+      const nextContext = await fetchPrefetchQueryData(
+        queryClient,
+        storageLocationCardContextQueryOptions(
           location.guid,
           nextScanId,
           reviewMode,
+          navigationQuery,
         ),
-        staleTime: DETAIL_PREFETCH_STALE_MS,
-      });
+        reviewMode,
+      );
       if (!nextContext) return null;
       const step = await loadCollectionPositionStep(
         queryClient,
         nextContext.card.collectionGuid,
         nextScanId,
-        CARD_LOOKUP_QUERY,
+        ALL_CARDS_QUERY,
+        reviewMode,
       );
       return step && { ...step, nextScanId: nextContext.next?.scanId ?? null };
     },
-    [queryClient, location.guid, reviewMode],
+    [queryClient, location.guid, reviewMode, navigationQuery],
   );
-  usePrefetchDetailCards(nextScanId, true, loadPrefetchStep);
+  usePrefetchDetailCards(nextScanId, true, loadPrefetchStep, reviewMode);
 
   if (!context || !stored || !scanned) return <CardDetailPanelSkeleton />;
 
   const leaveCard = () => {
-    if (reviewMode) reviewSession.forget(scanId);
+    if (reviewMode) {
+      reviewSession.forget(scanId);
+      onRemoved?.(scanId);
+    }
     if (nextScanId) onNavigate(nextScanId);
     else onClose();
   };
 
-  const removeFromLocation = () => {
+  const removeFromLocation = (alsoRemoveFromCollection: boolean) => {
     setConfirmRemoveOpen(false);
-    void removeCard(location.guid, scanId);
+    void removeCard({
+      locationGuid: location.guid,
+      scanId,
+      collectionGuid: stored.collectionGuid,
+      alsoRemoveFromCollection,
+    });
     leaveCard();
   };
 
@@ -164,6 +185,7 @@ export function StorageCardDetail({
         lowConfidenceMatch={stored.lowConfidenceMatch}
         wasCorrected={stored.corrected}
         isReviewed={stored.reviewed}
+        isDownloaded={scanned.isDownloaded}
         isFoil={stored.isFoil}
         foilType={stored.foilType ?? undefined}
         condition={stored.condition}
@@ -177,6 +199,7 @@ export function StorageCardDetail({
         currentIndex={context.index}
         total={total}
         reviewMode={reviewMode}
+        onReviewed={onReviewed}
         onShowReviewGrid={onShowReviewGrid}
         onReviewComplete={() => {
           toast.success(t("review.complete", { count: total }));
@@ -216,15 +239,12 @@ export function StorageCardDetail({
         onOpenChange={setMoveOpen}
         onMove={moveToLocation}
       />
-      <DeleteDialog
+      <RemoveFromLocationDialog
         open={confirmRemoveOpen}
         onOpenChange={setConfirmRemoveOpen}
-        title={tStorage("removeDialog.title", {
-          name: stored.card.name,
-          location: location.name,
-        })}
-        description={tStorage("removeDialog.description")}
-        confirmLabel={tStorage("removeDialog.confirm")}
+        cardName={stored.card.name}
+        locationName={location.name}
+        collectionName={stored.collectionName}
         focusConfirm
         onConfirm={removeFromLocation}
       />

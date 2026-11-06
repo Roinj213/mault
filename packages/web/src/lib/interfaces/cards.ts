@@ -1,11 +1,13 @@
 import type { HotkeyId } from "@/lib/interfaces/hotkeys";
 import type {
   CardCondition,
+  CardTag,
   CardScanOrigin,
   CardFilters,
   CardStorageLocation,
   CardSetOption,
   Collection,
+  CollectionCardsQuery,
   FieldMeta,
   GroupedScannedCard,
   OcrRegion,
@@ -14,6 +16,7 @@ import type {
   PlayingCardWithDistance,
   PriceSource,
   ReviewGridCard,
+  ScannedCard,
 } from "@magic-vault/shared";
 import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import type { ScanStats } from "@/lib/interfaces/scanner";
@@ -29,6 +32,7 @@ export interface CardSearchResultTileProps {
   card: PlayingCard | PlayingCardWithDistance;
   disabled?: boolean;
   isSelected?: boolean;
+  reviewLayout?: boolean;
   className?: string;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -50,6 +54,7 @@ export interface CardSortOptionsProps {
   sortKey: string | null;
   onSortChange: (key: string | null) => void;
   sortableFields: FieldMeta[];
+  defaultSortLabel?: string;
 }
 
 export interface CardDetailsListProps {
@@ -78,6 +83,10 @@ export interface CardPriceDetailsProps {
   className?: string;
 }
 
+export interface CardSearchOptions {
+  keepResultsWhileRefreshing?: boolean;
+}
+
 export interface CardSearchState {
   results: PlayingCard[];
   sets: CardSetOption[];
@@ -93,7 +102,8 @@ export interface CardImageViewerProps {
   onOpenChange: (open: boolean) => void;
   capturedImageUrl: string;
   showOcrRegions: boolean;
-  onShowOcrRegionsChange: (show: boolean) => void;
+  onShowOcrRegionsChange?: (show: boolean) => void;
+  ocrRegions?: OcrOverlayRegion[];
 }
 
 export interface PriceTableRow {
@@ -347,14 +357,19 @@ export interface CapturedImageThumbProps {
   alt: string;
 }
 
+export interface OcrOverlayRegion extends OcrRegion {
+  anchored?: boolean;
+}
+
 export interface OcrRegionOverlayProps {
   showLabels?: boolean;
-  regions?: OcrRegion[];
+  regions?: OcrOverlayRegion[];
 }
 
 export interface OcrRegionCropsProps {
   src: string;
   className?: string;
+  regions?: OcrOverlayRegion[];
 }
 
 export interface CardDetailActions {
@@ -364,6 +379,7 @@ export interface CardDetailActions {
   setCardFoilType: (scanId: string, foilType: string | null) => void;
   setCardCondition: (scanId: string, condition: CardCondition) => void;
   setCardLanguage: (scanId: string, language: string) => void;
+  setCardTags: (scanId: string, tags: CardTag[], enabled: boolean) => void;
 }
 
 export interface ScanDraftOptions {
@@ -383,6 +399,14 @@ export interface CardDetailScope {
   actions?: CardDetailActions;
 }
 
+export interface CardTagsMenuProps {
+  scanId: string;
+  isDownloaded?: boolean;
+  isReviewed?: boolean;
+  wasCorrected?: boolean;
+  useSheet: boolean;
+}
+
 export interface CardDetailPanelProps {
   scanId?: string;
   onClose: () => void;
@@ -392,6 +416,7 @@ export interface CardDetailPanelProps {
   lowConfidenceMatch?: boolean;
   wasCorrected?: boolean;
   isReviewed?: boolean;
+  isDownloaded?: boolean;
   isFoil?: boolean;
   foilType?: string;
   condition?: CardCondition;
@@ -409,6 +434,7 @@ export interface CardDetailPanelProps {
   reviewMode?: boolean;
   onReviewComplete?: () => void;
   onShowReviewGrid?: () => void;
+  onReviewed?: (scanId: string) => void;
   extraActions?: CardDetailAction[];
   onRemoveShortcut?: () => void;
 }
@@ -457,9 +483,7 @@ export interface CardDisplayOptionsProps {
 }
 
 export interface CardViewOptionsDrawerProps
-  extends CardSortOptionsProps,
-    CardFilterFieldsProps,
-    CardDisplayOptionsProps {
+  extends CardSortOptionsProps, CardFilterFieldsProps, CardDisplayOptionsProps {
   triggerClassName?: string;
 }
 
@@ -481,6 +505,7 @@ export interface CardCorrectionOptions {
 export interface CardCorrectionSearchProps {
   collectionGuid: string | undefined;
   initialQuery?: string;
+  inline?: boolean;
   capturedImage?: ReactNode;
   disabled?: boolean;
   onSelect: (card: PlayingCard, options: CardCorrectionOptions) => void;
@@ -537,4 +562,47 @@ export interface CardDetailActionsSheetProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   actions: CardDetailAction[];
+}
+
+export interface ReviewQueueSession {
+  id: number;
+  collectionGuid: string;
+  query: CollectionCardsQuery;
+  currentScanId: string | null;
+  reviewedScanIds: ReadonlySet<string>;
+  removedScanIds: ReadonlySet<string>;
+}
+
+export interface ReviewQueueCards {
+  cards: ScannedCard[];
+  totalCards: number;
+}
+
+export interface ReviewQueuePanelProps {
+  session: ReviewQueueSession;
+}
+
+export interface ReviewQueueEntry {
+  scanId: string;
+  card: PlayingCardWithDistance;
+}
+
+export interface ReviewQueueListProps {
+  cards: ReviewQueueEntry[];
+  totalCards: number;
+  isPending: boolean;
+  isError: boolean;
+  currentScanId: string | null;
+  reviewedScanIds: ReadonlySet<string>;
+  removedScanIds: ReadonlySet<string>;
+  onOpen: (scanId: string) => void;
+  onExit: () => void;
+}
+
+export interface ReviewQueueRowProps {
+  entry: ReviewQueueEntry;
+  isCurrent: boolean;
+  isReviewed: boolean;
+  isRemoved: boolean;
+  onOpen: () => void;
 }

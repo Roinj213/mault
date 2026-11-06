@@ -11,7 +11,8 @@
     "sounds": "Sounds",
     "deleted": "Deleted and unmatched",
     "hardware": "Hardware",
-    "developer": "Developer"
+    "developer": "Developer",
+    "foilLabels": "Foil labels"
   },
   "kitTest": {
     "board": {
@@ -58,6 +59,9 @@
     }
   },
   "cardImageVectors": {
+    "gameLabel": "Game",
+    "languageLabel": "Language",
+    "progressLabel": "Sync progress",
     "heading": "Card Image Vectors",
     "syncStatus": {
       "idle": "Idle",
@@ -93,6 +97,7 @@
     "empty": "No Logs"
   },
   "cardDatabase": {
+    "searchLabel": "Search cards",
     "heading": "Card Database",
     "cardCount_one": "{{count}} card",
     "cardCount_other": "{{count}} cards",
@@ -102,6 +107,7 @@
     "empty": "No cards found"
   },
   "syncCardById": {
+    "cardIdLabel": "Card ID",
     "heading": "Sync Card by ID",
     "description": "Fetch and vectorize a single card, adding it if it isn't in the database yet",
     "cardIdPlaceholder": "Card ID...",
@@ -155,6 +161,7 @@
     "neverUsed": "Never used"
   },
   "dumpDatabase": {
+    "scopeLabel": "Scope",
     "heading": "Dump Card Database",
     "description": "Permanently delete card image vectors, for one game or all of them",
     "scopePlaceholder": "Select scope...",
@@ -361,6 +368,7 @@
     }
   },
   "deletedItems": {
+    "typeLabel": "Item type",
     "heading": "Deleted items",
     "description": "Everything deleted in any organization, except scanned cards. Restoring puts an item back exactly as it was.",
     "searchPlaceholder": "Search by name or organization",
@@ -372,6 +380,7 @@
     "types": {
       "collection": "Collection",
       "binSet": "Bin preset",
+      "presetWorkflow": "Multi-stage preset",
       "bin": "Bin",
       "device": "Sorter",
       "binRoute": "Bin route",
@@ -393,6 +402,7 @@
     }
   },
   "unmatchedRetry": {
+    "photoFilterLabel": "Photo filter",
     "heading": "Unmatched scans",
     "description": "The most recent unmatched scans across all organizations. Retry runs today's card matching on each scan's saved data and shows what it would match now. Nothing is saved or changed. Retrying a single scan follows live scanning: if the image match is unsure, it also runs OCR on the saved photo. Retry all only re-runs the image match, so it doesn't hold up OCR for live scans.",
     "searchPlaceholder": "Search by organization, collection or card",
@@ -551,5 +561,40 @@
     "heading": "System sound clips",
     "description": "Clips every organization can use in its sound rules. Organizations can play them but can't rename or delete them.",
     "empty": "No system sound clips yet."
+  },
+  "foilLabels": {
+    "heading": "Foil labels",
+    "description": "Check Magic scans saved as foil and mark whether each card really is foil. The labels train foil detection and never change the customer's collection.",
+    "counts": "{{remaining}} left to label · {{foil}} foil and {{notFoil}} not foil labelled so far",
+    "sessionCounts": "This session: {{foil}} foil, {{notFoil}} not foil",
+    "scanPhoto": "Scan photo",
+    "scanPhotoAlt": "Scan photo of {{name}}",
+    "catalogImage": "Catalog image",
+    "catalogImageAlt": "Catalog image of {{name}}",
+    "unknownCard": "Unknown card",
+    "savedAs": "Saved as {{foilType}}",
+    "foil": "foil",
+    "detectionScore": "Rainbow score {{score}}",
+    "noDetection": "No foil detection on this scan",
+    "decisions": {
+      "foil": "Labelled foil",
+      "notFoil": "Labelled not foil",
+      "skipped": "Skipped"
+    },
+    "actions": {
+      "foil": "Foil",
+      "notFoil": "Not foil",
+      "skip": "Skip",
+      "back": "Back",
+      "refresh": "Refresh"
+    },
+    "empty": {
+      "title": "Nothing left to label",
+      "description": "Every Magic scan saved as foil with a photo has a label, or you skipped the rest. Refresh to load skipped scans again."
+    },
+    "toasts": {
+      "saveError": "Couldn't save the label. Try that card again."
+    },
+    "nudgeScore": "Nudge change {{score}}"
   }
 }

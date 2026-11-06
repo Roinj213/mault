@@ -1,4 +1,5 @@
 import type {
+  AdminFoilLabelQueueItem,
   AdminUnmatchedOcrResult,
   AdminUnmatchedRetryResult,
   AdminUnmatchedScan,
@@ -115,6 +116,7 @@ export interface AdminScriptCommandProps {
 }
 
 export interface DiscordGuildSelectProps {
+  id?: string;
   value: string | null;
   guilds: PlatformDiscordGuildSummary[];
   emptyLabel: string;
@@ -224,4 +226,11 @@ export interface DeletedItemsRequest {
   page: number;
   search: string;
   type: DeletedItemType | null;
+}
+
+export type FoilLabelDecision = "foil" | "notFoil" | "skipped";
+
+export interface FoilLabelHistoryEntry {
+  item: AdminFoilLabelQueueItem;
+  decision: FoilLabelDecision;
 }

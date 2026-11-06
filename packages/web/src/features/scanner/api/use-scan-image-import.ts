@@ -25,6 +25,7 @@ import { generateScanId } from "@/lib/utils";
 import {
   COLOR_BAR_REGIONS_BY_GAME_KEY,
   OCR_REGIONS_BY_GAME_KEY,
+  scanFoilType,
 } from "@magic-vault/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -46,9 +47,10 @@ export function useScanImageImport(
   const isRunningRef = useRef(false);
   const stopRequestedRef = useRef(false);
 
-  const gameKey =
-    collections.find((collection) => collection.guid === collectionGuid)?.game
-      ?.key ?? "";
+  const targetGame = collections.find(
+    (collection) => collection.guid === collectionGuid,
+  )?.game;
+  const gameKey = targetGame?.key ?? "";
   const isOcrSupported = (OCR_REGIONS_BY_GAME_KEY[gameKey]?.length ?? 0) > 0;
   const latest = {
     t,
@@ -71,7 +73,9 @@ export function useScanImageImport(
   const updateItem = useCallback(
     (id: string, update: Partial<ScanImageImportItem>) =>
       setItems((previous) =>
-        previous.map((item) => (item.id === id ? { ...item, ...update } : item)),
+        previous.map((item) =>
+          item.id === id ? { ...item, ...update } : item,
+        ),
       ),
     [],
   );
@@ -96,9 +100,8 @@ export function useScanImageImport(
           return true;
         }
         sourceCanvas = source.canvas;
-        const { searchCardImageWithConsensus } = await import(
-          "@/features/scanner/lib/card-image-search"
-        );
+        const { searchCardImageWithConsensus } =
+          await import("@/features/scanner/lib/card-image-search");
         const outcome = await searchCardImageWithConsensus(
           source.canvas,
           () => {},
@@ -120,17 +123,21 @@ export function useScanImageImport(
           scanLog(
             `[scan-import] ${file.name} matched ${outcome.card.name} (${outcome.card.id})`,
           );
+          const foilType = scanFoilType(outcome.card, null);
           const result = await saveCard({
             ...scanTarget,
             record: {
               scanId,
               card: outcome.card,
+              isFoil: foilType != null || undefined,
+              foilType: foilType ?? undefined,
               scannedAt,
               capturedImageUrl: outcome.debugImageUrl,
               alternativeMatches: outcome.alternativeMatches.length
                 ? outcome.alternativeMatches
                 : undefined,
-              lowConfidenceMatch: outcome.matched?.lowConfidenceMatch || undefined,
+              lowConfidenceMatch:
+                outcome.matched?.lowConfidenceMatch || undefined,
               vectorizedOn: outcome.vectorizedOn,
               diagnostics: outcome.matched?.diagnostics,
             },

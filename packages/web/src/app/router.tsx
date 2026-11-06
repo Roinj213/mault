@@ -19,7 +19,7 @@ import { useImpersonation } from "@/hooks/use-impersonation";
 import { ScanningBlockedWhileImpersonating } from "@/components/scanning-blocked-while-impersonating";
 import { ALL_NAMESPACES, withNamespaces } from "@/lib/i18n";
 import { SORTERS_OVERVIEW_PATH } from "@/lib/constants/scanner";
-import { STORAGE_PATH } from "@/lib/constants/storage";
+import { STORAGE_PATH, STORAGE_PICK_LIST_PATH } from "@/lib/constants/storage";
 import { STATS_PATH } from "@/lib/constants/stats";
 import { CONTROL_CARDS_PATH } from "@/lib/constants/control-cards";
 import { lazy, Suspense, useEffect } from "react";
@@ -30,7 +30,7 @@ import {
   useLocation,
   useParams,
 } from "react-router-dom";
-import { SORTING_RULES_PATH } from "@/lib/constants/bins";
+import { PRESET_WORKFLOW_PATH, SORTING_RULES_PATH } from "@/lib/constants/bins";
 import { SETTINGS_PATHS } from "@/lib/constants/settings";
 import { AUTH_PROVIDER } from "@/lib/constants/auth";
 import {
@@ -93,6 +93,9 @@ const CollectionViewPage = lazy(
   () => import("@/app/routes/app/collection-view"),
 );
 const BinsPage = lazy(() => import("@/app/routes/app/bins"));
+const PresetWorkflowPage = lazy(
+  () => import("@/app/routes/app/preset-workflow"),
+);
 const CalibrateLayout = lazy(() => import("@/app/routes/app/calibrate/layout"));
 const CalibrateConnectionPage = lazy(
   () => import("@/app/routes/app/calibrate/connection"),
@@ -118,6 +121,9 @@ const AdminDiscordPage = lazy(() => import("@/app/routes/app/admin/discord"));
 const AdminSoundsPage = lazy(() => import("@/app/routes/app/admin/sounds"));
 const AdminDeletedPage = lazy(() => import("@/app/routes/app/admin/deleted"));
 const AdminHardwarePage = lazy(() => import("@/app/routes/app/admin/hardware"));
+const AdminFoilLabelsPage = lazy(
+  () => import("@/app/routes/app/admin/foil-labels"),
+);
 const AdminDeveloperPage = lazy(
   () => import("@/app/routes/app/admin/developer"),
 );
@@ -163,6 +169,9 @@ const AccountPage = lazy(() => import("@/app/routes/app/account"));
 const HealthPage = lazy(() => import("@/app/routes/app/health"));
 const SortersPage = lazy(() => import("@/app/routes/app/sorters"));
 const StoragePage = lazy(() => import("@/app/routes/app/storage"));
+const StoragePickListPage = lazy(
+  () => import("@/app/routes/app/storage-pick-list"),
+);
 const StatsPage = lazy(() => import("@/app/routes/app/stats"));
 const IntakePage = lazy(() => import("@/app/routes/app/intake"));
 const PicksPage = lazy(() => import("@/app/routes/app/picks"));
@@ -364,7 +373,6 @@ export const routes: RouteObject[] = [
                       },
                       {
                         path: "/app/calibrate",
-                        element: <BlockedWhileImpersonatingGuard />,
                         children: [
                           {
                             element: <CalibrateLayout />,
@@ -448,6 +456,10 @@ export const routes: RouteObject[] = [
                               {
                                 path: "plans",
                                 element: <AdminPlansPage />,
+                              },
+                              {
+                                path: "foil-labels",
+                                element: <AdminFoilLabelsPage />,
                               },
                             ],
                           },
@@ -541,6 +553,10 @@ export const routes: RouteObject[] = [
                 element: <StoragePage />,
               },
               {
+                path: STORAGE_PICK_LIST_PATH,
+                element: <StoragePickListPage />,
+              },
+              {
                 path: ORDERS_PATH,
                 element: <Navigate to={INTAKE_PATH} replace />,
               },
@@ -562,6 +578,10 @@ export const routes: RouteObject[] = [
                   {
                     path: SORTING_RULES_PATH,
                     element: <BinsPage />,
+                  },
+                  {
+                    path: PRESET_WORKFLOW_PATH,
+                    element: <PresetWorkflowPage />,
                   },
                 ],
               },

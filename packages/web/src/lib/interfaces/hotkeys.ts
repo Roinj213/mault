@@ -5,7 +5,8 @@ export type HotkeyGroup =
   | "navigation"
   | "scanner"
   | "cardDetail"
-  | "intake";
+  | "intake"
+  | "foilLabeling";
 
 export type HotkeyId =
   | "showShortcuts"
@@ -21,6 +22,7 @@ export type HotkeyId =
   | "goCalibrate"
   | "goSettings"
   | "goAdmin"
+  | "goNextSorterNeedingAttention"
   | "scanPauseResume"
   | "scanNow"
   | "scanFeed"
@@ -41,7 +43,16 @@ export type HotkeyId =
   | "cardRemove"
   | "reviewStart"
   | "reviewAccept"
-  | "intakeOpenScanner";
+  | "reviewPreviousMatch"
+  | "reviewNextMatch"
+  | "reviewCycleFoil"
+  | "reviewCycleCondition"
+  | "reviewCycleLanguage"
+  | "intakeOpenScanner"
+  | "foilLabelFoil"
+  | "foilLabelNotFoil"
+  | "foilLabelSkip"
+  | "foilLabelBack";
 
 export interface HotkeyCombo {
   key: string;

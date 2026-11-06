@@ -158,6 +158,28 @@ async function searchByCardText(
   }
 }
 
+function readCanvasPixels(canvas: HTMLCanvasElement): ImageData | null {
+  if (!canvas.width || !canvas.height) return null;
+  return (
+    canvas.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height) ??
+    null
+  );
+}
+
+export async function captureDewarpedCardImage(
+  canvas: HTMLCanvasElement,
+  refreshFrame: () => void,
+): Promise<ImageData | null> {
+  refreshFrame();
+  const { dewarpedCanvas } = await detectAndDewarpCard(canvas, refreshFrame);
+  if (!dewarpedCanvas) return null;
+  try {
+    return readCanvasPixels(dewarpedCanvas);
+  } finally {
+    releaseCanvases([dewarpedCanvas]);
+  }
+}
+
 function buildImageSearchFormData(blob: Blob, scope: MatchScope): FormData {
   const formData = new FormData();
   formData.append("image", blob, "card.jpg");
@@ -178,6 +200,7 @@ async function toAttemptOutcome(
     | "ocr"
     | "lowConfidenceMatch"
     | "matchedBy"
+    | "dewarpedCardImage"
   >,
 ): Promise<ScanAttemptOutcome> {
   const detectedColor =
@@ -197,6 +220,8 @@ async function toAttemptOutcome(
         context.matchedBy === "ocr" && !!context.ocr?.printingConfirmed,
     },
   );
+  const topDistance =
+    best.result.data?.[0]?.distance ?? best.result.nearestDistance ?? null;
   return {
     ...resolved,
     ...context,
@@ -206,8 +231,7 @@ async function toAttemptOutcome(
     search: best.result.diagnostics ?? null,
     orientation: best.orientation,
     embedding: best.embedding,
-    topDistance:
-      best.result.data?.[0]?.distance ?? best.result.nearestDistance ?? null,
+    topDistance,
   };
 }
 
@@ -306,6 +330,7 @@ async function runCardImageSearch(
         true,
         {
           detectedContour: corners.contour,
+          dewarpedCardImage: readCanvasPixels(dewarpedCanvas),
           vectorizedOn: "web",
           detection,
           ocr: text?.ocr ?? null,
@@ -341,6 +366,7 @@ async function runCardImageSearch(
 
   return toAttemptOutcome(best, collectionGuid, colorBarRegion, false, {
     detectedContour: null,
+    dewarpedCardImage: null,
     vectorizedOn: "server",
     detection: { ...detection, fallbackReason },
     ocr: null,
@@ -354,13 +380,20 @@ function toScanOutcome(
   attempts: ScanAttemptOutcome[],
   matchesNeeded: number,
 ): ScanOutcome {
-  const { card, debugImageUrl, detectedContour, vectorizedOn } = outcome;
+  const {
+    card,
+    debugImageUrl,
+    detectedContour,
+    vectorizedOn,
+    dewarpedCardImage,
+  } = outcome;
   return {
     card,
     alternativeMatches: card ? outcome.alternativeMatches : [],
     debugImageUrl,
     detectedContour,
     vectorizedOn,
+    dewarpedCardImage,
     ...toScanMatchDetails(outcome, attempts, matchesNeeded, vectorizedOn),
   };
 }
