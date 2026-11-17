@@ -3,6 +3,7 @@ import {
   SHARED_STORAGE_PATH_PREFIX,
   SHOP_CATALOG_PATH_PREFIX,
   SHORT_LINK_NOT_FOUND_PATH,
+  MOBILE_SOCIAL_SIGN_IN_CALLBACK_PATH,
 } from "@magic-vault/shared";
 import {
   HOME_PATH,
@@ -34,6 +35,7 @@ import {
   STORAGE_PICK_LIST_PATH,
 } from "@/lib/constants/storage";
 import {
+  IN_PERSON_TRADE_PATH,
   SENT_TRADE_OFFER_PATH,
   TRADE_OFFER_PATH,
   TRADES_PATH,
@@ -59,6 +61,7 @@ import {
 import { PRESET_WORKFLOW_PATH, SORTING_RULES_PATH } from "@/lib/constants/bins";
 import { SETTINGS_PATHS } from "@/lib/constants/settings";
 import { AUTH_PROVIDER } from "@/lib/constants/auth";
+import { SERVED_FROM_PI_BUNDLE } from "@/lib/constants/pi-bundle";
 import {
   INTAKE_PATH,
   intakeReceiptPath,
@@ -89,10 +92,7 @@ const SharedStoragePage = lazy(
   ),
 );
 const SharedCardPage = lazy(
-  withNamespaces(
-    () => import("@/app/routes/shared-card"),
-    ["common", "cards"],
-  ),
+  withNamespaces(() => import("@/app/routes/shared-card"), ["common", "cards"]),
 );
 const ShopCatalogPage = lazy(
   withNamespaces(
@@ -105,6 +105,12 @@ const LinkNotFoundPage = lazy(
 );
 const AuthPage = lazy(
   withNamespaces(() => import("@/app/routes/neon/auth"), ["common", "auth"]),
+);
+const MobileAuthCallbackPage = lazy(
+  withNamespaces(
+    () => import("@/app/routes/neon/mobile-auth-callback"),
+    ["common", "auth"],
+  ),
 );
 const AuthLocalPage = lazy(
   withNamespaces(() => import("@/app/routes/local/auth"), ["common", "auth"]),
@@ -230,14 +236,17 @@ const HealthPage = lazy(() => import("@/app/routes/app/health"));
 const SortersPage = lazy(() => import("@/app/routes/app/sorters"));
 const StoragePage = lazy(loadStoragePage);
 const TradesPage = lazy(() => import("@/app/routes/app/trades"));
+const InPersonTradePage = lazy(
+  () => import("@/app/routes/app/in-person-trade"),
+);
 const TradeOfferRoutePage = lazy(() => import("@/app/routes/app/trade-offer"));
-const SentTradeOfferRoutePage = lazy(() => import("@/app/routes/app/sent-trade-offer"));
+const SentTradeOfferRoutePage = lazy(
+  () => import("@/app/routes/app/sent-trade-offer"),
+);
 const StoragePickListPage = lazy(
   () => import("@/app/routes/app/storage-pick-list"),
 );
-const StorageLabelsPage = lazy(
-  () => import("@/app/routes/app/storage-labels"),
-);
+const StorageLabelsPage = lazy(() => import("@/app/routes/app/storage-labels"));
 const StatsPage = lazy(loadStatsPage);
 const IntakePage = lazy(() => import("@/app/routes/app/intake"));
 const PicksPage = lazy(() => import("@/app/routes/app/picks"));
@@ -359,31 +368,53 @@ function RequireCollectionGuard() {
   );
 }
 
+const marketingPageRoutes: RouteObject[] = [
+  {
+    path: MARKETING_PAGE_PATHS.home,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.home} />,
+  },
+  {
+    path: MARKETING_PAGE_PATHS.build,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.build} />,
+  },
+  {
+    path: MARKETING_PAGE_PATHS.selfHost,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.selfHost} />,
+  },
+  {
+    path: MARKETING_PAGE_PATHS.discordBot,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.discordBot} />,
+  },
+  {
+    path: MARKETING_PAGE_PATHS.download,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.download} />,
+  },
+];
+
+const legalPageRoutes: RouteObject[] = [
+  {
+    path: MARKETING_PAGE_PATHS.privacy,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.privacy} />,
+  },
+  {
+    path: MARKETING_PAGE_PATHS.terms,
+    element: <MarketingRoute path={MARKETING_PAGE_PATHS.terms} />,
+  },
+];
+
+const piHostHomeRoutes: RouteObject[] = [
+  {
+    path: MARKETING_PAGE_PATHS.home,
+    element: <Navigate to={HOME_PATH} replace />,
+  },
+];
+
 export const routes: RouteObject[] = [
   {
     element: <Outlet />,
     errorElement: <ErrorPage />,
     children: [
-      {
-        path: MARKETING_PAGE_PATHS.home,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.home} />,
-      },
-      {
-        path: MARKETING_PAGE_PATHS.build,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.build} />,
-      },
-      {
-        path: MARKETING_PAGE_PATHS.selfHost,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.selfHost} />,
-      },
-      {
-        path: MARKETING_PAGE_PATHS.discordBot,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.discordBot} />,
-      },
-      {
-        path: MARKETING_PAGE_PATHS.download,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.download} />,
-      },
+      ...(SERVED_FROM_PI_BUNDLE ? piHostHomeRoutes : marketingPageRoutes),
       {
         element: <PublicPageLayout />,
         children: [
@@ -409,14 +440,15 @@ export const routes: RouteObject[] = [
           },
         ],
       },
-      {
-        path: MARKETING_PAGE_PATHS.privacy,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.privacy} />,
-      },
-      {
-        path: MARKETING_PAGE_PATHS.terms,
-        element: <MarketingRoute path={MARKETING_PAGE_PATHS.terms} />,
-      },
+      ...(SERVED_FROM_PI_BUNDLE ? [] : legalPageRoutes),
+      ...(AUTH_PROVIDER === "neon"
+        ? [
+            {
+              path: MOBILE_SOCIAL_SIGN_IN_CALLBACK_PATH,
+              element: <MobileAuthCallbackPage />,
+            },
+          ]
+        : []),
       {
         path: "/auth/:path",
         element: AUTH_PROVIDER === "local" ? <AuthLocalPage /> : <AuthPage />,
@@ -691,6 +723,10 @@ export const routes: RouteObject[] = [
               {
                 path: TRADES_PATH,
                 element: <TradesPage />,
+              },
+              {
+                path: IN_PERSON_TRADE_PATH,
+                element: <InPersonTradePage />,
               },
               {
                 path: TRADE_OFFER_PATH,
