@@ -87,6 +87,7 @@ import { usePiHost } from "@/hooks/use-pi-host";
 import { useSessionMonitor } from "@/features/scanner/api/use-session-monitor";
 import { useScanTimer } from "@/features/scanner/api/use-scan-timer";
 import { useSerial } from "@/features/scanner/api/use-serial";
+import { useValueCelebration } from "@/features/scanner/api/use-value-celebration";
 import { useStation, useStations } from "@/features/scanner/api/use-stations";
 import { BinCorrectionDialog } from "@/features/scanner/components/bin-correction-dialog";
 import { routeCardToBin } from "@/features/scanner/lib/route-card-to-bin";
@@ -156,6 +157,9 @@ export function ScannedCardsProvider({
   }, []);
   const { routes: binRoutes } = useBinRoutes();
   const device = useDevice();
+  const prepareCelebration = useValueCelebration();
+  const prepareCelebrationRef = useRef(prepareCelebration);
+  prepareCelebrationRef.current = prepareCelebration;
   const deviceGuidRef = useRef(device?.guid);
   deviceGuidRef.current = device?.guid;
   const { feederConfig } = useFeederConfig();
@@ -814,6 +818,7 @@ export function ScannedCardsProvider({
         );
       }
 
+      const celebrate = prepareCelebrationRef.current(card, record.isFoil);
       if (
         matchedBin &&
         serialRef.current.isConnected &&
@@ -834,6 +839,11 @@ export function ScannedCardsProvider({
           pause: pauseForRoutingFailure,
           triggerAutoFeed,
           onJam: showJamToast,
+          onRouted: celebrate,
+        });
+      } else if (celebrate) {
+        void celebrate().then((success) => {
+          if (!success) pause();
         });
       }
 

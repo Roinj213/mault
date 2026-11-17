@@ -138,21 +138,28 @@ Neon scales to zero after about 5 idle minutes, so nothing may poll the DB on a 
 
 ### Firmware & serial
 
-- Protocol: `firmware/PROTOCOL.md`. Firmware has no bins; the app maps bin -> (module, direction).
-- One command at a time; every blocking wait goes through `waitMs()`; pusher moves through `setServoPosition()`.
-- `handleCommand` parses its line as `const char*` and prints replies directly. New `ModuleConfig`/`FeederConfig` fields go in `MODULE_FIELDS`/`FEEDER_FIELDS` too; changing `ModuleConfig` needs an EEPROM layout migration.
-- A function whose signature uses a sketch-defined struct needs a manual prototype right after the struct.
+- Protocol: `firmware/PROTOCOL.md`. The firmware has no concept of bins; the web app resolves bin -> (module, direction).
+- Firmware runs one command at a time; every blocking wait goes through `waitMs()`. Pusher moves always go through `setServoPosition()`, never `pwm.setPWM`.
+- `handleCommand` parses its line as `const char*` and prints replies directly. New `ModuleConfig`/`FeederConfig` fields go in `MODULE_FIELDS`/`FEEDER_FIELDS` too.
+- Replies are matched by `seq` (firmware 2.7.0+). Use `sendRequest`/`sendRawCommand`; there's no "read next line" API.
+- Minimum-firmware features go in `FIRMWARE_FEATURE_MIN_VERSIONS` and are gated with `FirmwareFeatureGate`/`useFirmwareFeature`. Runtime paths still need fallbacks for older boards.
+- Changing the firmware's `ModuleConfig` requires an EEPROM layout migration (see `loadStoredConfigV1()`).
+- A function whose signature uses a sketch-defined struct needs its own prototype right after the struct (Arduino preprocessor).
 - `FeederCalibration.feedRetryCount` is app-only: the firmware ignores it and it stays out of `FEEDER_CALIBRATION_FIELDS`. Web, mobile and Pi feeds go through `shared`'s `feedWithRetries`, which resends `{"feeder": true}` only on a timeout (`isFeedTimeoutReply`), never on an empty hopper or another error.
 - Firmware `route` runs the feeder first when module 1 reads empty, so scan routes pass `requireLoadedCard` (`readIR` before routing) or they sort an unscanned card; only calibration routes rely on the implicit feed.
 - The foil nudge (`shared` `foilNudgeCommands`) is sized from the `pusherNudgeMaxPulse`/`pusherNudgeMaxTravelPercent` limits firmware reports in its status (`parseFoilNudgeFirmwareLimits`); without them the app never nudges, because a larger pusher move lowers the side paddle. It runs through `SerialSession.runWhenIdle` so it never lands mid-route.
-- Replies match by `seq`: use `sendRequest`/`sendRawCommand`. Minimum-firmware features go in `FIRMWARE_FEATURE_MIN_VERSIONS` with a gate and a fallback.
-- ESP32-S3 builds pin `FlashMode=dio` and `PartitionScheme=min_spiffs`; `esp32-flasher.ts` writes the merged bin around NVS, never whole at 0.
-- Pusher directions are mirrored (`"left"` lands right); render through `BIN_SLOTS_PHYSICAL_ORDER`, never change routes to fix the display.
-- Serial controls require `useSerial().isReady`; hardware-editing pages use `SessionLock`; new commands go in `DEVICE_COMMANDS`.
+- ESP32-S3 release builds pin `FlashMode=dio` and `PartitionScheme=min_spiffs` (BLE + Wi-Fi + TLS overflow the default 1.25 MB app slot; min_spiffs keeps NVS at 0x9000 so stored settings survive); keep the Hardware CDC TX timeout at 0.
+- `esp32-flasher.ts` writes the merged bin around NVS, never whole at 0.
+- Pusher directions are mirrored: `"left"` lands on the physical right. Render bin layouts through `BIN_SLOTS_PHYSICAL_ORDER`; never change default routes to fix the display.
+- Controls that send serial commands require `useSerial().isReady` (passed self-test). Hardware-editing pages are wrapped in `SessionLock`. A new firmware command gets an entry in `DEVICE_COMMANDS`.
 - `requestPort`/`requestDevice` must be the first await in the click handler: browsers only show the picker from the originating gesture.
+- Wi-Fi remote (ESP32, 2.10.0+, `cloud_esp32.ino`): the board holds an outbound WebSocket to `/sorter-link/device` (bearer token, SHA-256 in `devices.sorter_link_token_hash`, looked up through plain `db`), and `lib/sorter-link.ts` relays raw lines to one browser on `/sorter-link/client`. The web side is just another `ByteTransport` (`CloudTransport`, kind `cloud`), so seq matching, self-test and leases are unchanged. The relay is in process, so a board and its browser must reach the same server process. Board URL: `SORTER_LINK_URL`, else `API_URL`, else the web origin (unreachable from a board in local dev). Wi-Fi is configured only over USB/BLE; firmware never flashes over `cloud`. Wi-Fi start-up spikes brown out weak supplies, so the radio starts 2 s after boot at reduced TX power and pauses after 2 consecutive brownout resets (RTC-memory counter); never start Wi-Fi from `setup()` directly.
+- The LED strip (`lighting.ino`, 2.11.0+) keeps its mode in RAM only: the setting lives on the device record (`light_*` columns) and a pre-test hook in `DeviceCalibrationSyncProvider` re-sends `setLight` on every connect.
+- Changing `BIN_HEIGHT_PRESETS` needs a data migration (see `drizzle/0080_small_bin_height.sql`).
+- The 3D model maps raw pulses (never percentages) to horn degrees, anchored at the CAD closed pose (gates) or neutral (pusher). `SORTER_BOTTOM_DEGREES_PER_TICK` is fit to a real gate: closed 453 to flat with the card bed at 231 (the CAD paddle pose sits ~13 degrees below the bed, not flat).
+- The 3D sorter model is built from `3d model/Card Sorter.step` by `pnpm --filter @magic-vault/web model`; rerun after changing the STEP file and update `MODULE_ROLES`/mechanism points if parts move.
 - Wi-Fi remote (`cloud_common.ino` plus `cloud_esp32.ino`/`cloud_wifis3.ino`): the relay is in process, so board and browser must reach the same server process; Wi-Fi is configured only over USB/BLE; never flash over `cloud`; never start Wi-Fi from `setup()`. The app gates setup on `useSerial().hasWifi`, not the board type.
 - Uno R4 WiFi: Wi-Fi and BLE share the co-processor, one per boot, and switching restarts the board. Its networking runs from `cloudPoll()`, with the modem timeout under the watchdog and no joins or TLS handshakes while a command runs.
-- Changing `BIN_HEIGHT_PRESETS` needs a data migration. The 3D model maps raw pulses (never percentages) to degrees; rerun the model script after changing the STEP file.
 
 ### Mobile app (`packages/mobile`)
 

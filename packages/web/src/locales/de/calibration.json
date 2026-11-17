@@ -1,4 +1,106 @@
 {
+  "foilCalibration": {
+    "captureMode": "Aufnahmeexperiment",
+    "colorMode": "Farbfolge (bisherig)",
+    "brightnessMode": "Umgebungslicht / schwaches / helleres Weiss",
+    "brightnessSequence": "Karte ruhig halten: LEDs aus > Weiss 4/255 > Weiss 12/255 > Weiss 4/255 > Weiss 12/255 > LEDs aus. Jeder Zustand wartet nach Bestaetigung mindestens 1 Sekunde. Umgebungslicht, schwaches und helleres Weiss werden jeweils zweimal mit getrennten Stabilitaetspruefungen aufgenommen. Aus bedeutet Umgebungslicht, nicht Dunkelheit. Keine automatische Foil-Entscheidung.",
+    "brightComparison": "Wiederholtes helleres Weiss (12/255): Intensitaetsaenderung {{shift}} Punkte; normalisierter Unterschied {{difference}}%; Eckenverschiebung {{movement}}% der Bilddiagonale.",
+    "ambientComparison": "Umgebungslichtwiederholung: Intensitaetsaenderung {{shift}} Punkte; normalisierter Unterschied {{difference}}%; Eckenverschiebung {{movement}}% der Bilddiagonale.",
+    "ambientHelp": "Der Umgebungslichtvergleich schaetzt einen medianen Lichtfaktor pro RGB-Kanal und misst verbleibende positive und negative Aenderungen ausgerichteter Kartenpixel. Dunkle, gesaettigte und voraussichtlich gesaettigte Pixel werden ausgeschlossen. Mindestens 25% nutzbare Pixel und maximal 1% Eckenverschiebung der Bilddiagonale erforderlich. Einfache Motiv- und Belichtungseffekte werden reduziert, nicht vollstaendig entfernt. Experimentell, keine Foil-Konfidenz; Aufnahmewarnungen beachten.",
+    "ambientMetrics": "Umgebungslicht-Rest ({{eligible}}% nutzbar): positiver Mittelwert {{mean}} Punkte, 99. Perzentil {{peak}} Punkte, negativer Mittelwert {{negative}} Punkte.",
+    "ambientUnavailable": "Umgebungslichtvergleich nicht verfuegbar: Ausschnitt fehlt, Ecken zu stark verschoben oder zu wenige nutzbare Kanal-/Pixelwerte. Keine Foil-Aussage.",
+    "reflectionHelp": "Fleckenmessungen vergleichen ein 3x3-Zentrum mit einem umgebenden 13x13-Ring. Kandidaten brauchen mindestens 55% Intensitaet und 20 Kontrastpunkte. Komponenten brauchen 3 Pixel; Rechteckfuellung beschreibt die Form. Auch Druckmotive erzeugen Flecken. Erste Foil- und Nicht-Foil-Ergebnisse ueberlappen: Mehr Flecken oder staerkerer Kontrast bedeuten nicht Foil.",
+    "reflections": "Lokaler Kontrast (99,9. Perzentil): {{contrast}} Punkte; {{count}} Flecken, {{area}}% Kandidatenflaeche; groesster {{largest}}%, Rechteckfuellung {{compactness}}%. Experimentell, kein Foil-Wert.",
+    "brightness": "Aufnahmehelligkeit",
+    "brightnessHelp": "Nur bei Aufnahmen angewendet, nicht als Sortereinstellung gespeichert. Beim naechsten Test mit 48 beginnen (bisherige Aufnahmen: 96).",
+    "analyze": "Kartenbereich analysieren",
+    "analyzing": "Kartenbereich wird analysiert...",
+    "analysisFailed": "Kartenanalyse fehlgeschlagen. Die Fotos bleiben gespeichert. Modellverfuegbarkeit und Browserspeicher pruefen, dann Analyse erneut starten.",
+    "analysisHelp": "Bei erkannten Kartenausschnitten wird ein Rand von 6% nicht gemessen. Glanzlichter liegen ueber 60% Intensitaet und dem Kartenmedian plus 25 Prozentpunkten. Qualitaetsgrenzen sind experimentelle Diagnosen, keine Foil-Klassifikation oder Genauigkeitsgarantie. Ausschnitte auf falsche Eckenerkennung pruefen.",
+    "cardCrop": "Erkannter und ausgerichteter Kartenausschnitt",
+    "cardMetrics": "Karte: {{clipping}}% gesaettigt, {{highlights}}% Glanzlichter",
+    "whiteComparison": "Weisswiederholung: Intensitaetsaenderung {{shift}} Prozentpunkte; helligkeitsnormalisierter Unterschied {{difference}}%; Eckenverschiebung {{movement}}% der Bilddiagonale.",
+    "quality": {
+      "brightUnstable": "Der Vergleich des wiederholten helleren Weiss fehlt oder ueberschreitet eine bestehende Belichtungs-, Ausrichtungs- oder Bilddifferenzgrenze. Telefonbelichtung, Bewegung und Kartenausschnitte vor der Auswertung pruefen.",
+      "ambientUnstable": "Der wiederholte Umgebungslichtvergleich fehlt oder ueberschreitet eine bestehende Belichtungs-, Ausrichtungs- oder Bilddifferenzgrenze. Umgebungslicht, Telefonbelichtung und Bewegung vor der Auswertung pruefen.",
+      "missingCard": "Kartenerkennung nicht verfuegbar oder Ecken um mehr als 3% der Bilddiagonale gegenueber der Referenz verschoben. Inkonsistente Ausschnitte werden nicht gemessen. Keine vollstaendige Qualitaetsbewertung moeglich.",
+      "clipping": "Mehr als 2% eines Kartenausschnitts erreichen Intensitaet 250/255 in mindestens einem Kanal. Niedrigere Aufnahmehelligkeit versuchen.",
+      "exposure": "Die wiederholte weisse Aufnahme aendert ihre Intensitaet um mehr als 5 Prozentpunkte. Belichtung oder Licht ist eventuell noch nicht stabil.",
+      "movement": "Die Ecken verschieben sich um mehr als 1% der Bilddiagonale. Bewegung oder ungenaue Eckenerkennung kann den Vergleich beeinflussen.",
+      "unstable": "Weisse Kartenausschnitte unterscheiden sich nach Helligkeitsnormalisierung um mehr als 4%. Bewegung, Belichtung und Erkennung pruefen.",
+      "directionUnstable": "Ein wiederholter Einzel-LED-Vergleich ist nicht verfuegbar oder ueberschreitet ein bestehendes Belichtungs-, Ausrichtungs- oder Bilddifferenzlimit. Belichtung, Bewegung und Kartenausschnitte pruefen, bevor das Richtungsexperiment interpretiert wird."
+    },
+    "heading": "Aufnahmelabor zur Foil-Erkennung",
+    "description": "Nur experimentelle Datenerfassung. Klassifiziert keine Karten, aendert keinen Foil-Status und bewegt oder sortiert keine Karten.",
+    "instructions": "Sorter verbinden und Selbsttest ausfuehren, oben Webcam oder gekoppeltes Telefon einrichten und Kameraeinstellungen speichern. Eine bekannte Foil- oder Nicht-Foil-Karte ruhig an die Scanposition legen. Aufnahmen bei Umgebungslicht, Weiss, Rot, Gruen, Blau und erneut Weiss erstellen. Danach werden die gespeicherten Lichteinstellungen wiederhergestellt.",
+    "limitations": "Farbaenderungen beweisen keinen Foil-Effekt. Automatische Belichtung, Bewegung, Huellen und Umgebungslicht beeinflussen das Ergebnis. Beide weissen Aufnahmen auf Stabilitaet vergleichen. Die Saettigung des Gesamtbilds ist nur eine Diagnose, kein Foil-Wert. Bei geschlossenem Tab oder Verbindungsabbruch kann die Wiederherstellung scheitern; danach die Lichtseite pruefen.",
+    "card": "Kartenname und Druck (Set / Sammlernummer)",
+    "cardRequired": "Kartenname und Druck eingeben (maximal 200 Zeichen).",
+    "finish": "Bekannte physische Ausfuehrung",
+    "foil": "Foil",
+    "nonfoil": "Nicht-Foil",
+    "sleeved": "Karte ist in einer Huelle",
+    "notes": "Aufbaunotizen (Lichtposition, Kamera, Huelle, Umgebungslicht)",
+    "capture": "Beschriftete Probe aufnehmen",
+    "capturing": "Aufnahme...",
+    "cancel": "Aufnahme abbrechen",
+    "progress": "Aufnahme: {{step}}",
+    "unavailable": "Benoetigt einen verbundenen Sorter mit bestandenem Selbsttest und Lichtunterstuetzung, eine bereite Kamera, gespeicherte Kameraeinstellungen, lokalen Speicher und keine aktive Scan-Sitzung.",
+    "failed": "Aufnahme fehlgeschlagen. Keine vollstaendige Probe gespeichert. Kamera, Sorterverbindung und Lichtwarnungen pruefen und erneut versuchen.",
+    "cancelled": "Aufnahme abgebrochen. Keine vollstaendige Probe gespeichert.",
+    "checkLighting": "Aufnahme nicht abgeschlossen. Pruefen, ob das vorherige Licht wiederhergestellt wurde.",
+    "storageFailed": "Lokaler Probenspeicher fehlgeschlagen. Browserberechtigungen und freien Speicher pruefen.",
+    "storageFull": "Das Probenlimit dieses Browsers ist erreicht. Proben exportieren und entfernen, um weitere aufzunehmen. Proben anderer Sorter oder Organisationen muessen in deren Aufnahmelabor entfernt werden.",
+    "saved": "Beschriftete Aufnahme in diesem Browser gespeichert.",
+    "storage": "{{count}} Proben fuer diesen Sorter. Maximal {{limit}} Proben insgesamt in diesem Browser. Vor dem Entfernen oder Loeschen der Browserdaten exportieren. Fotos werden nicht hochgeladen oder zwischen Browsern geteilt.",
+    "export": "JSON exportieren",
+    "remove": "Probe entfernen",
+    "frameAlt": "{{card}}, Beleuchtung {{step}}",
+    "clipped": "{{percent}}% gesaettigt",
+    "steps": {
+      "whiteBrightRepeat": "Helleres Weiss wiederholt",
+      "whiteBright": "Weisse Hauptlichtreferenz",
+      "whiteHigh": "Helles Hauptlicht",
+      "ambientRepeat": "Umgebungslicht wiederholt (Streifen aus)",
+      "ambient": "Umgebungslicht (Streifen aus)",
+      "white": "Weiss",
+      "red": "Rot",
+      "green": "Gruen",
+      "blue": "Blau",
+      "whiteRepeat": "Weiss wiederholt",
+      "led0": "Nur LED 0",
+      "led3": "Nur LED 3",
+      "led0Repeat": "Nur LED 0 wiederholt",
+      "led3Repeat": "Nur LED 3 wiederholt",
+      "diffuse": "Eingestellte diffuse LEDs",
+      "led4": "Nur LED 4",
+      "led4Repeat": "Nur LED 4 wiederholt",
+      "led7": "Nur LED 7",
+      "led7Repeat": "Nur LED 7 wiederholt"
+    },
+    "directionMode": "LED-Richtung (LED 0 / LED 7)",
+    "stagedMode": "Hauptlichtreihe + Foil-Pruefung",
+    "stagedSequence": "Stufe 1 nutzt die eingestellten diffusen LEDs: LEDs aus > normales Weiss 32/255 > dunkles Weiss 8/255 > helles Weiss 96/255 > nochmals normales Weiss 32/255. Stufe 2 prueft jede Karte: LED 0 > LED 7 > LED 0 > LED 7, jeweils 32/255 mit ausgeschalteten diffusen LEDs. Karte ruhig halten und Raumlicht abschirmen. Dies aendert die LED-Helligkeit, nicht die Kamerabelichtung; die automatische Belichtung kann ausgleichen. Stufe 1 klassifiziert noch keine Karten und ueberspringt keine Pruefung. Die experimentelle Auswertung nutzt die Richtungsaufnahmen. Wiederholungen des normalen Lichts pruefen die Stabilitaet. Live-Sortierung bleibt unveraendert.",
+    "directionSequence": "Die Hauptbeleuchtung nutzt die eingestellten diffusen LEDs. Offene LEDs 0 und 7 sind fuer die Foil-Erkennung reserviert. Karte ruhig halten: LEDs aus > diffuse LEDs weiss 12/255 > diffuse LEDs weiss 32/255 > nur LED 0 > nur LED 7 > nur LED 0 > nur LED 7 (einzelne LEDs mit 32/255). Erfordert Sortierer-Firmware mit LED-Richtungsunterstuetzung: zuerst ueber die Website neu flashen, sonst stoppt die Aufnahme, wenn die LED-Maske nicht bestaetigt wird. Raumlicht abschirmen. Die Foil-Auswertung ist experimentell.",
+    "directionHelp": "Die Richtungsantwort teilt den LED-{{far}}-Ausschnitt Pixel fuer Pixel durch den LED-0-Ausschnitt, sodass gedrucktes Artwork weitgehend wegfaellt, und entfernt dann den gleichmaessigen Abfall entlang des Streifens mit einem lokalen 17x17-Mittelwert. Verbleibende scharfe Aenderungen sind Glanzlichter, die mit dem Licht wandern. Das Wiederholungsrauschen ist dieselbe Messung fuer LED 0 gegen ihre Wiederholung; ein brauchbares Foil-Signal muss deutlich darueber liegen. Experimentell, kein Foil-Wert.",
+    "directionResponse": "LED 0 gegen LED {{far}} ({{eligible}}% nutzbar): 99. Perzentil Rest {{peak}}, wandernde Glanzlichter {{glints}}% der Karte.",
+    "directionNoise": "Wiederholungsrauschen, LED 0 gegen LED 0 ({{eligible}}% nutzbar): 99. Perzentil Rest {{peak}}, wandernde Glanzlichter {{glints}}% der Karte.",
+    "directionUnavailable": "Richtungsvergleich nicht verfuegbar: Ausschnitt fehlt oder zu wenige beleuchtete Pixel.",
+    "directionStability": "Wiederholte {{led}}: Intensitaetsaenderung {{shift}} Punkte; normalisierter Unterschied {{difference}}%; Eckenverschiebung {{movement}}% der Bilddiagonale.",
+    "verdict": {
+      "foil": "Foil (experimentell)",
+      "nonFoil": "Kein Foil (experimentell)",
+      "uncertain": "Unsicher"
+    },
+    "verdictToast": "{{card}}: {{verdict}}",
+    "verdictMismatch": "Die experimentelle Auswertung widerspricht dem gewaehlten Finish. Pruefe die Angabe; wenn sie stimmt, exportiere diese Probe, damit die Grenzwerte angepasst werden koennen.",
+    "rainbowScore": "Richtungs-Farbaenderung, LED 0 gegen LED {{far}}: {{first}}, Wiederholung {{repeat}}. Breite farbige Reflexe koennen diesen Wert ebenfalls erhoehen; allein ist er kein Foil-Nachweis.",
+    "localRainbowScore": "Bisherige lokale Farbaenderung: {{first}}, Wiederholung {{repeat}}. Nur zum Vergleich; gedruckte Bildfarben koennen diesen Wert erhoehen.",
+    "analysisVersion": "Detektor-Analyseversion {{version}}",
+    "normalizedScore": "Um Bildfarben bereinigter Richtungswert: {{first}}, Wiederholung {{repeat}}. Rauschen bei gleichem Licht: {{noise0}} / {{noiseFar}}. Foil erfordert beide Richtungswerte ab {{foil}}; kein Foil erfordert beide bis {{nonFoil}}. Stabile, brauchbare Aufnahmen und geringes Wiederholungsrauschen sind erforderlich; sonst unsicher. Experimentell, keine validierte Genauigkeit oder Erkennung spezieller Foil-Arten.",
+    "normalizedCoverage": "Brauchbare Richtungspixel: {{eligible}}%, Wiederholung {{eligibleRepeat}}%. Auf den Lichtwechsel reagierende Pixel: {{changed}}%, Wiederholung {{changedRepeat}}%. Beide erfordern mindestens 25% Abdeckung. Proben in Huellen bleiben unsicher.",
+    "reanalyzeGlare": "Diese Probe nutzt einen aelteren Detektor ohne um Bildfarben bereinigte Farbverhaeltnisse. Mit Analysieren aktualisieren; die alte Finish-Prognose ist ausgeblendet."
+  },
   "page": {
     "title": "Sortierer einrichten",
     "subtitle": "Geh diese Schritte der Reihe nach durch, um einen Sortierer startklar zu machen."
@@ -54,6 +156,7 @@
     "moduleCalibration": "Modulkalibrierung",
     "connection": "Verbindung",
     "layout": "Aufbau",
+    "lights": "Licht",
     "test": "Test"
   },
   "binConfigurations": {
@@ -563,6 +666,7 @@
     "layout": "Sag der App, wie viele Module verbaut sind, in welchem Platz jedes Fach sitzt und wie groß jedes Fach ist.",
     "calibration": "Stimme die Zuführung und die Servos jedes Moduls ab, bis Karten sauber laufen, und speichere dann.",
     "scanRegion": "Rahme den Teil des Kamerabilds ein, in dem die Karte liegt, und lege fest, wie genau jeder Scan abgeglichen wird.",
+    "lights": "Lege Farbe und Helligkeit des Scanlichts fest. Der Sortierer behält diese Einstellung und bekommt sie bei jeder Verbindung mit der App zurück.",
     "test": "Prüfe vor dem Sortieren, ob die Sensoren Karten erkennen und jedes Fach sie erhält."
   },
   "sorterModel": {
@@ -595,5 +699,70 @@
       "feeder": "Zieht eine Karte aus dem Magazin auf Modul 1."
     },
     "xray": "Röntgenblick"
+  },
+  "lights": {
+    "previewUnavailable": "Verbinde den Sortierer und lass ihn den Selbsttest bestehen, um Änderungen am Streifen zu sehen. Bearbeiten und Speichern geht trotzdem.",
+    "strip": {
+      "heading": "Lichtstreifen",
+      "description": "SK6812-RGBW-LEDs: Diffuse LEDs 1 bis 6 und bei 16 LEDs auch 8 bis 15 sorgen für normales Licht. Offene LEDs 0 und 7 dienen der Foil-Erkennung. Warnungen nutzen alle eingestellten LEDs."
+    },
+    "ledCountLabel": "Länge des LED-Streifens",
+    "ledCountValue": "{{count}} LEDs",
+    "ledCountHelp": "Wähle 8 für nur die erste Platine oder 16 für beide hintereinander verbundenen Platinen. Speichern übernimmt die Einstellung.",
+    "modeLabel": "Modus",
+    "modes": {
+      "off": {
+        "label": "Aus",
+        "description": "Normales Licht bleibt dunkel. Aktivierte Warnungen und Feiern koennen den Streifen weiter beleuchten."
+      },
+      "white": {
+        "label": "Weiß",
+        "description": "Firmware 2.13+ verwendet den dedizierten Neutralweiß-Kanal des Streifens. Kamera-Weißabgleich und LED-Qualität beeinflussen weiterhin die Kartenfarbe; dies ist keine Farbkalibrierung."
+      },
+      "custom": {
+        "label": "Eigene Farbe",
+        "description": "RGB-Farbe wählen und den Neutralweiß-Kanal unabhängig einstellen."
+      },
+      "foil": {
+        "label": "Foil-Lauflicht",
+        "description": "Ein weißes Licht läuft um den Streifen, damit Foil-Karten das Licht aus verschiedenen Winkeln einfangen."
+      }
+    },
+    "colorLabel": "Farbe",
+    "whiteChannelLabel": "Weißkanal (W)",
+    "whiteChannelValue": "{{value}}/255",
+    "brightnessLabel": "Helligkeit",
+    "brightnessValue": "{{percent}} %",
+    "celebration": {
+      "heading": "Feier für wertvolle Karten",
+      "description": "Je eine LED blinkt von 0 bis zur letzten eingestellten LED und zurueck, abwechselnd gruen, rot und blau. Bei neu gescannten Karten ab dem Mindestwert. Automatische Feiern per Schalter deaktivieren. Vor dem naechsten Einzug kehrt normales Licht zurueck. Die einstellbare Streifenlaenge erfordert aktualisierte Firmware.",
+      "duration": "Dauer der Feier (Sekunden)",
+      "invalidDuration": "Gib 0,5 bis 3 Sekunden ein.",
+      "previewFailed": "Feiertest fehlgeschlagen. Warnungen loeschen und Firmware fuer einstellbare Dauer aktualisieren.",
+      "enabled": "Automatische Feier aktivieren",
+      "threshold": "Mindestkartenwert ({{currency}})",
+      "invalidThreshold": "Gib einen nicht negativen Betrag ein.",
+      "source": "Verwendet Preise von {{source}}, einschließlich Foil und Zustand. Speichere diese Einstellungen nach einem Wechsel der Preisquelle erneut.",
+      "failed": "Der Sortierer hat die Feier nicht bestätigt. Der Scan wurde pausiert."
+    },
+    "alerts": {
+      "heading": "Warnungen",
+      "description": "Warnungen wechseln mit dem normalen mittleren Licht, solange ein gemeldeter Fehler besteht, und enden bei freiem Sensor. Alle Zeiten in Sekunden, pro Sortierer gespeichert. Standard: 3 Sekunden Warnung, 5 Sekunden normales Licht. Blockaden haben Vorrang vor leerem Einzug und Feiern. Sicherheitspruefungen bleiben auch ohne Warnlicht aktiv. Ab Firmware 2.12.0.",
+      "enabled": "Warnlichter aktivieren",
+      "lightEmptyWarningSeconds": "Gelbe Warnung bei leerem Einzug (Sekunden)",
+      "lightBlockedWarningSeconds": "Rote Warnung bei blockiertem Modul (Sekunden)",
+      "lightNormalSeconds": "Normales diffuses Licht zwischen Warnungen (Sekunden)",
+      "invalidSeconds": "Gib eine ganze Zahl von 1 bis 300 Sekunden ein.",
+      "jam": "Blockiertes Modul: alle eingestellten LEDs leuchten fuer die eingestellte Warnzeit rot.",
+      "empty": "Leerer Einzug: alle eingestellten LEDs leuchten fuer die eingestellte Warnzeit gelb.",
+      "value": "Feiern laufen von LED 0 bis zur letzten eingestellten LED und zurueck mit gruenen, roten und blauen Blitzen.",
+      "testCelebration": "Feier testen",
+      "clear": "Warnung beenden"
+    },
+    "toasts": {
+      "saved": "Lichteinstellungen gespeichert.",
+      "saveFailed": "Lichteinstellungen konnten nicht gespeichert werden.",
+      "previewFailed": "Lichteinstellungen nicht bestaetigt. Verbindung, gueltige Zeitwerte und Firmware pruefen."
+    }
   }
 }

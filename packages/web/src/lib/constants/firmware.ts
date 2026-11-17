@@ -1,3 +1,5 @@
+export const LATEST_FIRMWARE_VERSION =
+  import.meta.env.VITE_LATEST_FIRMWARE_VERSION ?? "2.14.0";
 export const BUNDLED_FIRMWARE_OPTION_KEY = "bundled";
 
 export const ESP32_FIRMWARE_CHIP = "ESP32-S3";

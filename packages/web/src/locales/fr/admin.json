@@ -250,6 +250,79 @@
   "cancel": "Annuler",
   "starting": "Démarrage...",
   "loading": "Chargement...",
+  "devicePlayground": {
+    "heading": "Bac à sable de l'appareil",
+    "description": "Envoie n'importe quelle commande firmware au trieur connecté et vois sa réponse brute. Outil de développement, le protocole complet est dans firmware/PROTOCOL.md.",
+    "connect": "Connecter",
+    "connectUsb": "USB",
+    "connectBluetooth": "Bluetooth",
+    "disconnect": "Déconnecter",
+    "statusConnected": "Connecté",
+    "statusDisconnected": "Non connecté",
+    "firmware": "Firmware {{version}}",
+    "firmwareUnknown": "Firmware inconnu",
+    "selfTestPassed": "Autotest réussi",
+    "selfTestPending": "Autotest non réussi",
+    "warning": "Les commandes vont directement au trieur et contournent le verrou habituel de l'autotest. Le calibrage envoyé d'ici n'est pas enregistré ; reconnecte-toi pour restaurer le calibrage enregistré.",
+    "needsFirmware": "Nécessite le firmware {{version}}+",
+    "unchangedPlaceholder": "inchangé",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "outcome": {
+      "ok": "Réponse en {{ms}} ms",
+      "busy": "Le trieur est occupé par une autre commande. Réessaie quand il a terminé.",
+      "disconnected": "Aucun trieur n'est connecté.",
+      "noResponse": "Aucune réponse après {{ms}} ms."
+    },
+    "stop": {
+      "description": "Arrêts rapides",
+      "neutral": "Tout au neutre",
+      "feeder": "Arrêter le chargeur"
+    },
+    "groups": {
+      "status": "État et configuration",
+      "servos": "Servos et canaux",
+      "feeder": "Chargeur",
+      "routing": "Tri",
+      "calibration": "Calibrage (non enregistré)"
+    },
+    "commands": {
+      "getStatus": "Indique la version du firmware, la carte, l'identifiant matériel et l'état BLE.",
+      "readIR": "Lit le capteur IR de chaque module et le capteur du bac.",
+      "setChannelOffset": "Définit la disposition des canaux (0 standard, 4 ancien) et remet chaque servo au neutre.",
+      "test": "Lance l'autotest complet. Refuse si un capteur de module détecte une carte.",
+      "neutral": "Met chaque servo en position fermée ou neutre et arrête le chargeur.",
+      "clearDevice": "Ouvre toutes les trappes à la fois pour évacuer les cartes coincées, puis revient au neutre.",
+      "servoPosition": "Déplace un servo vers une position calibrée. Trappe et palette prennent open/closed, le pousseur left/neutral/right.",
+      "servoValue": "Pilote un servo avec une impulsion brute, sans calibrage.",
+      "channel": "Pilote un canal PCA9685 brut avec une impulsion, sans correspondance de module.",
+      "channelStop": "Coupe le PWM sur un canal brut, nécessaire pour arrêter un servo à rotation continue.",
+      "feeder": "Lance un chargement jusqu'à ce que le module 1 détecte une carte, que le bac soit vide ou que le délai expire.",
+      "feederValue": "Pilote le moteur du chargeur avec une impulsion brute. Il tourne jusqu'à ce que tu l'arrêtes.",
+      "feederStop": "Coupe le PWM sur le canal du chargeur.",
+      "route": "Charge une carte et l'envoie vers la sortie gauche, droite ou du bas d'un module.",
+      "pushTest": "Exécute seulement l'étape de poussée d'un module, sans carte ni vérification IR.",
+      "setConfig": "Définit les impulsions des servos et les délais de poussée d'un module. Les champs vides gardent leur valeur actuelle.",
+      "setFeederConfig": "Définit la vitesse, les délais et le recul du chargeur. Les champs vides gardent leur valeur actuelle.",
+      "getWifi": "Indique le réseau Wi-Fi, l'adresse IP, le signal et l'état du lien serveur.",
+      "clearWifi": "Oublie le réseau Wi-Fi et le lien serveur. La carte reste hors ligne jusqu'à ce que le Wi-Fi soit reconfiguré.",
+      "setLight": "Règle le mode, la luminosité et la couleur du ruban lumineux. Le mode value joue un court clignotement de célébration."
+    },
+    "raw": {
+      "heading": "Console brute",
+      "description": "Envoie exactement cette ligne et attend la réponse suivante. Le JSON invalide est envoyé tel quel, pratique pour tester les erreurs du firmware.",
+      "line": "Commande",
+      "timeout": "Délai (ms)"
+    },
+    "log": {
+      "heading": "Journal série",
+      "description": "Chaque ligne envoyée et reçue sur cette connexion, la plus récente en premier, y compris les événements spontanés comme les bourrages.",
+      "empty": "Rien d'envoyé ni de reçu pour l'instant.",
+      "copy": "Copier le journal",
+      "copied": "Journal copié.",
+      "copyFailed": "Impossible de copier le journal."
+    }
+  },
   "plans": {
     "planNames": {
       "free": "Free",

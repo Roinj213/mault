@@ -6,6 +6,10 @@ export type FirmwareFeature =
   | "storedCalibration"
   | "paddleOpenDelay"
   | "wifiRemote"
+  | "lighting"
+  | "lightingWarnings"
+  | "rgbwLighting"
+  | "configurableLighting"
   | "retractCard"
   | "moduleDetection"
   | "pusherNudge";

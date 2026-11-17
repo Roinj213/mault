@@ -18,8 +18,9 @@ export async function routeCardToBin({
   pause,
   triggerAutoFeed,
   onJam,
+  onRouted,
 }: RouteCardToBinParams): Promise<void> {
-  const feedNext = isAutoFeedEnabled() && isPipelinedFeedEnabled();
+  const feedNext = !onRouted && isAutoFeedEnabled() && isPipelinedFeedEnabled();
   const response = await sendRoute(route, {
     feedNext,
     requireLoadedCard: true,
@@ -111,6 +112,11 @@ export async function routeCardToBin({
       collectionGuid,
       deviceGuid: deviceGuid,
     });
+    pause();
+    return;
+  }
+
+  if (onRouted && !(await onRouted())) {
     pause();
     return;
   }

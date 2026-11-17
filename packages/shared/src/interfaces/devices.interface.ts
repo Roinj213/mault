@@ -1,7 +1,8 @@
+import type { LightingDraft } from "./lighting.interface";
 import type { ChannelLayout } from "./module-configs.interface";
 import type { ScanRegion } from "./scanner.interface";
 
-export interface DevicePatch {
+export interface DevicePatch extends Partial<LightingDraft> {
   name?: string;
   hardwareId?: string | null;
   scanRegion?: ScanRegion | null;

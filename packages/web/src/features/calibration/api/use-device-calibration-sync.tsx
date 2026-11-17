@@ -32,6 +32,9 @@ import {
   DEFAULT_CHANNEL_LAYOUT,
   isBusyResponse,
   isFirmwareFeatureSupported,
+  toSetLightCommand,
+  assertLightLedCountReply,
+  assertLightWarningReply,
   type ModuleConfig,
   parseSerialReply,
   SERIAL_BUSY_RETRY_ATTEMPTS,
@@ -325,6 +328,31 @@ export function DeviceCalibrationSyncProvider({
     pushCalibration,
     storeOnDevice,
   ]);
+
+  const firmwareVersionRef = useRef(firmwareVersion);
+  useEffect(() => {
+    firmwareVersionRef.current = firmwareVersion;
+  }, [firmwareVersion]);
+
+  useEffect(() => {
+    return registerPreTestHook(async (target) => {
+      const version = firmwareVersionRef.current;
+      if (!target) return;
+      if (version && !isFirmwareFeatureSupported(version, "lighting")) return;
+      const warningsSupported = isFirmwareFeatureSupported(version, "lightingWarnings");
+      const rgbwSupported = isFirmwareFeatureSupported(version, "rgbwLighting");
+      const configurableLightingSupported = isFirmwareFeatureSupported(version, "configurableLighting");
+      const { line } = await request(toSetLightCommand(target, { warningsSupported, rgbwSupported, configurableLightingSupported }));
+      if (configurableLightingSupported) {
+        if (!line) throw new Error("LED count acknowledgement missing");
+        assertLightLedCountReply(line, target.lightLedCount);
+      }
+      if (warningsSupported) {
+        if (!line) throw new Error("Lighting warning settings acknowledgement missing");
+        assertLightWarningReply(line, target);
+      }
+    });
+  }, [registerPreTestHook, request]);
 
   const applyToDevice = useCallback(
     (changes: Partial<DeviceCalibration>) => {

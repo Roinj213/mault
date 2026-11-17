@@ -2,6 +2,8 @@ import {
   DEFAULT_CAPTURE_SETTLE_DELAY_MS,
   DEFAULT_CHECK_BOTH_ORIENTATIONS,
   DEFAULT_MATCHES_NEEDED,
+  toLightMode,
+  toPriceSource,
 } from "@magic-vault/shared";
 import { toScanRegion } from "../org-settings/shared";
 
@@ -23,6 +25,19 @@ export function toDevice(row: {
   pipelinedFeed: boolean;
   autoConnect: boolean;
   testOnConnect: boolean;
+  lightMode: string;
+  lightColor: string;
+  lightBrightness: number;
+  lightWhite: number;
+  lightLedCount: number;
+  valueCelebrationEnabled: boolean;
+  valueCelebrationThreshold: number;
+  valueCelebrationPriceSource: string;
+  valueCelebrationDurationMs: number;
+  lightWarningsEnabled: boolean;
+  lightEmptyWarningSeconds: number;
+  lightBlockedWarningSeconds: number;
+  lightNormalSeconds: number;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -44,6 +59,19 @@ export function toDevice(row: {
     pipelinedFeed: row.pipelinedFeed,
     autoConnect: row.autoConnect,
     testOnConnect: row.testOnConnect,
+    lightMode: toLightMode(row.lightMode),
+    lightColor: row.lightColor,
+    lightBrightness: row.lightBrightness,
+    lightWhite: row.lightWhite,
+    lightLedCount: row.lightLedCount,
+    valueCelebrationEnabled: row.valueCelebrationEnabled,
+    valueCelebrationThreshold: row.valueCelebrationThreshold,
+    valueCelebrationPriceSource: toPriceSource(row.valueCelebrationPriceSource),
+    valueCelebrationDurationMs: row.valueCelebrationDurationMs,
+    lightWarningsEnabled: row.lightWarningsEnabled,
+    lightEmptyWarningSeconds: row.lightEmptyWarningSeconds,
+    lightBlockedWarningSeconds: row.lightBlockedWarningSeconds,
+    lightNormalSeconds: row.lightNormalSeconds,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

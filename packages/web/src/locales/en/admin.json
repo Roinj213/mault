@@ -261,6 +261,79 @@
   "cancel": "Cancel",
   "starting": "Starting...",
   "loading": "Loading...",
+  "devicePlayground": {
+    "heading": "Device playground",
+    "description": "Send any firmware command to the connected sorter and see its raw response. Developer tool, see firmware/PROTOCOL.md for the full protocol.",
+    "connect": "Connect",
+    "connectUsb": "USB",
+    "connectBluetooth": "Bluetooth",
+    "disconnect": "Disconnect",
+    "statusConnected": "Connected",
+    "statusDisconnected": "Not connected",
+    "firmware": "Firmware {{version}}",
+    "firmwareUnknown": "Firmware unknown",
+    "selfTestPassed": "Self-test passed",
+    "selfTestPending": "Self-test not passed",
+    "warning": "Commands go straight to the sorter and skip the usual self-test gate. Calibration sent from here isn't saved; reconnect to restore the saved calibration.",
+    "needsFirmware": "Needs firmware {{version}}+",
+    "unchangedPlaceholder": "unchanged",
+    "send": "Send",
+    "sending": "Sending…",
+    "outcome": {
+      "ok": "Response in {{ms}} ms",
+      "busy": "The sorter is busy with another command. Try again when it's done.",
+      "disconnected": "No sorter is connected.",
+      "noResponse": "No response after {{ms}} ms."
+    },
+    "stop": {
+      "description": "Quick stops",
+      "neutral": "All to neutral",
+      "feeder": "Stop feeder"
+    },
+    "groups": {
+      "status": "Status and setup",
+      "servos": "Servos and channels",
+      "feeder": "Feeder",
+      "routing": "Routing",
+      "calibration": "Calibration (not saved)"
+    },
+    "commands": {
+      "getStatus": "Reports firmware version, board, hardware id and BLE state.",
+      "readIR": "Reads every module's IR sensor and the hopper sensor.",
+      "setChannelOffset": "Sets the channel layout (0 standard, 4 legacy) and resets every servo to neutral.",
+      "test": "Runs the full self-test. Refuses if a module sensor reads a card.",
+      "neutral": "Moves every servo to its closed or neutral position and stops the feeder.",
+      "clearDevice": "Opens every trapdoor at once to flush stuck cards, then returns to neutral.",
+      "servoPosition": "Moves one servo to a calibrated position. Trapdoor and paddle take open/closed, the pusher takes left/neutral/right.",
+      "servoValue": "Drives one servo at a raw pulse, ignoring calibration.",
+      "channel": "Drives a raw PCA9685 channel at a pulse, bypassing the module mapping.",
+      "channelStop": "Cuts PWM on a raw channel, needed to stop a continuous-rotation servo.",
+      "feeder": "Runs one feed until module 1 sees a card, the hopper is empty, or it times out.",
+      "feederValue": "Drives the feeder motor at a raw pulse. It keeps spinning until you stop it.",
+      "feederStop": "Cuts PWM on the feeder channel.",
+      "route": "Feeds a card and routes it to a module's left, right or bottom output.",
+      "pushTest": "Runs only the push step on a module, without a card or IR checks.",
+      "setConfig": "Sets a module's servo pulses and push timings. Empty fields keep their current value.",
+      "setFeederConfig": "Sets feeder speed, timings and rollback. Empty fields keep their current value.",
+      "getWifi": "Reports the Wi-Fi network, IP address, signal and server link state.",
+      "clearWifi": "Forgets the Wi-Fi network and server link. The board stays offline until Wi-Fi is set up again.",
+      "setLight": "Sets the light strip mode, brightness and color. Mode value plays a short celebration flash."
+    },
+    "raw": {
+      "heading": "Raw console",
+      "description": "Sends exactly this line and waits for the next reply. Invalid JSON is sent as-is, which is useful for testing firmware errors.",
+      "line": "Command",
+      "timeout": "Timeout (ms)"
+    },
+    "log": {
+      "heading": "Serial log",
+      "description": "Every line sent and received on this connection, newest first, including unsolicited events like jams.",
+      "empty": "Nothing sent or received yet.",
+      "copy": "Copy log",
+      "copied": "Log copied.",
+      "copyFailed": "Couldn't copy the log."
+    }
+  },
   "plans": {
     "planNames": {
       "free": "Free",

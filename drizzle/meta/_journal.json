@@ -1072,6 +1072,13 @@
       "when": 1793749379323,
       "tag": "0152_platform_foil_labels",
       "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1794885999221,
+      "tag": "0153_mysterious_firelord",
+      "breakpoints": true
     }
   ]
 }

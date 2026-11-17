@@ -1,3 +1,4 @@
+import type { Control } from "react-hook-form";
 import type { ReactNode, RefObject } from "react";
 import type {
   BinHeight,
@@ -6,6 +7,7 @@ import type {
   ModuleConfig,
   ServoCalibration,
   ChannelLayout,
+  LightingDraft,
   ScanRegion,
   FeederTestFormValues,
 } from "@magic-vault/shared";
@@ -17,6 +19,7 @@ export type CalibrationSection =
   | "layout"
   | "calibration"
   | "scanRegion"
+  | "lights"
   | "test";
 
 export interface ModuleConfigsContextValue {
@@ -315,7 +318,7 @@ export interface CalibrationConflictDialogProps {
   onChoose: (source: CalibrationSource) => void;
 }
 
-export interface Device {
+export interface Device extends LightingDraft {
   guid: string;
   name: string;
   hardwareId: string | null;
@@ -512,6 +515,15 @@ export interface ScorePrintingFrameInput {
 }
 
 export type PendingConnectKind = "usb" | "bluetooth" | "cloud";
+
+export interface LightingPanelProps {
+  control: Control<LightingDraft>;
+  isLoaded: boolean;
+  canControl: boolean;
+  onPreview: () => void;
+  onTestCelebration: () => void;
+  onClearAlert: () => void;
+}
 
 export interface FetchSavedCalibrationOptions {
   bypassCache?: boolean;

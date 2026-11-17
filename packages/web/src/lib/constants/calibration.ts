@@ -5,12 +5,14 @@ import type {
   SetupIntroPart,
   SetupIrSeen,
   SetupServoPosition,
+  Device,
   CalibrationSection,
 } from "@/lib/interfaces/calibration";
 import {
   IconAdjustmentsHorizontal,
   IconArrowBarToDown,
   IconArrowsHorizontal,
+  IconBulb,
   IconChecklist,
   IconColumns2,
   IconFocus2,
@@ -26,6 +28,20 @@ import {
   SERVO_PULSE_MAX,
   SERVO_PULSE_MIN,
   type ServoCalibration,
+  DEFAULT_CAPTURE_SETTLE_DELAY_MS,
+  DEFAULT_CHANNEL_LAYOUT,
+  DEFAULT_CHECK_BOTH_ORIENTATIONS,
+  DEFAULT_LIGHT_BRIGHTNESS,
+  DEFAULT_LIGHT_COLOR,
+  DEFAULT_LIGHT_MODE,
+  DEFAULT_LIGHT_WHITE,
+  DEFAULT_LIGHT_LED_COUNT,
+  DEFAULT_VALUE_CELEBRATION_DURATION_MS,
+  DEFAULT_LIGHT_WARNING_SECONDS,
+  DEFAULT_LIGHT_NORMAL_SECONDS,
+  DEFAULT_MATCHES_NEEDED,
+  DEFAULT_MODULE_COUNT,
+  DEFAULT_SCAN_REGION,
 } from "@magic-vault/shared";
 
 export const SERVO_CALIBRATION_FIELDS: (keyof ServoCalibration)[] = [
@@ -159,11 +175,45 @@ export const DEVICE_TOGGLE_KEYS: DeviceToggleKey[] = [
   "pipelinedFeed",
 ];
 
+export const DEFAULT_DEVICE: Device = {
+  guid: "",
+  name: "Card Sorter",
+  hardwareId: null,
+  scanRegion: DEFAULT_SCAN_REGION,
+  captureSettleDelayMs: DEFAULT_CAPTURE_SETTLE_DELAY_MS,
+  matchesNeeded: DEFAULT_MATCHES_NEEDED,
+  feederStopPulse: null,
+  checkBothOrientations: DEFAULT_CHECK_BOTH_ORIENTATIONS,
+  flipCamera: false,
+  moduleCount: DEFAULT_MODULE_COUNT,
+  channelLayout: DEFAULT_CHANNEL_LAYOUT,
+  setupCompletedAt: null,
+  pipelinedFeed: false,
+  autoConnect: false,
+  testOnConnect: true,
+  lightMode: DEFAULT_LIGHT_MODE,
+  lightColor: DEFAULT_LIGHT_COLOR,
+  lightBrightness: DEFAULT_LIGHT_BRIGHTNESS,
+  lightWhite: DEFAULT_LIGHT_WHITE,
+  lightLedCount: DEFAULT_LIGHT_LED_COUNT,
+  valueCelebrationEnabled: false,
+  valueCelebrationThreshold: 0,
+  valueCelebrationPriceSource: "tcgplayer",
+  valueCelebrationDurationMs: DEFAULT_VALUE_CELEBRATION_DURATION_MS,
+  lightWarningsEnabled: true,
+  lightEmptyWarningSeconds: DEFAULT_LIGHT_WARNING_SECONDS,
+  lightBlockedWarningSeconds: DEFAULT_LIGHT_WARNING_SECONDS,
+  lightNormalSeconds: DEFAULT_LIGHT_NORMAL_SECONDS,
+  createdAt: "",
+  updatedAt: "",
+};
+
 export const CALIBRATION_SECTION_PATHS: Record<CalibrationSection, string> = {
   connection: "connection",
   layout: "layout",
   calibration: "calibration",
   scanRegion: "scan-region",
+  lights: "lights",
   test: "test",
 };
 
@@ -172,6 +222,7 @@ export const CALIBRATION_PATH_SECTIONS: Record<string, CalibrationSection> = {
   layout: "layout",
   calibration: "calibration",
   "scan-region": "scanRegion",
+  lights: "lights",
   test: "test",
 };
 
@@ -182,6 +233,7 @@ export const CALIBRATION_SECTIONS = [
   { section: "layout", icon: IconLayoutBoardSplit },
   { section: "calibration", icon: IconAdjustmentsHorizontal },
   { section: "scanRegion", icon: IconFocus2 },
+  { section: "lights", icon: IconBulb },
   { section: "test", icon: IconChecklist },
 ] as const satisfies readonly {
   section: CalibrationSection;

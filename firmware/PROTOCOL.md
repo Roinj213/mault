@@ -623,6 +623,98 @@ Forgets the network and the server link and turns the radio off.
 valid `setCloud` URL is stored. `cloud` is `"rejected"` when the server
 refused the token (set it up again with a fresh token).
 
+### `setLight` (firmware 2.11.0+)
+
+The strip starts off on power-up, with brightness initialized to 160/255.
+The app applies saved lighting settings when it connects.
+
+For the current lighting diagnostic, `ENABLE_ONBOARD_RGB_STATUS` defaults to
+`0` in `main/main.ino`: onboard RGB status writes are disabled to isolate potential
+interaction with the external strip driver. Set it to `1` (or build with
+`-DENABLE_ONBOARD_RGB_STATUS=1`) to restore them.
+
+Drives an SK6812 RGBW strip (8 or 16 LEDs, GRBW byte order, neutral-white LEDs)
+on `LED_PIN`: GPIO 14 on the ESP32-S3,
+13 on classic ESP32, D8 on the Uno R4. Older firmware answers
+`{"error":"unknown command"}`.
+Firmware 2.13.0+ drives SK6812 RGBW pixels and is not compatible with RGB-only
+WS2812B strips.
+
+```json
+{"setLight": "white"}
+{"setLight": {"mode": "custom", "r": 255, "g": 120, "b": 0, "w": 64, "brightness": 160}, "clearAlert": true}
+```
+`mode` is `white`, `auto` (same color as white), `off`, `custom` (needs
+`r`, `g` and `b`; RGBW firmware also accepts `w` from 0 to 255), `foil`
+(alternating white light on LEDs 0 and 7 when dynamic foil lighting is enabled) or
+`value` (one LED at a time sweeps from 0 to the last configured LED and back to 0, cycling green/red/blue
+with a dark gap between flashes, leaving the mode alone). Firmware 2.13.0+
+uses the strip's dedicated neutral-white diode for white and auto modes.
+For `value`, an object request can set `durationMs` to an integer from 500 to
+3000 (default 500). For example:
+`{"setLight":{"mode":"value","durationMs":500}}`.
+The reply includes `"durationMs":500` while the value animation is active.
+The scanner requires this acknowledgement, waits for that duration plus a
+150 ms margin, and confirms restoration of main lighting before feeding again.
+Older firmware without the duration echo pauses scanning rather than assuming
+the shorter animation completed. `brightness` and the RGBW color channels are integers from 0 to 255;
+`brightness` defaults to the current one (160 at boot).
+
+Firmware 2.14.0+ accepts `"ledCount": 8` or `"ledCount": 16` in a `setLight`
+object and includes the active count in its reply. The count defaults to 16 at
+boot and is restored from the sorter's saved Calibration settings on connect.
+Warnings and celebrations use the configured number of LEDs.
+
+An object request may also set `leds`, a bitmask of the LEDs to light
+(bit 0 is LED 0, 65535 is all sixteen), for directional foil experiments. For
+example `{"setLight": {"mode": "white", "brightness": 32, "leds": 128}}` lights
+only LED 7, and `"leds": 65406` lights LEDs 1 to 6 and 8 to 15. A request
+without `leds` defaults to that diffused-light mask in the updated firmware.
+The web app selects `126` for 8 LEDs or `65406` for 16; for older firmware it
+keeps the previous five-LED mask `14`. Value celebrations sweep the configured
+LEDs and then restore the previous lighting.
+LEDs 0 and 7 are reserved for directional foil detection; the optional
+`foil` animation alternates those two LEDs with the other LEDs off. Firmware
+without this field ignores it and replies without `leds`.
+→ `{"status":"ok","lightMode":"white","lightAlert":"none","brightness":160,"leds":65406}`
+
+#### Timed warnings (lighting release 2.??.0)
+
+The placeholder above names the shipping lighting release; the compiled version
+and warning feature minimum are numeric `2.12.0`. Older versions retain their existing
+lighting behavior; clients omit warning configuration unless this feature is supported.
+
+RGBW output requires firmware `2.13.0+`; clients send `w` only to firmware with
+the `rgbwLighting` feature. The custom mode's `w` value directly controls the
+SK6812's neutral-white channel. Older RGB-only firmware ignores this extra
+setting, but firmware 2.13.0+ requires RGBW-compatible hardware.
+
+```json
+{"setLight":{"mode":"white","brightness":160,"warnings":{"enabled":true,"emptySeconds":3,"blockedSeconds":3,"normalSeconds":5}}}
+```
+
+All three timers are required integers from 1 to 300 **seconds**. Defaults are
+3 seconds for each warning and 5 seconds for normal lighting. A reported empty
+hopper lights all LEDs amber; a reported blocked module lights them red. Warning
+and normal-light intervals repeat until the relevant sensor clears. Blockage
+takes priority over empty and over celebrations, including during normal-light
+intervals. Disabling warnings changes lighting only, never fault reports or safety.
+The normal interval uses the configured mode, color, brightness and main LED mask.
+
+Replies echo the full `warnings` object, `warningsSuppressed` and `warningActive`.
+`lightAlert` is `empty`/`jam` during the colored interval and `none` during normal
+lighting. A value request is not started while a warning is active; clients check
+`warningActive` even when `lightAlert` is `none`.
+
+The Capture Lab sends `"suppressWarnings":true` inside `setLight` for diagnostic
+frames. This hides warning lighting without losing fault state; the ordinary
+restoration command resumes warnings. Every non-value request defaults suppression
+to false. `clearAlert:true` clears latched warning indications, not physical faults;
+an existing or new sensor fault can be reported again. Settings live in the device
+record and are re-sent on connect, not stored in EEPROM.
+
+Native state tests: `g++ -std=c++11 -Wall -Wextra -Werror firmware/tests/lighting-state.test.cpp -o lighting-test`, then run `lighting-test`.
+
 ### `readIR`
 ```json
 {"readIR": true}
@@ -719,6 +811,7 @@ response time for the feed (the web client waits 25s instead of 15s).
 | `{"error":"invalid JSON","reason":"...","length":N,"received":"..."}` | line didn't parse as JSON |
 | `{"error":"command too long"}` | line exceeded 255 characters |
 | `{"error":"push_blocked","reason":"lower the side paddle before pushing a card","module":N}` | firmware 2.2.x only: a `servo`/`channel` pusher move while a card is on module *N*'s platform and its side paddle isn't down (see Push safeguard) |
+| `{"error":"light mode must be white, auto, off, custom, foil or value"}` | firmware 2.11.0+: unknown `setLight` mode (also `setLight must be a string or object`, `setLight.mode must be a string`, `light values must be integers from 0 to 255`, `custom light requires r, g and b`, `clearAlert must be a boolean`) |
 | `{"error":"busy","reason":"another command is in progress"}` | a line arrived while another command (from any transport) was still executing; the line was not run |
 | `{"error":"unknown command"}` | valid JSON, but no recognized top-level key |
 | `{"error":"jam","module":N}` | **unsolicited** — module *N*'s IR saw a card continuously for 20s with no servo activity (informational only - no paddle-flap is attempted since nothing is actively sorting) |
