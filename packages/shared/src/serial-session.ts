@@ -1,8 +1,11 @@
-import { SERIAL_SEQ_MAX } from "./constants/firmware.constant";
+import { requestSorterRoute } from "./serial-route";
 import {
+  SERIAL_SEQ_MAX,
+  SERIAL_STOPPED_STATUS,
+} from "./constants/firmware.constant";
+import {
+  EMERGENCY_STOP_RESPONSE_TIMEOUT_MS,
   NEUTRAL_RESPONSE_TIMEOUT_MS,
-  ROUTE_RESPONSE_TIMEOUT_MS,
-  ROUTE_WITH_FEED_RESPONSE_TIMEOUT_MS,
   SERIAL_DEFAULT_RESPONSE_TIMEOUT_MS,
 } from "./constants/serial-timing.constant";
 import type { BinRoute } from "./interfaces/bin-routes.interface";
@@ -50,6 +53,7 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
   private commLogListeners = new Set<() => void>();
   private readonly options: SerialSessionOptions;
   onBootBanner: SerialBootBannerHandler | null = null;
+  onReply: SerialMessageListener | null = null;
 
   constructor(options: SerialSessionOptions) {
     this.options = options;
@@ -158,7 +162,11 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
       if (seq !== null) {
         this.taggedReplies = true;
         const index = this.pending.findIndex((entry) => entry.seq === seq);
-        if (index !== -1) this.pending.splice(index, 1)[0].resolve(trimmed);
+        if (index !== -1) {
+          const entry = this.pending.splice(index, 1)[0];
+          this.onReply?.(parsed);
+          entry.resolve(trimmed);
+        }
         continue;
       }
       if (this.taggedReplies) continue;
@@ -167,7 +175,10 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
         isBusyResponse(parsed) && this.pending.length > 1
           ? this.pending.splice(1, 1)[0]
           : this.pending.shift();
-      entry?.resolve(trimmed);
+      if (entry) {
+        this.onReply?.(parsed);
+        entry.resolve(trimmed);
+      }
     }
   }
 
@@ -274,11 +285,6 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
     );
   }
 
-  private async isCardLoadedAtModuleOne(): Promise<boolean> {
-    const sensors = await this.sendParsed({ readIR: true });
-    return Array.isArray(sensors?.ir) && sensors.ir[0] === true;
-  }
-
   private async sendRouteCommand(
     route: BinRoute,
     options: RouteOptions,
@@ -288,26 +294,12 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
       SerialReply | NoLoadedCardRouteResponse | null,
       null
     >(
-      async () => {
-        if (
-          options.requireLoadedCard &&
-          !(await this.isCardLoadedAtModuleOne())
-        ) {
-          return { noLoadedCard: true } satisfies NoLoadedCardRouteResponse;
-        }
-        return this.sendParsed(
-          {
-            route: {
-              module: route.module,
-              direction: route.direction,
-              ...(options.feedNext ? { feedNext: true } : {}),
-            },
-          },
-          options.feedNext
-            ? ROUTE_WITH_FEED_RESPONSE_TIMEOUT_MS
-            : ROUTE_RESPONSE_TIMEOUT_MS,
-        );
-      },
+      () =>
+        requestSorterRoute(
+          (command, timeout) => this.sendParsed(command, timeout),
+          route,
+          options,
+        ),
       () => null,
     );
   }
@@ -348,6 +340,14 @@ export class SerialSession<TTransport extends SerialSessionTransport> {
 
   runWhenIdle<T>(task: () => Promise<T>): Promise<T | null> {
     return this.runAfterRoutes(() => this.runExclusive(task, () => null));
+  }
+
+  async sendEmergencyStop(): Promise<boolean> {
+    const reply = await this.sendParsed(
+      { stop: true },
+      EMERGENCY_STOP_RESPONSE_TIMEOUT_MS,
+    );
+    return reply?.status === SERIAL_STOPPED_STATUS;
   }
 
   async sendNeutral(): Promise<boolean> {

@@ -1,3 +1,4 @@
+import { Progress } from "@/components/ui/progress";
 import { Callout } from "@/components/callout";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -151,7 +152,7 @@ export function FirmwareFlashDialog({
       }
     >
       {state === "idle" && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:gap-2">
           <Field>
             <FieldLabel htmlFor={versionSelectId}>
               {t("serial.flash.version.label")}
@@ -184,28 +185,16 @@ export function FirmwareFlashDialog({
       )}
 
       {state === "flashing" && isFlashing && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:gap-2">
           <div className="flex items-center gap-2 text-xs text-foreground/70">
             <IconLoader2 className="size-3.5 shrink-0 animate-spin" />
             <span>{t("serial.update.flashing")}</span>
           </div>
-          <div
-            role="progressbar"
-            aria-label={t("serial.update.flashing")}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={pct}
-            className="h-1.5 overflow-hidden rounded-full bg-secondary/50"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <Progress aria-label={t("serial.update.flashing")} value={pct} />
           {flashLog.length > 0 && (
             <ScrollArea
               viewportRef={flashLogRef}
-              className="h-40 rounded-lg border bg-muted/30 p-2"
+              className="h-40 rounded-lg bg-foreground/6 p-2"
             >
               <div className="flex flex-col gap-0.5 font-mono text-xs text-foreground/70">
                 {flashLog.map((line, i) => (

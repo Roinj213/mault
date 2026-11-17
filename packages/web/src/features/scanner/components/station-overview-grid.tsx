@@ -1,3 +1,4 @@
+import { IconBadge } from "@/components/icon-badge";
 import { DeleteDialog } from "@/components/delete-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -84,9 +85,9 @@ export function StationOverviewGrid({
     return (
       <div className={SORTERS_GRID_CLASS}>
         {Array.from({ length: COLLECTIONS_SKELETON_COUNT }).map((_, i) => (
-          <div key={i} className="overflow-hidden rounded-lg border">
+          <div key={i} className="overflow-hidden rounded-card border border-border bg-card">
             <Skeleton className="aspect-[3/4] rounded-none" />
-            <div className="space-y-1.5 border-t p-3">
+            <div className="space-y-1.5 p-3">
               <Skeleton className="h-3 w-32" />
               <Skeleton className="h-2.5 w-20" />
             </div>
@@ -138,13 +139,13 @@ export function StationOverviewGrid({
               render={
                 <button
                   type="button"
-                  className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-foreground/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground aria-expanded:border-primary/50 aria-expanded:bg-primary/5 motion-reduce:transition-none"
+                  className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border text-sm text-foreground/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground aria-expanded:border-primary/50 aria-expanded:bg-primary/5 motion-reduce:transition-none"
                 />
               }
             >
-              <span className="rounded-full border border-dashed p-3">
+              <IconBadge size="xl">
                 <IconPlus className="size-5" />
-              </span>
+              </IconBadge>
               {t("stations.connect")}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
@@ -206,7 +207,6 @@ export function StationOverviewGrid({
               </Button>
               <Button
                 variant="destructive"
-                className="bg-destructive text-white hover:bg-destructive/90 dark:bg-destructive dark:hover:bg-destructive/90"
                 disabled={
                   selectedOffline.length === 0 || deleteDevices.isPending
                 }

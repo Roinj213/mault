@@ -1,4 +1,5 @@
 import {
+  ROUTE_TIMEOUT_MODULE_PATTERN,
   SERIAL_BUSY_ERROR,
   SERIAL_FED_EVENT,
   SERIAL_FEED_TIMEOUT_ERROR_PREFIX,
@@ -8,11 +9,17 @@ import {
   SERIAL_RETRACTED_STATUS,
   SERIAL_ROLLBACK_OFF_ERROR,
   SERIAL_SERVO_DRIVER_MISSING,
+  SERIAL_STOPPED_ERROR,
 } from "./constants/firmware.constant";
 import type {
   RetractCardOutcome,
   SerialResetReason,
 } from "./interfaces/firmware.interface";
+import type {
+  FeedReplyOptions,
+  FeedReplyOutcome,
+  RouteReplyOutcome,
+} from "./interfaces/serial-session.interface";
 
 function asFields(message: unknown): Record<string, unknown> | null {
   return typeof message === "object" && message !== null
@@ -40,6 +47,10 @@ export function isUnsolicitedSerialMessage(message: unknown): boolean {
 
 export function isBusyResponse(message: unknown): boolean {
   return asFields(message)?.error === SERIAL_BUSY_ERROR;
+}
+
+export function isEmergencyStopReply(message: unknown): boolean {
+  return asFields(message)?.error === SERIAL_STOPPED_ERROR;
 }
 
 export function isFedEvent(message: unknown): message is Record<string, unknown> {
@@ -142,4 +153,36 @@ export function detectedModuleCount(
   return typeof modules === "number" && Number.isInteger(modules) && modules >= 0
     ? modules
     : null;
+}
+
+export function classifyRouteReply(reply: unknown): RouteReplyOutcome {
+  const fields = asFields(reply);
+  if (!fields) return { kind: "noReply" };
+  if (isEmergencyStopReply(fields)) return { kind: "stopped" };
+  if (fields.skipped) return { kind: "skipped" };
+  if (fields.noLoadedCard) return { kind: "noLoadedCard" };
+  if (fields.empty) return { kind: "hopperEmpty" };
+  if (fields.error) {
+    const message = String(fields.error);
+    const jam = message.match(ROUTE_TIMEOUT_MODULE_PATTERN);
+    return jam
+      ? { kind: "jam", module: Number(jam[1]) }
+      : { kind: "error", message };
+  }
+  return { kind: "routed", fedNext: !!fields.fedNext };
+}
+
+export function classifyFeedReply(
+  reply: unknown,
+  options: FeedReplyOptions = {},
+): FeedReplyOutcome {
+  const fields = asFields(reply);
+  if (!fields) return { kind: "noReply" };
+  if (isEmergencyStopReply(fields)) return { kind: "stopped" };
+  if (fields.empty && !options.ignoreIrSensors) return { kind: "hopperEmpty" };
+  if (fields.error) return { kind: "error", message: String(fields.error) };
+  if (fields.detected === false && !options.ignoreIrSensors) {
+    return { kind: "noCardDetected" };
+  }
+  return { kind: "cardArrived" };
 }

@@ -27,6 +27,7 @@ export const FORM_VALIDATION_MESSAGE_KEYS = [
   "percentAtLeast",
   "percentAtMost",
   "amountRequired",
+  "amountInvalid",
   "percentageRequired",
   "tiersRequired",
   "tooManyTiers",
@@ -43,6 +44,12 @@ export const FORM_VALIDATION_MESSAGE_KEYS = [
   "verificationCodeLength",
   "verificationCodeNumeric",
   "controlCardActionRequired",
+  "orderBinDuplicate",
+  "shortLinkCodeInvalid",
+  "shortLinkCodeReserved",
+  "shortLinkTargetInvalid",
+  "orderBinCatchAll",
+  "jsonObjectInvalid",
 ] as const;
 
 export const ORGANIZATION_NAME_MAX_LENGTH = 100;

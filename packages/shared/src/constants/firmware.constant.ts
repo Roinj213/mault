@@ -5,6 +5,11 @@ export function isFirmwareVersionOutdated(
   latestVersion: string | null | undefined,
 ): boolean {
   if (!version || !latestVersion) return false;
+  if (version.startsWith("pi-")) {
+    return latestVersion.startsWith("pi-")
+      ? isFirmwareVersionOutdated(version.slice(3), latestVersion.slice(3))
+      : false;
+  }
   const current = version.split(".").map((n) => parseInt(n, 10) || 0);
   const latest = latestVersion.split(".").map((n) => parseInt(n, 10) || 0);
   for (let i = 0; i < Math.max(current.length, latest.length); i++) {
@@ -25,6 +30,7 @@ export const FIRMWARE_FEATURE_MIN_VERSIONS: Record<FirmwareFeature, string> = {
   retractCard: "2.11.0",
   moduleDetection: "2.12.0",
   pusherNudge: "2.13.0",
+  emergencyStop: "2.13.2",
 };
 
 export const MODULE_DETECTION_BOARDS: readonly string[] = ["esp32"];
@@ -44,6 +50,9 @@ export function isFirmwareFeatureSupported(
   version: string | null | undefined,
   feature: FirmwareFeature,
 ): boolean {
+  if (version === "pi-0.1.0") {
+    return feature !== "wifiRemote" && feature !== "retractCard";
+  }
   return (
     !!version &&
     !isFirmwareVersionOutdated(version, FIRMWARE_FEATURE_MIN_VERSIONS[feature])
@@ -53,7 +62,10 @@ export function isFirmwareFeatureSupported(
 export const SERIAL_FED_EVENT = "fed";
 export const SERIAL_FEED_TIMEOUT_ERROR_PREFIX = "timeout";
 export const SERIAL_JAM_ERROR = "jam";
+export const ROUTE_TIMEOUT_MODULE_PATTERN = /no card detected at module (\d+)/;
 export const SERIAL_BUSY_ERROR = "busy";
+export const SERIAL_STOPPED_ERROR = "stopped";
+export const SERIAL_STOPPED_STATUS = "stopped";
 export const SERIAL_PUSH_BLOCKED_ERROR = "push_blocked";
 export const SERIAL_ROLLBACK_OFF_ERROR = "rollback_off";
 export const SERIAL_RETRACTED_STATUS = "retracted";

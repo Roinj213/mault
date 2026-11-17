@@ -2,6 +2,7 @@ import { DeleteDialog } from "@/components/delete-dialog";
 import { MobilePageHeader } from "@/components/mobile-page-header";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { CsvImportDialog } from "@/components/csv-import-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +29,10 @@ import {
   IconCameraOff,
   IconDots,
   IconEdit,
+  IconFileImport,
   IconX,
 } from "@tabler/icons-react";
+import { formatDecklist } from "@magic-vault/shared";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -41,6 +44,7 @@ function StoragePickListView() {
   const [isEditing, setIsEditing] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const hasList = pickList.entries.length > 0;
   const showForm = !hasList || isEditing;
   const allPicked = pickList.pickedCount >= pickList.cards.length;
@@ -56,6 +60,12 @@ function StoragePickListView() {
         {showScanPanel ? <IconCameraOff /> : <IconCamera />}
         {showScanPanel ? t("pickList.scan.stop") : t("pickList.scan.button")}
       </Button>
+      {!isMobile && (
+        <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+          <IconFileImport />
+          {t("pickList.import")}
+        </Button>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -104,9 +114,10 @@ function StoragePickListView() {
         setIsEditing(false);
       }}
       onCancel={hasList ? () => setIsEditing(false) : undefined}
+      onImportCsv={isMobile ? undefined : () => setIsImportOpen(true)}
     />
   ) : showScanPanel ? (
-    <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:items-start">
+    <div className="flex flex-col gap-4 md:gap-2 md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:items-start">
       <div className="sticky top-0 z-10 md:top-24">
         <ScanCardsPanel
           mode="pick"
@@ -152,13 +163,25 @@ function StoragePickListView() {
           isMobile
             ? MOBILE_PAGE_BODY_CLASS
             : cn(
-                "mx-auto flex w-full flex-col gap-4 p-4 md:p-6",
+                "mx-auto flex w-full flex-col gap-4 md:gap-2 p-4 md:px-3 md:py-2",
                 showScanPanel ? "max-w-6xl" : "max-w-4xl",
               )
         }
       >
         {body}
       </div>
+      <CsvImportDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        title={t("pickList.importTitle")}
+        description={t("pickList.importDescription")}
+        importLabel={t("pickList.import")}
+        onImport={async (entries) => {
+          pickList.setDecklist(formatDecklist(entries));
+          setIsEditing(false);
+          return true;
+        }}
+      />
       <DeleteDialog
         open={finishOpen}
         onOpenChange={setFinishOpen}

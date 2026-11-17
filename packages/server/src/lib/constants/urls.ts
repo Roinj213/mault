@@ -32,6 +32,7 @@ export const TCGTRACKING_API_ROOT = "https://openapi.tcgtracking.com/v1";
 export const TCGTRACKING_IMAGE_ROOT = "https://cdn.tcgtracking.com/product";
 export const POKEMON_DEFAULT_URL = "https://api.tcgdex.net/v2/en/cards";
 export const POKEMON_JAPAN_DEFAULT_URL = `${TCGTRACKING_API_ROOT}/85`;
+export const DIGIMON_DEFAULT_URL = `${TCGTRACKING_API_ROOT}/63`;
 export const RIFTBOUND_DEFAULT_URL = "https://api.riftcodex.com/cards";
 export const SORCERY_DEFAULT_URL = "https://api.sorcerytcg.com/api/cards";
 export const SCRYFALL_DEFAULT_URL = "https://api.scryfall.com/cards";
@@ -58,3 +59,16 @@ export const ALLOWED_IMAGE_HOSTS = new Set([
   "assets.tcgdex.net",
   "cdn.swu-db.com",
 ]);
+
+export const IMAGE_PROXY_MAX_BYTES = 15 * 1024 * 1024;
+export const IMAGE_PROXY_MAX_REDIRECTS = 3;
+
+export const DEFAULT_SHORTENER_URL = "http://127.0.0.1:3003";
+
+export function getShortenerUrl(): string {
+  return (process.env.SHORTENER_URL || DEFAULT_SHORTENER_URL).replace(/\/$/, "");
+}
+
+export function getShortLinkBaseUrl(): string | null {
+  return process.env.SHORT_LINK_BASE_URL?.trim() || null;
+}

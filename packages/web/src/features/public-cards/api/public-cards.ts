@@ -1,13 +1,22 @@
 import { hasPublicCardFilters } from "@/features/public-cards/lib/public-card-filters";
 import { API_BASE } from "@/lib/constants/api";
-import { PUBLIC_CARDS_QUERY_KEY } from "@/lib/constants/public-cards";
-import type { PublicCardsRequest, PublicCardsSource } from "@/lib/interfaces/public-cards";
+import {
+  PUBLIC_CARDS_QUERY_KEY,
+  PUBLIC_CARDS_RATE_LIMITED_STATUS,
+} from "@/lib/constants/public-cards";
 import type {
-  PublicCardBrowseInfo,
-  PublicCardDetail,
-  PublicCardFacets,
-  PublicCardPage,
-  Result,
+  PublicCardsErrorKind,
+  PublicCardsRequest,
+  PublicCardsSource,
+} from "@/lib/interfaces/public-cards";
+import {
+  SCAN_IMAGE_SIDE_QUERY_PARAM,
+  type PublicCardBrowseInfo,
+  type PublicCardDetail,
+  type PublicCardFacets,
+  type PublicCardPage,
+  type Result,
+  type ScanImageSide,
 } from "@magic-vault/shared";
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
@@ -23,15 +32,65 @@ export const publicCardsKeys = {
     [...publicCardsKeys.root(source), "card", scanId] as const,
 };
 
+export class PublicCardsError extends Error {
+  readonly kind: PublicCardsErrorKind;
+
+  constructor(kind: PublicCardsErrorKind, message?: string) {
+    super(message ?? kind);
+    this.name = "PublicCardsError";
+    this.kind = kind;
+  }
+}
+
+export function isPublicCardsUnavailableError(error: unknown): boolean {
+  return !(error instanceof PublicCardsError) || error.kind === "unavailable";
+}
+
+function isServerOrRateLimitStatus(status: number) {
+  return status >= 500 || status === PUBLIC_CARDS_RATE_LIMITED_STATUS;
+}
+
 export async function fetchPublicCards<T>(
   basePath: string,
   path: string,
   params: URLSearchParams,
 ): Promise<T> {
-  const response = await fetch(`${API_BASE}/api/public/${basePath}${path}?${params}`);
-  const result: Result<T> = await response.json();
-  if (!result.success || !result.data) throw new Error(result.message);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/public/${basePath}${path}?${params}`);
+  } catch (error) {
+    throw new PublicCardsError(
+      "unavailable",
+      error instanceof Error ? error.message : undefined,
+    );
+  }
+  if (isServerOrRateLimitStatus(response.status)) {
+    throw new PublicCardsError("unavailable", response.statusText);
+  }
+  let result: Result<T>;
+  try {
+    result = await response.json();
+  } catch {
+    throw new PublicCardsError("unavailable", response.statusText);
+  }
+  if (!response.ok || !result.success || !result.data) {
+    throw new PublicCardsError("notFound", result.message);
+  }
   return result.data;
+}
+
+export async function loadPublicScanImageDownload(
+  source: PublicCardsSource,
+  scanId: string,
+  side: ScanImageSide,
+): Promise<Blob> {
+  const params = new URLSearchParams(source.linkParams);
+  params.set(SCAN_IMAGE_SIDE_QUERY_PARAM, side);
+  const response = await fetch(
+    `${API_BASE}/api/public/${source.basePath}/cards/${encodeURIComponent(scanId)}/scan-image/download?${params}`,
+  );
+  if (!response.ok) throw new PublicCardsError("unavailable", response.statusText);
+  return response.blob();
 }
 
 export const publicCardsInfoQueryOptions = (source: PublicCardsSource) =>

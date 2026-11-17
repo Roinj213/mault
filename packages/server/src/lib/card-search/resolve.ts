@@ -1,8 +1,9 @@
 import { isCardLanguage } from "@magic-vault/shared";
 import { and, eq } from "drizzle-orm";
-import { authQuery } from "../../db";
+import { authQuery, orgIdOfJwtClaims } from "../../db";
 import { collections, games } from "../../db/schema";
 import { cyberpunkAdapter } from "../adapters/cyberpunk/search";
+import { digimonAdapter } from "../adapters/digimon/search";
 import { fabAdapter } from "../adapters/fab/search";
 import { grandArchiveAdapter } from "../adapters/grand-archive/search";
 import { gundamAdapter } from "../adapters/gundam/search";
@@ -32,6 +33,7 @@ export const ADAPTERS_BY_GAME_KEY: Record<string, CardSearchAdapter> = {
   gundam: withTcgtracking("gundam", gundamAdapter),
   pokemon: withTcgtracking("pokemon", pokemonAdapter),
   pokemonjp: pokemonJapanAdapter,
+  digimon: digimonAdapter,
   lorcana: withTcgtracking("lorcana", lorcanaAdapter),
   onepiece: withTcgtracking("onepiece", onePieceAdapter),
   fab: withTcgtracking("fab", fabAdapter),
@@ -79,6 +81,8 @@ async function loadCollectionMatchScope(
   jwtClaims: string,
   collectionGuid: string,
 ): Promise<CollectionMatchScope | null> {
+  const orgId = orgIdOfJwtClaims(jwtClaims);
+  if (!orgId) return null;
   return authQuery(jwtClaims, async (tx) => {
     const [row] = await tx
       .select({
@@ -91,6 +95,7 @@ async function loadCollectionMatchScope(
       .where(
         and(
           eq(collections.guid, collectionGuid),
+          eq(collections.orgId, orgId),
           eq(collections.isDeleted, false),
         ),
       )

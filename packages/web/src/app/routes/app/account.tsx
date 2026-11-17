@@ -4,6 +4,8 @@ import {
 } from "@/lib/constants/nav";
 import { cn } from "@/lib/utils";
 import { MobilePageHeader } from "@/components/mobile-page-header";
+import { PageHeader } from "@/components/page-header";
+import { SaveBarGroup } from "@/components/save-bar-group";
 import {
   SettingsSection,
   SettingsSections,
@@ -63,16 +65,10 @@ export default function AccountPage() {
           MOBILE_NAV_SCROLL_PADDING_CLASS,
         )}
       >
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
-          {!isMobile && (
-            <div>
-              <h1 className="font-heading text-lg font-semibold">
-                {t("title")}
-              </h1>
-              <p className="text-sm text-foreground/70">{t("subtitle")}</p>
-            </div>
-          )}
-
+        {!isMobile && (
+          <PageHeader title={t("title")} description={t("subtitle")} />
+        )}
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 md:gap-2 p-4 md:px-3 md:py-2">
           <SettingsSections>
             {AUTH_PROVIDER === "local" ? (
               <>
@@ -82,7 +78,7 @@ export default function AccountPage() {
                 </SettingsSection>
               </>
             ) : (
-              <>
+              <SaveBarGroup>
                 <SettingsSection heading={t("profile.heading")}>
                   <UpdateNameForm />
                 </SettingsSection>
@@ -95,15 +91,17 @@ export default function AccountPage() {
                 <SettingsSection heading={t("sessions.heading")}>
                   <SessionsList />
                 </SettingsSection>
-              </>
+              </SaveBarGroup>
             )}
 
-            <SettingsSection
-              heading={t("discord.heading")}
-              description={t("discord.description")}
-            >
-              <DiscordAccountLink />
-            </SettingsSection>
+            {!isMobile && (
+              <SettingsSection
+                heading={t("discord.heading")}
+                description={t("discord.description")}
+              >
+                <DiscordAccountLink />
+              </SettingsSection>
+            )}
 
             {!isMobile && (
               <SettingsSection

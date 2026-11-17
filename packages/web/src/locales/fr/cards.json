@@ -98,7 +98,6 @@
       "language": "Langue"
     },
     "copyOf": "Exemplaire {{index}} sur {{count}}",
-    "moreOptions": "Plus",
     "actions": "Actions de la carte",
     "name": "Nom",
     "moveToLocation": "Déplacer vers un emplacement",
@@ -124,6 +123,8 @@
     "manageCollections": "Gérer les collections",
     "noCardsScanned": "Aucune carte scannée pour le moment",
     "scanToGetStarted": "Scanne une carte pour commencer",
+    "loadFailed": "Impossible de charger les cartes de cette collection.",
+    "selectAllFailed": "Impossible de sélectionner toutes les cartes. Réessaie.",
     "noCardsMatchFilters": "Aucune carte ne correspond aux filtres actuels",
     "tryAdjusting": "Essaie d'ajuster ta recherche, ton tri ou tes filtres",
     "cardsSelected_one": "{{count}} carte sélectionnée",
@@ -165,6 +166,10 @@
     "sortDescString": "Z-A",
     "sortAscDefault": "Croissant",
     "sortDescDefault": "Décroissant",
+    "priceSort": {
+      "usd": "Prix (USD)",
+      "eur": "Prix (EUR)"
+    },
     "deselectAll": "Tout désélectionner",
     "selectAll": "Tout sélectionner",
     "gridView": "Vue grille",
@@ -248,6 +253,8 @@
     "previous": "Précédent",
     "next": "Suivant",
     "skipAll": "Tout passer",
+    "pause": "Mettre le diaporama en pause",
+    "play": "Lire le diaporama",
     "intro": {
       "eyebrow": "Ta session",
       "title": "Le récap de {{collectionName}}",
@@ -349,6 +356,13 @@
       "noScanAreas": "Non vérifié : aucune zone de marque issue du scan",
       "noReferences": "Non vérifié : pas encore de références pour ce jeu",
       "singlePrinting": "Inutile : aucune impression similaire"
+    },
+    "printedLanguageCode": "Code de langue (« EN »)",
+    "printedLanguageCodeValue": {
+      "presentChanged": "EN trouvé, impression changée",
+      "presentKept": "EN trouvé",
+      "absentChanged": "Pas de EN, impression changée",
+      "absentKept": "Pas de EN"
     },
     "printedFoilMarker": "Étoile foil",
     "printedFoilMarkerValue": {
@@ -589,10 +603,10 @@
     "findSet": "Trouver une extension",
     "openCard": "Voir {{name}} ({{details}})",
     "cardNotFound": "Cette carte n'est plus disponible.",
+    "cardLoadFailed": "Impossible de charger cette carte.",
     "referenceImage": "Image de référence",
     "backToCards": "Retour aux cartes",
-    "loading": "Chargement des cartes",
-    "tradeHint": "Ouvrez une carte pour l'ajouter à votre offre"
+    "tradeHint": "Touchez + sur une carte ou ouvrez-la pour l'ajouter à votre offre"
   },
   "tradeOffers": {
     "game": "Jeu",
@@ -623,7 +637,10 @@
     "headerButton_other": "Offre d'échange ({{count}})",
     "inTradeOffer": "Dans votre offre",
     "addToTradeOffer": "Ajouter à l'offre",
-    "pageDescription": "Choisissez des cartes dans {{source}}, ajoutez celles que vous donnez en échange, puis envoyez. Le propriétaire accepte ou refuse.",
+    "quickAdd": "Ajouter {{name}} à l'offre",
+    "quickRemove": "Retirer {{name}} de l'offre",
+    "wantedLimit": "Une offre peut demander jusqu'à {{max}} cartes.",
+    "pageDescription": "Choisissez des cartes dans {{source}}, ajoutez les cartes ou l'argent que vous donnez en échange (ou rien), puis envoyez. Le propriétaire accepte ou refuse.",
     "detailsTitle": "Vos coordonnées",
     "detailsDescription": "Pour que le propriétaire sache qui vous êtes et comment vous joindre.",
     "getTitle_one": "Vous recevez ({{count}})",
@@ -634,15 +651,38 @@
     "addMoreCards": "Ajouter d'autres cartes",
     "giveTitle_one": "Vous donnez ({{count}})",
     "giveTitle_other": "Vous donnez ({{count}})",
-    "giveDescription": "Vos cartes, de n'importe quel jeu",
+    "giveDescription": "Vos cartes de n'importe quel jeu, de l'argent, ou les deux",
+    "cashLabel": "Argent en {{currency}} (facultatif)",
+    "cashHint": "Proposez de l'argent avec vos cartes ou seul. Laissez les deux vides pour ne rien proposer en échange.",
     "giveEmpty": "Cherchez ci-dessus et ajoutez les cartes que vous proposez.",
     "summary": "Cartes reçues : {{get}} · Cartes données : {{give}}",
+    "summaryWithCash": "Cartes reçues : {{get}} · Cartes données : {{give}} · Argent : {{cash}}",
+    "summaryNothing": "Cartes reçues : {{get}} · Rien en échange",
     "needGet": "Ajoutez une carte voulue pour continuer.",
-    "needGive": "Ajoutez une carte à donner pour continuer.",
     "quantityFor": "Quantité de {{name}}",
     "conditionFor": "État de {{name}}",
     "yourOffers_one": "Vos offres envoyées ({{count}})",
     "yourOffers_other": "Vos offres envoyées ({{count}})",
-    "noPrice": "Sans prix"
+    "noPrice": "Sans prix",
+    "account": {
+      "logIn": "Se connecter",
+      "logInHint": "Connectez-vous pour suivre les offres que vous envoyez. Elles apparaissent dans votre compte sous Échanges > Envoyées.",
+      "signedInAs": "Connecté en tant que {{name}}.",
+      "signedInHint": "Les offres que vous envoyez apparaissent dans votre compte sous Échanges > Envoyées."
+    }
+  },
+  "shareCardLink": {
+    "action": "Copier le lien de partage",
+    "copied": "Lien de partage copié. Toute personne qui l’a peut voir cette carte.",
+    "copyFailed": "Impossible de copier un lien de partage pour cette carte.",
+    "sharedPage": {
+      "readOnly": "Carte partagée · Lecture seule",
+      "invalidTitle": "Ce lien ne fonctionne plus",
+      "invalidDescription": "Il a peut-être été révoqué, ou la carte a été retirée. Demandez un nouveau lien à la personne qui l'a partagé."
+    }
+  },
+  "downloadScanImage": {
+    "action": "Télécharger la photo",
+    "failed": "Impossible de télécharger la photo. Réessayez."
   }
 }

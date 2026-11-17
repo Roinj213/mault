@@ -1,3 +1,4 @@
+import { CompactCount, CompactPrice } from "@/components/compact-value";
 import { Sparkline } from "@/components/sparkline";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -81,13 +82,13 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
   const { filters, toggleRarity, toggleColor, toggleSet } = useCardFilters();
   const query = useMemo(() => ({ ...ALL_CARDS_QUERY, filters }), [filters]);
   const { displayStats: stats } = useCollectionCardsSummary(query);
-  const { format } = usePriceSource();
+  const { format, formatCompact } = usePriceSource();
 
   if (!stats) {
     return (
       <div
         data-tour="scan-stats"
-        className="rounded-lg bg-input/20 dark:bg-input/30 border border-input text-xs font-semibold text-foreground/70 p-2"
+        className="rounded-card bg-card p-3 md:p-2.5 text-xs font-semibold text-foreground/70"
       >
         {t("scanStats.emptyState")}
       </div>
@@ -101,7 +102,7 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
       : null;
   const overviewSummary = [
     t("scanStats.summaryCards", { count: stats.totalCount }),
-    stats.hasPricing ? format(stats.totalValue) : null,
+    stats.hasPricing ? formatCompact(stats.totalValue) : null,
     cardsPerHour !== null
       ? t("scanStats.summaryRate", { rate: cardsPerHour })
       : null,
@@ -115,18 +116,27 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
 
   const statCards: {
     label: string;
-    value: string;
+    value: React.ReactNode;
     indicator?: boolean;
     trend?: number[];
     action?: React.ReactNode;
   }[] = [
-    { label: t("totalCards"), value: String(stats.totalCount) },
-    { label: t("unique"), value: String(stats.uniqueCount) },
+    {
+      label: t("totalCards"),
+      value: <CompactCount value={stats.totalCount} />,
+    },
+    { label: t("unique"), value: <CompactCount value={stats.uniqueCount} /> },
   ];
   if (stats.hasPricing) {
     statCards.push(
-      { label: t("scanStats.totalValue"), value: format(stats.totalValue) },
-      { label: t("scanStats.avgValue"), value: format(stats.avgValue) },
+      {
+        label: t("scanStats.totalValue"),
+        value: <CompactPrice value={stats.totalValue} />,
+      },
+      {
+        label: t("scanStats.avgValue"),
+        value: <CompactPrice value={stats.avgValue} />,
+      },
     );
   }
   statCards.push(
@@ -195,7 +205,7 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
                 className={cn(
                   i % 2 === 0 && "border-r",
                   i < statCards.length - 2 && "border-b",
-                  "border-input",
+                  "border-border",
                 )}
               >
                 {card.trend && (
@@ -217,8 +227,8 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
             ))}
           </div>
           {stats.mostValuable && (
-            <div className="p-2 border-t border-input">
-              <p className="text-2xs font-medium text-foreground/70 uppercase tracking-wide">
+            <div className="border-t border-border p-3">
+              <p className="text-xs text-foreground/70">
                 {t("mostValuable")}
               </p>
               <div className="flex flex-row justify-between items-center">
@@ -249,7 +259,7 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
                     onClick={() => toggleRarity(r.key)}
                     className={cn(
                       "flex items-center justify-between text-xs rounded-sm px-1 -mx-1 py-0.5 cursor-pointer transition-colors",
-                      active ? "bg-primary/15" : "hover:bg-muted",
+                      active ? "bg-primary/15" : "hover:bg-foreground/6",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
@@ -285,7 +295,7 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
                     onClick={() => toggleColor(c.key)}
                     className={cn(
                       "flex items-center justify-between text-xs rounded-sm px-1 -mx-1 py-0.5 cursor-pointer transition-colors",
-                      active ? "bg-primary/15" : "hover:bg-muted",
+                      active ? "bg-primary/15" : "hover:bg-foreground/6",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
@@ -322,7 +332,7 @@ export function ScanStats({ className, scrollable = true }: ScanStatsProps) {
                   onClick={() => toggleSet(s.code)}
                   className={cn(
                     "flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 py-0.5 cursor-pointer transition-colors",
-                    active ? "bg-primary/15" : "hover:bg-muted",
+                    active ? "bg-primary/15" : "hover:bg-foreground/6",
                   )}
                 >
                   <span
@@ -367,7 +377,7 @@ function StatCard({
   children,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   className?: string;
   indicator?: boolean;
   action?: React.ReactNode;
@@ -375,9 +385,9 @@ function StatCard({
 }) {
   const { t } = useTranslation("scanner");
   return (
-    <div className={`p-2 ${className ?? ""}`}>
+    <div className={`p-3 ${className ?? ""}`}>
       <div className="flex items-center gap-1.5">
-        <p className="text-2xs font-medium text-foreground/70 uppercase tracking-wide">
+        <p className="text-xs text-foreground/70">
           {label}
         </p>
         {indicator !== undefined && (

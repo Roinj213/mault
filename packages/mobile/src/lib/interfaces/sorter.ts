@@ -8,7 +8,7 @@ import type {
   SerialRequestResult,
   SerialResetReason,
 } from "@magic-vault/shared";
-import type { Device } from "@/lib/interfaces/devices";
+import type { Device } from "@magic-vault/shared";
 
 export interface ByteTransport {
   readonly id: string;
@@ -109,7 +109,9 @@ export interface SorterContextValue {
   sendRequest: (command: object, timeoutMs?: number) => Promise<SerialRequestResult>;
   sendRoute: (route: BinRoute, options?: RouteOptions) => Promise<unknown>;
   feed: () => Promise<SerialReply | null>;
+  readSensors: () => Promise<SerialReply | null>;
   sendNeutral: () => Promise<boolean>;
+  sendEmergencyStop: () => Promise<boolean>;
   clearDevice: () => Promise<void>;
   retractCard: () => Promise<RetractCardOutcome>;
   sendCommand: (command: object) => void;

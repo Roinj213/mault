@@ -13,6 +13,8 @@ export interface ShopCatalog {
   collections: ShopCatalogSource[];
   storageLocations: ShopCatalogSource[];
   linkToken: string | null;
+  shortCode: string;
+  shortUrl?: string | null;
   createdAt: string;
 }
 

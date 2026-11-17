@@ -1,5 +1,8 @@
+import { delay } from "@/lib/delay";
+import { useScanRemoval } from "@/features/scanner/api/use-scan-removal";
 import { useCollections } from "@/features/collections/api/use-collections";
 import {
+  emergencyStopPiScanSession,
   feedPiScanSession,
   pausePiScanSession,
   piScanHoldsPort,
@@ -10,7 +13,7 @@ import {
 } from "@/features/scanner/api/pi-scan-session";
 import { useScannedCards } from "@/features/scanner/api/use-scanned-cards";
 import { useSerial } from "@/features/scanner/api/use-serial";
-import { useStation } from "@/features/scanner/api/use-stations";
+import { usePiHostState } from "@/hooks/use-pi-host";
 import { readPiCameraHealth } from "@/features/scanner/lib/pi-camera";
 import {
   applyPiScanState,
@@ -19,43 +22,42 @@ import {
   setPiScanHoldOverride,
   subscribePiScan,
 } from "@/features/scanner/lib/pi-scan-store";
+import { settlePiScanSessionRequest } from "@/features/scanner/lib/pi-scan-session-result";
 import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
+import { PI_CAMERA_HEALTH_RETRY_MS } from "@/lib/constants/scanner";
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function usePiScanSession() {
+export function usePiScanSession(getAllowDuplicates?: () => boolean) {
   const { t } = useTranslation("scanner");
   const { activeCollection } = useCollections();
-  const { autoFeed, forceFoilType, forceSetCodes } = useScannedCards();
+  const { autoFeed, forceFoilType, forceSetCodes, scanCondition } =
+    useScannedCards();
   const { disconnect } = useSerial();
-  const { isActive } = useStation();
+  const { piHost, piSorter } = usePiHostState();
   const state = useSyncExternalStore(subscribePiScan, getPiScanState);
+  const { isRemoveModeEnabled, removalBinNumber } = useScanRemoval();
   const [cameraReady, setCameraReady] = useState(false);
   const [starting, setStarting] = useState(false);
   const collectionGuid = activeCollection?.guid;
-  const sessionLive = piScanHoldsPort(state);
 
   useEffect(() => {
+    if (!piHost) return;
     let cancelled = false;
-    void readPiCameraHealth().then((health) => {
-      if (!cancelled) setCameraReady(health.status === "ready");
-    });
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    async function checkCamera() {
+      const health = await readPiCameraHealth();
+      if (cancelled) return;
+      if (health.status === "ready") setCameraReady(true);
+      else
+        retry = setTimeout(() => void checkCamera(), PI_CAMERA_HEALTH_RETRY_MS);
+    }
+    void checkCamera();
     return () => {
       cancelled = true;
+      clearTimeout(retry);
     };
-  }, []);
-
-  useEffect(() => {
-    if (!sessionLive || !isActive) return;
-    void updatePiScanSettings({
-      foilType: forceFoilType,
-      preferredSetCodes: forceSetCodes,
-    }).catch(() => {});
-  }, [sessionLive, isActive, forceFoilType, forceSetCodes]);
+  }, [piHost]);
 
   const start = useCallback(async () => {
     if (!collectionGuid) {
@@ -67,20 +69,28 @@ export function usePiScanSession() {
     setStarting(true);
     setPiScanHoldOverride(true);
     try {
-      await disconnect();
+      if (!piSorter) await disconnect();
       let result = await startPiScanSession({
         collectionGuid,
+        condition: scanCondition,
         foilType: forceFoilType,
         preferredSetCodes: forceSetCodes,
         autoFeed,
+        removalEnabled: isRemoveModeEnabled,
+        removalBinNumber,
+        allowDuplicates: getAllowDuplicates?.(),
       });
       if (!result.success && result.code === "busy") {
-        await sleep(400);
+        await delay(400);
         result = await startPiScanSession({
           collectionGuid,
+          condition: scanCondition,
           foilType: forceFoilType,
           preferredSetCodes: forceSetCodes,
           autoFeed,
+          removalEnabled: isRemoveModeEnabled,
+          removalBinNumber,
+          allowDuplicates: getAllowDuplicates?.(),
         });
       }
       if (result.data) applyPiScanState(result.data);
@@ -94,44 +104,59 @@ export function usePiScanSession() {
     }
   }, [
     autoFeed,
+    isRemoveModeEnabled,
+    removalBinNumber,
+    getAllowDuplicates,
     collectionGuid,
     disconnect,
+    piSorter,
     forceFoilType,
     forceSetCodes,
+    scanCondition,
     t,
   ]);
 
-  const pause = useCallback(async () => {
-    const result = await pausePiScanSession();
-    if (result.data) applyPiScanState(result.data);
-  }, []);
+  const unreachableMessage = t("piScan.requestFailed");
 
-  const resume = useCallback(async () => {
-    const result = await resumePiScanSession();
-    if (result.data) applyPiScanState(result.data);
-  }, []);
+  const pause = useCallback(
+    () => settlePiScanSessionRequest(pausePiScanSession(), unreachableMessage),
+    [unreachableMessage],
+  );
 
-  const stop = useCallback(async () => {
-    const result = await stopPiScanSession();
-    if (result.data) applyPiScanState(result.data);
-  }, []);
+  const resume = useCallback(
+    () => settlePiScanSessionRequest(resumePiScanSession(), unreachableMessage),
+    [unreachableMessage],
+  );
+
+  const stop = useCallback(
+    () => settlePiScanSessionRequest(stopPiScanSession(), unreachableMessage),
+    [unreachableMessage],
+  );
+
+  const emergencyStop = useCallback(
+    () =>
+      settlePiScanSessionRequest(
+        emergencyStopPiScanSession(),
+        unreachableMessage,
+      ),
+    [unreachableMessage],
+  );
 
   const setAutoFeed = useCallback(
     (enabled: boolean) => {
       if (!piScanHoldsPort(state)) return;
-      void updatePiScanSettings({ autoFeed: enabled }).then((result) => {
-        if (result.data) applyPiScanState(result.data);
-      });
+      void settlePiScanSessionRequest(
+        updatePiScanSettings({ autoFeed: enabled }),
+        unreachableMessage,
+      );
     },
-    [state],
+    [state, unreachableMessage],
   );
 
   const feed = useCallback(() => {
     if (!piScanHoldsPort(state)) return;
-    void feedPiScanSession().then((result) => {
-      if (result.data) applyPiScanState(result.data);
-    });
-  }, [state]);
+    void settlePiScanSessionRequest(feedPiScanSession(), unreachableMessage);
+  }, [state, unreachableMessage]);
 
   const startOrResume = useCallback(() => {
     if (state.phase === "running") return;
@@ -149,6 +174,7 @@ export function usePiScanSession() {
     startOrResume,
     pause,
     stop,
+    emergencyStop,
     feed,
     setAutoFeed,
   };

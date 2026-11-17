@@ -2,6 +2,8 @@ import type {
   OrgShareLink,
   ShareLinkPurpose,
   StorageShareLinkInfo,
+  CardShareLinkInfo,
+  SharedCardLink,
 } from "@magic-vault/shared";
 import type { MonitorLinkFormValues } from "@/schemas/monitor-link.schema";
 import type { Button } from "@/components/ui/button";
@@ -24,16 +26,40 @@ export interface ShareLinkDialogProps {
   subjectGuid: string;
   title: string;
   description: string;
-  renderTrigger: (activeLinkCount: number) => ReactElement;
+  renderTrigger?: (activeLinkCount: number) => ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   revokedMessage: string;
   createLink: (options: ShareLinkOptions) => Promise<CreatedShareLink>;
   revokeLinks: () => Promise<void>;
+  sharedCardsCollectionGuid?: string;
 }
 
 export interface ShareStorageLinkDialogProps {
   locationGuid: string;
-  renderTrigger: (activeLinkCount: number) => ReactElement;
+  renderTrigger?: (activeLinkCount: number) => ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
+
+export interface SharedCardLinkListProps {
+  collectionGuid: string;
+}
+
+export interface SharedCardLinkRowProps {
+  link: SharedCardLink;
+  isRevoking: boolean;
+  onCopy: (link: SharedCardLink) => void;
+  onRevoke: (link: SharedCardLink) => void;
+}
+
+export type ShareLinkDialogTab = "links" | "cards";
+
+export type SharedCardLinkState =
+  | { status: "checking" }
+  | { status: "invalid" }
+  | { status: "failed" }
+  | { status: "valid"; info: CardShareLinkInfo };
 
 export type ShareLinkTriggerButtonProps = ComponentProps<typeof Button> & {
   label: string;
@@ -44,7 +70,17 @@ export type ShareLinkTriggerButtonProps = ComponentProps<typeof Button> & {
 export type SharedStorageLinkState =
   | { status: "checking" }
   | { status: "invalid" }
+  | { status: "failed" }
   | { status: "valid"; info: StorageShareLinkInfo };
+
+export type ShareLinkCheckStatus = "checking" | "invalid" | "failed";
+
+export interface ShareLinkStatusScreenProps {
+  status: ShareLinkCheckStatus;
+  invalidTitle: string;
+  invalidDescription: string;
+  onRetry: () => void;
+}
 
 
 

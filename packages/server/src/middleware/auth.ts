@@ -1,3 +1,5 @@
+import { SERVER_SCAN_ACTOR } from "../lib/constants/scan-actor";
+import type { ServerScanBindings } from "../lib/interfaces/scan-actor";
 import { timingSafeEqual } from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import * as jose from "jose";
@@ -13,6 +15,10 @@ import {
 } from "../lib/constants/timing";
 import { cachedDisplayName } from "../lib/display-name-cache";
 import { createKeyedCache } from "../lib/keyed-cache";
+import {
+  invalidateOrgReadCaches,
+  isMutatingRequestMethod,
+} from "../lib/org-read-cache";
 import { parsePreviewPlan, planPreviewStorage } from "../lib/plan-preview";
 import {
   findMemberSeatOverflow,
@@ -34,8 +40,9 @@ export type AppVariables = {
   orgId: string;
   orgRole: OrgRole;
   impersonatedBy: string | null;
+  skipsOrgReadCacheInvalidation: boolean;
 };
-export type AppEnv = { Variables: AppVariables };
+export type AppEnv = { Variables: AppVariables; Bindings: ServerScanBindings };
 
 const userRoleCache = createKeyedCache<string>(
   AUTH_LOOKUP_CACHE_TTL_MS,
@@ -143,13 +150,17 @@ export async function getUserDisplayName(userId: string): Promise<string> {
 }
 
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
+  const actor = c.env?.[SERVER_SCAN_ACTOR];
   const authHeader = c.req.header("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (
+    (actor && c.req.header("X-Org-Id") !== actor.orgId) ||
+    (!actor && !authHeader?.startsWith("Bearer "))
+  ) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
-  const token = authHeader.slice(7);
+  const token = authHeader?.slice(7) ?? "";
 
-  const impersonation = await verifyImpersonationToken(token);
+  const impersonation = actor ? null : await verifyImpersonationToken(token);
   if (impersonation) {
     const role = await getUserRole(impersonation.sub);
     c.set(
@@ -163,7 +174,7 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
     return;
   }
 
-  const payload = await verifyToken(token);
+  const payload = actor ? { sub: actor.userId } : await verifyToken(token);
   if (!payload?.sub)
     return c.json({ success: false, message: "Unauthorized" }, 401);
   const role = await getUserRole(payload.sub);
@@ -225,8 +236,33 @@ export const requireOrg = createMiddleware<AppEnv>(async (c, next) => {
     "jwtClaims",
     JSON.stringify({ sub: userId, role: "authenticated", org_id: orgId }),
   );
-  await next();
+  try {
+    await next();
+  } finally {
+    if (
+      requestInvalidatesOrgReadCaches(
+        c.req.method,
+        c.get("skipsOrgReadCacheInvalidation") === true,
+      )
+    ) {
+      invalidateOrgReadCaches(orgId);
+    }
+  }
 });
+
+export function requestInvalidatesOrgReadCaches(
+  method: string,
+  skipsOrgReadCacheInvalidation: boolean,
+): boolean {
+  return isMutatingRequestMethod(method) && !skipsOrgReadCacheInvalidation;
+}
+
+export const markRequestAsReadOnly = createMiddleware<AppEnv>(
+  async (c, next) => {
+    c.set("skipsOrgReadCacheInvalidation", true);
+    await next();
+  },
+);
 
 export function requireRole(...roles: string[]) {
   return createMiddleware<AppEnv>(async (c, next) => {
@@ -249,12 +285,22 @@ export function requireOrgRole(...roles: OrgRole[]) {
   });
 }
 
+function secretHeaderMatches(
+  expectedSecret: string | undefined,
+  providedSecret: string | undefined,
+): boolean {
+  const expected = Buffer.from(expectedSecret ?? "");
+  const provided = Buffer.from(providedSecret ?? "");
+  return (
+    expected.length > 0 &&
+    provided.length === expected.length &&
+    timingSafeEqual(provided, expected)
+  );
+}
+
 export const requireBotSecret = createMiddleware<AppEnv>(async (c, next) => {
-  const secret = c.req.header("X-Bot-Secret");
   if (
-    !secret ||
-    !process.env.BOT_API_SECRET ||
-    secret !== process.env.BOT_API_SECRET
+    !secretHeaderMatches(process.env.BOT_API_SECRET, c.req.header("X-Bot-Secret"))
   ) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
@@ -262,12 +308,8 @@ export const requireBotSecret = createMiddleware<AppEnv>(async (c, next) => {
 });
 
 export const requireDeployKey = createMiddleware<AppEnv>(async (c, next) => {
-  const expected = Buffer.from(process.env.DEPLOY_API_KEY ?? "");
-  const provided = Buffer.from(c.req.header("X-Deploy-Key") ?? "");
   if (
-    expected.length === 0 ||
-    provided.length !== expected.length ||
-    !timingSafeEqual(provided, expected)
+    !secretHeaderMatches(process.env.DEPLOY_API_KEY, c.req.header("X-Deploy-Key"))
   ) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }

@@ -1,5 +1,8 @@
+import type { ReactNode } from "react";
 import type { CameraDevice, CameraFrameOutput, CameraOutput } from "react-native-vision-camera";
 import type {
+  ScanDestination,
+  StorageLocation,
   BinConfig,
   CardCondition,
   CardContour,
@@ -7,6 +10,8 @@ import type {
   CardTextSearchResult,
   MatchedScanDetails,
   ParsedShareLinkUrl,
+  OrderPickLinkTarget,
+  StorageLabelTarget,
   PlayingCard,
   PlayingCardWithDistance,
   RgbaImage,
@@ -83,9 +88,11 @@ export type ScannerPhase =
 
 export type ScannerPauseReason =
   | "user"
+  | "emergency-stop"
   | "feeder-empty"
   | "no-card"
   | "card-missing"
+  | "card-stuck-in-module-one"
   | "feed-failed"
   | "route-failed"
   | "jam"
@@ -93,6 +100,7 @@ export type ScannerPauseReason =
   | "scan-limit"
   | "sorter-limit"
   | "collection-locked"
+  | "storage-unavailable"
   | "save-failed"
   | "sorter-disconnected"
   | "no-match"
@@ -155,6 +163,7 @@ export interface PendingCardSave {
   orgId: string | null;
   collectionGuid: string;
   deviceGuid?: string;
+  storageLocationGuid?: string;
   record: ScannedCard;
   attempts: number;
 }
@@ -177,6 +186,7 @@ export interface CardSaveResult {
   binLimitReached?: boolean;
   sorterLimitReached?: boolean;
   scanLimitReached?: boolean;
+  storageLocationUnavailable?: boolean;
 }
 
 export interface PendingSavesContextValue {
@@ -195,6 +205,8 @@ export interface ScanSessionValue extends ScanSessionState {
   start: () => void;
   pause: () => void;
   resume: () => void;
+  emergencyStop: () => Promise<void>;
+  resetAfterEmergencyStop: () => Promise<boolean>;
   scanOnce: () => void;
   feedOnce: () => Promise<void>;
   autoFeed: boolean;
@@ -203,7 +215,11 @@ export interface ScanSessionValue extends ScanSessionState {
   setAllowDuplicates: (value: boolean) => void;
   handScan: boolean;
   setHandScan: (value: boolean) => void;
+  handScanBins: boolean;
+  setHandScanBins: (value: boolean) => void;
   handScanActive: boolean;
+  hasBinPreset: boolean;
+  sortsCards: boolean;
   trackLiveCorners: (corners: LiveCorners | null) => void;
   forcedFoilType: string | null;
   setForcedFoilType: (foilType: string | null) => void;
@@ -322,6 +338,10 @@ export interface ScanOptionsSheetProps {
   onAllowDuplicatesChange: (value: boolean) => void;
   handScan: boolean;
   onHandScanChange: (value: boolean) => void;
+  handScanBins: boolean;
+  onHandScanBinsChange: (value: boolean) => void;
+  hasBinPreset: boolean;
+  sortsCards: boolean;
   removeMode: boolean;
   onRemoveModeChange: (value: boolean) => void;
   presetName: string | null;
@@ -340,7 +360,7 @@ export interface ScanOptionsSheetProps {
   onClose: () => void;
 }
 
-export type ScannerControlAction = "scan" | "feed" | "drop" | "retract" | "neutral";
+export type ScannerControlAction = "feed" | "drop" | "retract" | "neutral";
 
 export interface CameraChoice {
   devices: CameraDevice[];
@@ -362,7 +382,10 @@ export interface PhoneCameraResponder {
 }
 
 export type ScannerQrLink =
+  | { kind: "storage-label"; storageLabel: StorageLabelTarget }
+  | { kind: "order-pick"; orderPick: OrderPickLinkTarget }
   | { kind: "share-link"; shareLink: ParsedShareLinkUrl }
+  | { kind: "short-link"; shortCode: string }
   | { kind: "desktop-camera"; collectionGuid: string };
 
 export interface ScannerQrWatcherOptions {
@@ -450,4 +473,35 @@ export interface TorchControlProps {
 export interface LiveFrameSource {
   liveFrameOutput: CameraFrameOutput | null;
   grabLiveFrame: () => Promise<Image>;
+}
+
+export interface CameraPermissionEmptyStateProps {
+  canRequestPermission: boolean;
+  onRequestPermission: () => void;
+}
+
+export interface CameraNoticeActionProps {
+  label: string;
+  onPress: () => void;
+}
+
+export interface CameraEmptyStateFrameProps {
+  children: ReactNode;
+}
+
+export interface ScanDestinationState {
+  destination: ScanDestination;
+  storageLocation: StorageLocation | null;
+  storageLocations: StorageLocation[];
+  canStore: boolean;
+  sortsCards: boolean;
+  storageLocationGuid: string | undefined;
+  setDestination: (destination: ScanDestination) => void;
+}
+
+export interface ScanDestinationSheetProps {
+  visible: boolean;
+  scanDestination: ScanDestinationState;
+  offersSortWithRules: boolean;
+  onClose: () => void;
 }

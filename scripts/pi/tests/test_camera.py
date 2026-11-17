@@ -82,6 +82,7 @@ class CameraFrameTimingTests(unittest.TestCase):
         camera.buffer.publish(b'old')
         handler = CAMERA_HELPER.Handler.__new__(CAMERA_HELPER.Handler)
         handler.path = '/frame?fresh=1'
+        handler.headers = {'Host': '127.0.0.1:8765'}
         replies = []
         handler._send = lambda *reply: replies.append(reply)
         timer = threading.Timer(0.05, lambda: camera.buffer.publish(b'new'))
@@ -98,6 +99,7 @@ class CameraFrameTimingTests(unittest.TestCase):
         camera.buffer.publish(b'old')
         handler = CAMERA_HELPER.Handler.__new__(CAMERA_HELPER.Handler)
         handler.path = '/frame?fresh=1'
+        handler.headers = {'Host': '127.0.0.1:8765'}
         replies = []
         handler._send = lambda *reply: replies.append(reply)
         with patch.object(CAMERA_HELPER, 'CAMERA', camera), patch.object(
@@ -105,6 +107,204 @@ class CameraFrameTimingTests(unittest.TestCase):
         ):
             handler.do_GET()
         self.assertEqual(replies[0][0], 503)
+
+
+    def test_rejects_requests_for_other_host_names(self):
+        handler = CAMERA_HELPER.Handler.__new__(CAMERA_HELPER.Handler)
+        handler.path = '/frame'
+        handler.headers = {'Host': 'attacker.example:8765'}
+        replies = []
+        handler._send = lambda *reply: replies.append(reply)
+        handler.do_GET()
+        handler.do_POST()
+        self.assertEqual([reply[0] for reply in replies], [403, 403])
+
+
+class CameraFocusTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        state = patch.object(CAMERA_HELPER, "FOCUS_STATE_PATH", Path(temp.name) / "focus.json")
+        state.start()
+        self.addCleanup(state.stop)
+        from types import SimpleNamespace
+        controls = patch.object(CAMERA_HELPER.subprocess, "run", return_value=SimpleNamespace(
+            returncode=0, stdout="focus_automatic_continuous: 0\nfocus_absolute: 0\n"
+        ))
+        controls.start()
+        self.addCleanup(controls.stop)
+
+    def test_saved_manual_focus_is_restored_after_restart(self):
+        first = CAMERA_HELPER.Camera()
+        first.device = "/dev/video0"
+        with patch.object(first, "healthy", return_value=True), patch.object(first, "_set_control"):
+            first.set_focus("manual", 123)
+        second = CAMERA_HELPER.Camera()
+        second.device = "/dev/video0"
+        with patch.object(second, "healthy", return_value=True), patch.object(second, "_set_control") as control, patch.object(CAMERA_HELPER.time, "sleep"):
+            second.restore_focus()
+        self.assertEqual([call.args[0] for call in control.call_args_list], [
+            "focus_automatic_continuous=0", "focus_absolute=123"
+        ] * 2)
+
+    def test_health_reads_actual_hardware_focus_mode(self):
+        from types import SimpleNamespace
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        with patch.object(CAMERA_HELPER.subprocess, "run", return_value=SimpleNamespace(
+            returncode=0, stdout="focus_automatic_continuous: 0\nfocus_absolute: 123\n"
+        )):
+            self.assertEqual(camera.focus_settings(), {
+                "focusMode": "manual", "lensPosition": 123
+            })
+
+    def test_failed_focus_write_does_not_persist_new_setting(self):
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        with patch.object(camera, "healthy", return_value=True), patch.object(
+            camera, "_set_control", side_effect=RuntimeError("driver rejected")
+        ):
+            with self.assertRaises(RuntimeError):
+                camera.set_focus("manual", 123)
+        self.assertFalse(CAMERA_HELPER.FOCUS_STATE_PATH.exists())
+
+    def test_manual_focus_disables_auto_in_separate_control_write(self):
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        with patch.object(camera, "healthy", return_value=True), patch.object(
+            camera, "_set_control"
+        ) as control:
+            camera.set_focus("manual", 123)
+        self.assertEqual([call.args[0] for call in control.call_args_list], [
+            "focus_automatic_continuous=0", "focus_absolute=123"
+        ])
+
+    def test_repeated_manual_value_is_forced_after_autofocus(self):
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        camera.focus = {"min": 1, "max": 831, "step": 1}
+        with patch.object(camera, "healthy", return_value=True), patch.object(
+            camera, "focus_settings", return_value={"focusMode": "auto", "lensPosition": 387}
+        ), patch.object(camera, "_set_control") as control:
+            camera.set_focus("manual", 387)
+        self.assertEqual([call.args[0] for call in control.call_args_list], [
+            "focus_automatic_continuous=0", "focus_absolute=388", "focus_absolute=387"
+        ])
+
+    def test_reapply_stays_within_focus_range_at_maximum(self):
+        camera = CAMERA_HELPER.Camera()
+        camera.focus = {"min": 1, "max": 831, "step": 1}
+        with patch.object(camera, "_set_control") as control:
+            camera._write_manual_position(831, 831)
+        self.assertEqual([call.args[0] for call in control.call_args_list], [
+            "focus_absolute=830", "focus_absolute=831"
+        ])
+
+    def test_lock_disables_autofocus_before_reading_actual_position(self):
+        from types import SimpleNamespace
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        camera.focus = {"min": 1, "max": 831, "step": 1}
+        events = []
+        def read_position(*args, **kwargs):
+            events.append("read")
+            self.assertEqual(args[0][-1], "--get-ctrl=focus_absolute")
+            return SimpleNamespace(returncode=0, stdout="focus_absolute: 37\n")
+        with patch.object(camera, "healthy", return_value=True), patch.object(
+            camera, "_set_control", side_effect=events.append
+        ), patch.object(CAMERA_HELPER.subprocess, "run", side_effect=read_position):
+            self.assertEqual(camera.set_focus("lock", None), 37)
+        self.assertEqual(events, ["focus_automatic_continuous=0", "read",
+                                  "focus_absolute=38", "focus_absolute=37"])
+
+    def test_lock_endpoint_returns_position_for_browser_to_save(self):
+        import io
+        import json
+        handler = CAMERA_HELPER.Handler.__new__(CAMERA_HELPER.Handler)
+        body = b'{"mode":"lock"}'
+        handler.path = "/focus"
+        handler.headers = {"Content-Length": str(len(body)), "Host": "127.0.0.1:8765"}
+        handler.rfile = io.BytesIO(body)
+        replies = []
+        handler._send = lambda *reply: replies.append(reply)
+        with patch.object(CAMERA_HELPER.CAMERA, "set_focus", return_value=37) as focus:
+            handler.do_POST()
+        focus.assert_called_once_with("lock", None)
+        self.assertEqual(replies[0][0], 200)
+        self.assertEqual(json.loads(replies[0][1]), {"lensPosition": 37})
+
+    def test_lock_does_not_invent_position_when_read_fails(self):
+        from types import SimpleNamespace
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        with patch.object(camera, "healthy", return_value=True), patch.object(
+            camera, "_set_control"
+        ), patch.object(CAMERA_HELPER.subprocess, "run", return_value=SimpleNamespace(
+            returncode=1, stdout=""
+        )):
+            with self.assertRaisesRegex(RuntimeError, "could not read"):
+                camera.set_focus("lock", None)
+
+
+class CameraZoomTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        state = patch.object(CAMERA_HELPER, "ZOOM_STATE_PATH", Path(temp.name) / "zoom.json")
+        state.start()
+        self.addCleanup(state.stop)
+
+    def camera_with_zoom(self):
+        camera = CAMERA_HELPER.Camera()
+        camera.device = "/dev/video0"
+        camera.zoom = {"min": 100, "max": 500, "step": 1}
+        return camera
+
+    def test_zoom_range_reads_only_zoom_absolute(self):
+        from types import SimpleNamespace
+        listing = (
+            "  zoom_absolute_extra 0x1 (int) : min=0 max=9 step=1\n"
+            "  zoom_absolute 0x009a090d (int) : min=100 max=500 step=1 default=100 value=100\n"
+        )
+        with patch.object(CAMERA_HELPER.subprocess, "run", return_value=SimpleNamespace(
+            returncode=0, stdout=listing
+        )):
+            self.assertEqual(CAMERA_HELPER.read_zoom_range("/dev/video0"), {
+                "min": 100, "max": 500, "step": 1
+            })
+
+    def test_saved_zoom_is_restored_after_restart(self):
+        first = self.camera_with_zoom()
+        with patch.object(first, "healthy", return_value=True), patch.object(first, "_set_control"):
+            self.assertEqual(first.set_zoom(240.4), 240)
+        second = self.camera_with_zoom()
+        with patch.object(second, "healthy", return_value=True), patch.object(second, "_set_control") as control:
+            second.restore_zoom()
+        control.assert_called_once_with("zoom_absolute=240")
+
+    def test_zoom_outside_range_is_rejected_without_writing(self):
+        camera = self.camera_with_zoom()
+        with patch.object(camera, "healthy", return_value=True), patch.object(camera, "_set_control") as control:
+            with self.assertRaises(ValueError):
+                camera.set_zoom(900)
+        control.assert_not_called()
+        self.assertFalse(CAMERA_HELPER.ZOOM_STATE_PATH.exists())
+
+    def test_zoom_endpoint_returns_applied_level(self):
+        import io
+        import json
+        handler = CAMERA_HELPER.Handler.__new__(CAMERA_HELPER.Handler)
+        body = b'{"zoomLevel":240}'
+        handler.path = "/zoom"
+        handler.headers = {"Content-Length": str(len(body)), "Host": "127.0.0.1:8765"}
+        handler.rfile = io.BytesIO(body)
+        replies = []
+        handler._send = lambda *reply: replies.append(reply)
+        with patch.object(CAMERA_HELPER.CAMERA, "set_zoom", return_value=240) as zoom:
+            handler.do_POST()
+        zoom.assert_called_once_with(240.0)
+        self.assertEqual(replies[0][0], 200)
+        self.assertEqual(json.loads(replies[0][1]), {"zoomLevel": 240})
 
 
 if __name__ == "__main__":

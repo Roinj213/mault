@@ -52,3 +52,30 @@ export type SerialReply = Record<string, unknown>;
 export type SerialMessageListener = (message: unknown) => void;
 
 export type SerialBootBannerHandler = (message: unknown) => boolean;
+
+export type SorterRouteRequest = (
+  command: object,
+  timeoutMs: number,
+) => Promise<SerialReply | null>;
+
+export type RouteReplyOutcome =
+  | { kind: "noReply" }
+  | { kind: "stopped" }
+  | { kind: "skipped" }
+  | { kind: "noLoadedCard" }
+  | { kind: "hopperEmpty" }
+  | { kind: "jam"; module: number }
+  | { kind: "error"; message: string }
+  | { kind: "routed"; fedNext: boolean };
+
+export type FeedReplyOutcome =
+  | { kind: "noReply" }
+  | { kind: "stopped" }
+  | { kind: "hopperEmpty" }
+  | { kind: "error"; message: string }
+  | { kind: "noCardDetected" }
+  | { kind: "cardArrived" };
+
+export interface FeedReplyOptions {
+  ignoreIrSensors?: boolean;
+}

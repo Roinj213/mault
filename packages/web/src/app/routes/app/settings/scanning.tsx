@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useOrgSettingsDraft } from "@/features/companies/api/use-org-settings-draft";
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { usePiHost } from "@/hooks/use-pi-host";
 import { CorrectionAutoCloseSetting } from "@/features/scanner/components/correction-auto-close-setting";
 import { CONTROL_CARDS_PATH } from "@/lib/constants/control-cards";
 import { IconQrcode } from "@tabler/icons-react";
@@ -20,6 +21,7 @@ export default function SettingsScanningPage() {
   const { t } = useTranslation("settings");
   const draft = useOrgSettingsDraft();
   const isMobile = useIsMobile();
+  const piHost = usePiHost();
   const disabled = draft.isLoading || draft.isSaving;
   const ocrEnabled = useWatch({ control: draft.control, name: "ocrEnabled" });
   const correctionBinPrompt = useWatch({
@@ -53,7 +55,7 @@ export default function SettingsScanningPage() {
         heading={t("ocr.heading")}
         description={t("ocr.description")}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:gap-2">
           <label className="flex items-center justify-between gap-3">
             <span className="text-sm">{t("ocr.toggleLabel")}</span>
             <Controller
@@ -74,7 +76,7 @@ export default function SettingsScanningPage() {
               <span className="text-sm">
                 {t("ocr.highAccuracyToggleLabel")}
               </span>
-              <span className="text-2xs text-foreground/70">
+              <span className="text-xs text-foreground/70">
                 {t("ocr.highAccuracyDescription")}
               </span>
             </span>
@@ -98,13 +100,13 @@ export default function SettingsScanningPage() {
         badge={<Badge variant="outline">{t("foilDetection.badge")}</Badge>}
         description={t("foilDetection.description")}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:gap-2">
           <label className="flex items-center justify-between gap-3">
             <span className="flex flex-col gap-0.5">
               <span className="text-sm">
                 {t("foilDetection.starToggleLabel")}
               </span>
-              <span className="text-2xs text-foreground/70">
+              <span className="text-xs text-foreground/70">
                 {t("foilDetection.starToggleDescription")}
               </span>
             </span>
@@ -121,13 +123,13 @@ export default function SettingsScanningPage() {
               )}
             />
           </label>
-          {!isMobile && (
+          {(!isMobile || piHost) && (
             <label className="flex items-center justify-between gap-3">
               <span className="flex flex-col gap-0.5">
                 <span className="text-sm">
                   {t("foilDetection.toggleLabel")}
                 </span>
-                <span className="text-2xs text-foreground/70">
+                <span className="text-xs text-foreground/70">
                   {t("foilDetection.nudgeToggleDescription")}
                 </span>
               </span>
@@ -151,13 +153,13 @@ export default function SettingsScanningPage() {
         heading={t("correctionAutoClose.heading")}
         description={t("correctionAutoClose.description")}
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:gap-2">
           <label className="flex items-center justify-between gap-3">
             <span className="flex flex-col gap-0.5">
               <span className="text-sm">
                 {t("correctionAutoClose.promptToggleLabel")}
               </span>
-              <span className="text-2xs text-foreground/70">
+              <span className="text-xs text-foreground/70">
                 {t("correctionAutoClose.promptToggleDescription")}
               </span>
             </span>
@@ -189,20 +191,22 @@ export default function SettingsScanningPage() {
           )}
         </div>
       </SettingsSection>
-      <SettingsSection
-        heading={t("controlCards.heading")}
-        description={t("controlCards.description")}
-      >
-        <Button
-          variant="outline"
-          className="self-start"
-          nativeButton={false}
-          render={<Link to={CONTROL_CARDS_PATH} />}
+      {!isMobile && (
+        <SettingsSection
+          heading={t("controlCards.heading")}
+          description={t("controlCards.description")}
         >
-          <IconQrcode />
-          {t("controlCards.action")}
-        </Button>
-      </SettingsSection>
+          <Button
+            variant="outline"
+            className="self-start"
+            nativeButton={false}
+            render={<Link to={CONTROL_CARDS_PATH} />}
+          >
+            <IconQrcode />
+            {t("controlCards.action")}
+          </Button>
+        </SettingsSection>
+      )}
       <SettingsSection
         heading={t("deployPause.heading")}
         description={t("deployPause.description")}

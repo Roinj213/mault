@@ -19,6 +19,10 @@ export function ScanOptionsSheet({
   onAllowDuplicatesChange,
   handScan,
   onHandScanChange,
+  handScanBins,
+  onHandScanBinsChange,
+  hasBinPreset,
+  sortsCards,
   removeMode,
   onRemoveModeChange,
   presetName,
@@ -58,12 +62,23 @@ export function ScanOptionsSheet({
         ) : null}
       </ListGroup>
       <View style={{ gap: SPACING.sm }}>
-        {!sorter.isConnected ? (
+        {!sorter.isReady ? (
           <SwitchRow
             title={t("scan.options.handScan")}
             description={t("scan.options.handScanDescription")}
             value={handScan}
             onValueChange={onHandScanChange}
+          />
+        ) : null}
+        {!sorter.isReady && sortsCards ? (
+          <SwitchRow
+            title={t("scan.options.handScanBins")}
+            description={
+              hasBinPreset ? t("scan.options.handScanBinsDescription") : t("scan.options.handScanBinsNoPreset")
+            }
+            value={handScanBins && hasBinPreset}
+            disabled={!hasBinPreset}
+            onValueChange={onHandScanBinsChange}
           />
         ) : null}
         <SwitchRow
@@ -90,7 +105,7 @@ export function ScanOptionsSheet({
           />
         ) : null}
         <ListGroup>
-          {showPreset ? (
+          {showPreset && sortsCards ? (
             <ListRow
               icon="rules"
               title={t("scan.options.preset")}
@@ -103,6 +118,7 @@ export function ScanOptionsSheet({
             icon="sorter"
             title={t("scan.controls.sorter")}
             subtitle={t("scan.controls.sorterDescription")}
+            subtitleNumberOfLines={0}
             onPress={() => {
               onClose();
               router.push("/sorter");

@@ -1,3 +1,4 @@
+import { LANGUAGE_LABELS } from "@magic-vault/shared";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -5,6 +6,7 @@ import { View } from "react-native";
 import { CardRow } from "@/components/cards/card-row";
 import { AppText } from "@/components/ui/app-text";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ListGroup } from "@/components/ui/list-group";
 import { ListRow } from "@/components/ui/list-row";
 import { OptionSheet } from "@/components/ui/option-sheet";
@@ -13,9 +15,7 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { cardSearchQueryOptions } from "@/features/cards/api/card-search";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { usePricing } from "@/hooks/use-pricing";
-import { CARD_SEARCH_MIN_LENGTH } from "@/lib/constants/cards";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/constants/collections";
-import { LANGUAGE_LABELS } from "@/lib/constants/languages";
 import { SPACING } from "@/lib/constants/theme";
 import type { CardCorrectionSearchProps } from "@/lib/interfaces/cards";
 import { absoluteUrl } from "@/lib/url";
@@ -24,6 +24,7 @@ import {
   CARD_SEARCH_ALL_LANGUAGES,
   cardSearchResultKey,
   cardSearchResultLabel,
+  CATALOG_SEARCH_MIN_QUERY_LENGTH,
 } from "@magic-vault/shared";
 
 export function CardCorrectionSearch({
@@ -43,7 +44,7 @@ export function CardCorrectionSearch({
   const languageLabel = (value: string) =>
     value === CARD_SEARCH_ALL_LANGUAGES ? t("cardDetail.allLanguages") : (LANGUAGE_LABELS[value] ?? value);
   const results = useMemo(() => search.data?.pages.flatMap((page) => page.cards) ?? [], [search.data]);
-  const tooShort = debounced.length < CARD_SEARCH_MIN_LENGTH;
+  const tooShort = debounced.length < CATALOG_SEARCH_MIN_QUERY_LENGTH;
 
   return (
     <View style={{ gap: SPACING.md }}>
@@ -70,9 +71,7 @@ export function CardCorrectionSearch({
       ) : search.isPending ? (
         <ListSkeleton rows={4} />
       ) : results.length === 0 ? (
-        <AppText tone="secondary" style={{ textAlign: "center", paddingVertical: SPACING.xl }}>
-          {t("cardDetail.noCardsFound")}
-        </AppText>
+        <EmptyState icon="search" title={t("cardDetail.noCardsFound")} />
       ) : (
         <>
           <ListGroup>

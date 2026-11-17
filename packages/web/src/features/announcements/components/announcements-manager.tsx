@@ -144,7 +144,7 @@ export function AnnouncementsManager() {
         </Button>
       }
     >
-      <div className="divide-y rounded-lg border empty:hidden">
+      <div className="divide-y divide-border empty:hidden">
         {announcementsQuery.isLoading && (
           <p className="text-sm text-foreground/70 text-center py-6">
             {t("loading")}
@@ -161,7 +161,7 @@ export function AnnouncementsManager() {
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "text-xs font-semibold uppercase tracking-wide",
+                      "text-xs font-semibold",
                       ALERT_SEVERITY_ICON_CLASS[announcement.severity],
                     )}
                   >
@@ -201,7 +201,7 @@ export function AnnouncementsManager() {
                 </Button>
                 <Button
                   size="icon"
-                  variant="outline-destructive"
+                  variant="destructive"
                   onClick={() => setDeleteTarget(announcement)}
                   aria-label={t("deleteTitle")}
                   title={t("deleteTitle")}

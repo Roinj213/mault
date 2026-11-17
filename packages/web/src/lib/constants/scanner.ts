@@ -6,6 +6,7 @@ import type {
 } from "@/lib/interfaces/stations";
 import { PI_SCAN_SESSION_PATH } from "@magic-vault/shared";
 import { ALL_CARDS_QUERY } from "@/lib/constants/card-filters";
+import { monitorCollectionPath } from "@/lib/constants/collections";
 import {
   type CollectionCardsQuery,
   type PiScanSessionState,
@@ -19,7 +20,6 @@ import type {
   FlatbedPlacement,
   FlatbedScanStep,
   OnnxExecutionProviderPreference,
-  ScannerConnectionState,
 } from "@/lib/interfaces/scanner";
 import { MAX_CONNECTED_SORTERS } from "@magic-vault/shared";
 import {
@@ -106,6 +106,19 @@ export const JAM_VERIFY_SAMPLES = 3;
 export const JAM_VERIFY_INTERVAL_MS = 750;
 export const SCAN_POSITION_MODULE = 1;
 export const MONITOR_OPEN_CARD_PARAM = "card";
+export const MONITOR_REVIEW_PARAM = "review";
+export const MONITOR_REVIEW_ONE_BY_ONE_PARAM_VALUE = "1";
+
+export function monitorCollectionCardPath(
+  collectionGuid: string,
+  scanId: string,
+): string {
+  return `${monitorCollectionPath(collectionGuid)}?${new URLSearchParams({ [MONITOR_OPEN_CARD_PARAM]: scanId })}`;
+}
+
+export function monitorCollectionReviewPath(collectionGuid: string): string {
+  return `${monitorCollectionPath(collectionGuid)}?${new URLSearchParams({ [MONITOR_REVIEW_PARAM]: MONITOR_REVIEW_ONE_BY_ONE_PARAM_VALUE })}`;
+}
 export const CARD_SETS_STALE_MS = 15 * 60 * 1000;
 export const CARD_SET_PICKER_LIMIT = 100;
 export const MONITOR_NEEDS_REVIEW_CARDS_QUERY: CollectionCardsQuery = {
@@ -115,7 +128,6 @@ export const MONITOR_NEEDS_REVIEW_CARDS_QUERY: CollectionCardsQuery = {
 };
 export const SENSOR_BLOCKED_TOAST_ID = "test-sensor-blocked";
 export const SESSION_LOCK_ALERT_ID = "session-lock";
-export const ROUTE_TIMEOUT_MODULE_PATTERN = /no card detected at module (\d+)/;
 
 export const PARKED_PANELS_ROOT_CLASS =
   "fixed top-0 left-0 -z-10 invisible pointer-events-none";
@@ -194,14 +206,6 @@ export const PHONE_CAMERA_PATH_PATTERN = /^\/app\/monitor\/[^/]+\/camera\/?$/;
 export const QR_SCAN_INTERVAL_MS = 250;
 export const QR_SCAN_MAX_DIMENSION = 640;
 export const SCANNER_CONTROL_QR_MAX_DIMENSION = 1024;
-export const SCANNER_CONNECTION_DOT_CLASS: Record<
-  ScannerConnectionState,
-  string
-> = {
-  connected: "bg-success",
-  connecting: "bg-warning",
-  disconnected: "bg-foreground/30",
-};
 
 export const PENDING_SCAN_SAVES_DB_NAME = "magic-vault-pending-scan-saves";
 export const PENDING_SCAN_SAVES_STORE_NAME = "saves";
@@ -217,6 +221,7 @@ export const MOBILE_SCAN_PANEL_CLASS =
   "pointer-events-auto rounded-xl bg-black/60 p-3 text-white backdrop-blur-md";
 
 export const PI_CAMERA_PREVIEW_INTERVAL_MS = 250;
+export const PI_CAMERA_HEALTH_RETRY_MS = 2000;
 
 export const PI_SCAN_SESSION_API = `/api${PI_SCAN_SESSION_PATH}`;
 export const COMM_LOG_MARKER_LABELS: Partial<
@@ -262,6 +267,19 @@ export const FLATBED_DEFAULT_PLACEMENT: FlatbedPlacement = {
   widthMm: 70,
   heightMm: 95,
 };
+export const FLATBED_EMPTY_PLACEMENT: FlatbedPlacement = {
+  leftMm: 0,
+  topMm: 0,
+  widthMm: 0,
+  heightMm: 0,
+};
+export const FLATBED_PLACEMENT_FIELD_NAMES = [
+  "leftMm",
+  "topMm",
+  "widthMm",
+  "heightMm",
+] as const satisfies readonly (keyof FlatbedPlacement)[];
+export const FLATBED_PLACEMENT_FIELD_STEP_MM = 0.1;
 export const FLATBED_SCAN_MARGIN_MM = 4;
 export const FLATBED_DEFAULT_GLASS_WIDTH_MM = 216;
 export const FLATBED_MIN_PLACEMENT_MM = 40;
@@ -321,6 +339,7 @@ export const STATION_ATTENTION_FIXES: Record<
   hopperEmpty: "resume",
   feederError: "resume",
   noCardDetected: "resume",
+  cardStuckInModuleOne: "resume",
   sorterNotResponding: "resume",
   routingFailed: "resume",
   saveFailed: "resume",
@@ -331,6 +350,7 @@ export const STATION_ATTENTION_FIXES: Record<
   sorterLimit: "openSorter",
   collectionLocked: "openSorter",
   scannerError: "openSorter",
+  emergencyStopped: "openSorter",
 };
 
 export const STATION_TILE_ATTENTION_CLASS =
@@ -347,5 +367,8 @@ export const FLATBED_OVERRIDDEN_STATUSES: ScannerStatus[] = [
 
 export const SCAN_STATS_SUMMARY_SEPARATOR = " · ";
 
+export const PI_SORTER_RECONNECT_INTERVAL_MS = 5000;
+
 export const FOIL_NUDGE_DIAGNOSTIC_IMAGE_WIDTH = 224;
 export const FOIL_NUDGE_DIAGNOSTIC_JPEG_QUALITY = 0.8;
+export const FOIL_NONE_VALUE = "none";

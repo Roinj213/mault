@@ -14,9 +14,15 @@ import {
   isRulesMode,
   resolveOverflowBin,
 } from "./evaluate-bin";
-import { evaluatePickListBin, reservePickListBins } from "./pick-list";
+import {
+  evaluatePickListBin,
+  findPickListEntry,
+  isPickListBin,
+  reservePickListBins,
+} from "./pick-list";
 import type {
   AutoAssignTarget,
+  CorrectedScanBinTarget,
   ScanRoutingCard,
   ScanRoutingContext,
   ScanRoutingDecision,
@@ -160,7 +166,9 @@ export function resolveScanBin(
   if (
     routesToCatchAllNormally &&
     binSet?.isChaosMode &&
-    areAllChaosBinsFull(configs, (config) => context.isBinFull(config.binNumber))
+    areAllChaosBinsFull(configs, (config) =>
+      context.isBinFull(config.binNumber),
+    )
   ) {
     return { action: "pause", reason: "all-chaos-bins-full", bin };
   }
@@ -177,4 +185,102 @@ export function resolveScanBin(
     pickListMatch,
     autoAssignTarget,
   };
+}
+
+export function resolveUnmatchedScanBin(
+  context: ScanRoutingContext,
+): ScanRoutingDecision {
+  const bin = context.configs.find(
+    (candidate) => candidate.isCatchAll && !candidate.isDisabled,
+  );
+  if (bin && context.isBinFull(bin.binNumber))
+    return { action: "pause", reason: "bin-full", bin };
+  return {
+    action: "route",
+    bin,
+    isLowMatch: false,
+    pickListMatch: null,
+    autoAssignTarget: null,
+  };
+}
+
+export function resolveCorrectedScanBin(
+  card: ScanRoutingCard,
+  currentBinNumber: number | null | undefined,
+  context: ScanRoutingContext,
+): CorrectedScanBinTarget {
+  const { binSet } = context;
+  const pickListMatch =
+    isRulesMode(binSet ?? undefined) &&
+    !findLowMatchCatchAll(card, context.configs)
+      ? evaluatePickListBin(card.name, context.configs)
+      : null;
+  if (pickListMatch) {
+    return {
+      bin: pickListMatch.bin,
+      pickListName:
+        pickListMatch.bin.binNumber === currentBinNumber
+          ? undefined
+          : pickListMatch.entry.name,
+      autoAssignTarget: null,
+    };
+  }
+  const configs = routableConfigs(context);
+  if (binSet?.isChaosMode) {
+    const currentBin = configs.find(
+      (config) => config.binNumber === currentBinNumber,
+    );
+    if (currentBin && !currentBin.isCatchAll && !currentBin.isDisabled) {
+      return { bin: currentBin, autoAssignTarget: null };
+    }
+  }
+  const autoAssignTarget = binSet?.isRepackMode
+    ? null
+    : findAutoAssignTarget(
+        card,
+        configs,
+        context.fieldDefinitions,
+        binSet?.autoAssignField ?? null,
+        context.createRuleId,
+      );
+  if (autoAssignTarget) {
+    return {
+      bin: applyAutoAssignTarget(configs, autoAssignTarget).find(
+        (config) => config.binNumber === autoAssignTarget.binNumber,
+      ),
+      autoAssignTarget,
+    };
+  }
+  return { bin: matchScanBin(card, context), autoAssignTarget: null };
+}
+
+export function pickListNameInBin(
+  cardName: string | undefined,
+  binNumber: number | null | undefined,
+  configs: BinConfig[],
+): string | undefined {
+  if (!cardName || binNumber == null) return undefined;
+  const bin = configs.find(
+    (config) => config.binNumber === binNumber && isPickListBin(config),
+  );
+  return bin?.pickList
+    ? findPickListEntry(cardName, bin.pickList)?.name
+    : undefined;
+}
+
+export function releasedPickListNameAfterCorrection(
+  previousCardName: string | undefined,
+  currentBinNumber: number | null | undefined,
+  target: CorrectedScanBinTarget,
+  configs: BinConfig[],
+): string | undefined {
+  const releasedName = pickListNameInBin(
+    previousCardName,
+    currentBinNumber,
+    configs,
+  );
+  return target.bin?.binNumber !== currentBinNumber &&
+    releasedName !== target.pickListName
+    ? releasedName
+    : undefined;
 }

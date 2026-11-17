@@ -42,14 +42,8 @@ export function FeederCalibrationPanel({
   onSpeedChange,
   onStopPulseChange,
   onResetStopPulse,
-  onDurationChange,
-  onPulseDurationChange,
-  onPauseDurationChange,
-  onSettleDurationChange,
   onReverseSpeedChange,
-  onReverseDurationChange,
-  onFeedRetryCountChange,
-  onSelectContinuous,
+  onFieldChange,
   fullWidth = false,
 }: FeederCalibrationPanelProps) {
   const { t } = useTranslation("calibration");
@@ -74,7 +68,7 @@ export function FeederCalibrationPanel({
     >
       <div
         className={cn(
-          "flex flex-col gap-5",
+          "flex flex-col gap-5 md:gap-2",
           !fullWidth && "col-span-2 lg:col-span-1",
         )}
       >
@@ -167,7 +161,7 @@ export function FeederCalibrationPanel({
           step={10}
           disabled={!canEditTimings}
           value={durationValue}
-          onValueChange={onDurationChange}
+          onValueChange={(value) => onFieldChange("duration", value)}
         >
           {showAdvanced && (
             <RawStepperRow
@@ -176,7 +170,7 @@ export function FeederCalibrationPanel({
               bigStep={100}
               smallStep={10}
               disabled={!canEditTimings}
-              onChange={onDurationChange}
+              onChange={(value) => onFieldChange("duration", value)}
               valueLabel={ms(durationValue)}
             />
           )}
@@ -194,7 +188,7 @@ export function FeederCalibrationPanel({
           max={FEED_RETRY_COUNT_MAX}
           step={1}
           value={feedRetryCountValue}
-          onValueChange={onFeedRetryCountChange}
+          onValueChange={(value) => onFieldChange("feedRetryCount", value)}
         />
 
         <SliderField
@@ -204,7 +198,7 @@ export function FeederCalibrationPanel({
           max={sliderMax(pulseDurationValue, FEEDER_PULSE_DURATION_SLIDER_MAX)}
           disabled={!canEditTimings}
           value={pulseDurationValue}
-          onValueChange={onPulseDurationChange}
+          onValueChange={(value) => onFieldChange("pulseDuration", value)}
         >
           {showAdvanced && (
             <RawStepperRow
@@ -213,14 +207,14 @@ export function FeederCalibrationPanel({
               bigStep={10}
               smallStep={1}
               disabled={!canEditTimings}
-              onChange={onPulseDurationChange}
+              onChange={(value) => onFieldChange("pulseDuration", value)}
               valueLabel={pulseLabel}
             />
           )}
           <Button
             variant="outline"
             disabled={!canEditTimings}
-            onClick={onSelectContinuous}
+            onClick={() => onFieldChange("pulseDuration", 0)}
             className="w-full"
           >
             {t("feederCalibrationPanel.continuousFeedButton")}
@@ -234,7 +228,7 @@ export function FeederCalibrationPanel({
           max={sliderMax(pauseDurationValue, FEEDER_PAUSE_DURATION_SLIDER_MAX)}
           disabled={!canEditTimings}
           value={pauseDurationValue}
-          onValueChange={onPauseDurationChange}
+          onValueChange={(value) => onFieldChange("pauseDuration", value)}
         >
           {showAdvanced && (
             <RawStepperRow
@@ -243,7 +237,7 @@ export function FeederCalibrationPanel({
               bigStep={10}
               smallStep={1}
               disabled={!canEditTimings}
-              onChange={onPauseDurationChange}
+              onChange={(value) => onFieldChange("pauseDuration", value)}
               valueLabel={ms(pauseDurationValue)}
             />
           )}
@@ -260,7 +254,7 @@ export function FeederCalibrationPanel({
           )}
           disabled={!canEditTimings}
           value={settleDurationValue}
-          onValueChange={onSettleDurationChange}
+          onValueChange={(value) => onFieldChange("settleDuration", value)}
         >
           {showAdvanced && (
             <RawStepperRow
@@ -269,7 +263,7 @@ export function FeederCalibrationPanel({
               bigStep={10}
               smallStep={1}
               disabled={!canEditTimings}
-              onChange={onSettleDurationChange}
+              onChange={(value) => onFieldChange("settleDuration", value)}
               valueLabel={ms(settleDurationValue)}
             />
           )}
@@ -277,7 +271,7 @@ export function FeederCalibrationPanel({
 
         <FirmwareFeatureGate
           feature="feederRollback"
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 md:gap-2"
         >
           <SliderField
             label={t("feederCalibrationPanel.reverseDurationLabel")}
@@ -290,7 +284,7 @@ export function FeederCalibrationPanel({
             )}
             disabled={!canEditTimings}
             value={reverseDurationValue}
-            onValueChange={onReverseDurationChange}
+            onValueChange={(value) => onFieldChange("reverseDuration", value)}
           >
             {showAdvanced && (
               <RawStepperRow
@@ -299,7 +293,7 @@ export function FeederCalibrationPanel({
                 bigStep={10}
                 smallStep={1}
                 disabled={!canEditTimings}
-                onChange={onReverseDurationChange}
+                onChange={(value) => onFieldChange("reverseDuration", value)}
                 valueLabel={reverseLabel}
               />
             )}

@@ -9,7 +9,6 @@ import { tcgplayerPrices, tcgplayerProducts, tcgplayerSkus } from "../db/schema"
 import { ADAPTERS_BY_GAME_KEY } from "./card-search/resolve";
 import { skuLanguageCode, tcgplayerProductIdOf } from "./card-search/tcgplayer-prices";
 import {
-  TCGPLAYER_FOIL_VARIANT_PATTERN,
   TCGPLAYER_SKU_CONDITION_COLUMNS,
   TCGPLAYER_SKU_CONDITION_PRICE_COLUMNS,
 } from "./constants/tcgtracking";
@@ -82,7 +81,9 @@ export async function resolveTcgplayerSkus(
   const rowsByProductLanguage = new Map<string, (typeof rows)[number][]>();
   for (const row of rows) {
     const key = `${row.productId}:${row.language}`;
-    rowsByProductLanguage.set(key, [...(rowsByProductLanguage.get(key) ?? []), row]);
+    const existingEntries = rowsByProductLanguage.get(key);
+    if (existingEntries) existingEntries.push(row);
+    else rowsByProductLanguage.set(key, [row]);
   }
 
   const products = await db
@@ -137,7 +138,6 @@ export async function resolveTcgplayerSkus(
         productId,
         variant: target.variants[0] ?? null,
         skuId: null,
-        isFoilVariant: false,
         marketPrice: null,
         product,
       };
@@ -146,7 +146,6 @@ export async function resolveTcgplayerSkus(
       productId,
       variant: matchedRow.variant,
       skuId: String(matchedRow[conditionColumn]),
-      isFoilVariant: TCGPLAYER_FOIL_VARIANT_PATTERN.test(matchedRow.variant),
       marketPrice:
         matchedRow[TCGPLAYER_SKU_CONDITION_PRICE_COLUMNS[target.condition]] ??
         marketPricesByVariant.get(`${target.productId}:${matchedRow.variant}`) ??

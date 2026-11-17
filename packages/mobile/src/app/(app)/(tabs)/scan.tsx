@@ -3,7 +3,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { router, useIsFocused } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   binSetMode,
@@ -18,9 +18,8 @@ import {
   useCameraPermission,
   usePhotoOutput,
 } from "react-native-vision-camera";
-import { AppText } from "@/components/ui/app-text";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { OptionSheet } from "@/components/ui/option-sheet";
 import { PageHeader } from "@/components/ui/page-header";
@@ -33,17 +32,22 @@ import { useRulesData } from "@/features/rules/api/use-rules-data";
 import { useLiveCorners } from "@/features/scanner/api/use-live-corners";
 import { useLiveFrameSource } from "@/features/scanner/api/use-live-frame-source";
 import { useScannerQrWatcher } from "@/features/scanner/api/use-scanner-qr-watcher";
+import { useOpenOrderPick } from "@/features/business/api/use-open-order-pick";
 import { useCameraChoice } from "@/features/scanner/api/use-camera-choice";
 import { useCameraTorch } from "@/features/scanner/api/use-camera-torch";
 import { TorchBrightness } from "@/features/scanner/components/torch-brightness";
 import { TorchToggle } from "@/features/scanner/components/torch-toggle";
 import { useScanSession } from "@/features/scanner/api/use-scan-session";
+import { useScanDestination } from "@/features/scanner/api/use-scan-destination";
+import { ScanDestinationSheet } from "@/features/scanner/components/scan-destination-sheet";
 import { useScanResultAnnouncements } from "@/features/scanner/api/use-scan-result-announcements";
 import { useScanLiveActivity } from "@/features/scanner/api/use-scan-live-activity";
 import { useScanStatusAnnouncements } from "@/features/scanner/api/use-scan-status-announcements";
 import { CameraChip } from "@/features/scanner/components/camera-chip";
 import { BinBadge } from "@/features/scanner/components/bin-badge";
+import { CameraEmptyStateFrame } from "@/features/scanner/components/camera-empty-state-frame";
 import { CameraNotice } from "@/features/scanner/components/camera-notice";
+import { CameraPermissionEmptyState } from "@/features/scanner/components/camera-permission-empty-state";
 import { DetectedOutline } from "@/features/scanner/components/detected-outline";
 import { ScanOptionsSheet } from "@/features/scanner/components/scan-options-sheet";
 import { ScanRemovalQueueSheet } from "@/features/scanner/components/scan-removal-queue-sheet";
@@ -72,9 +76,11 @@ import { SCREEN_GUTTER, SPACING } from "@/lib/constants/theme";
 import { SHUTTER_SIZE } from "@/lib/constants/ui";
 import { SCANNER_QR_REPEAT_MS } from "@/lib/constants/phone-camera";
 import { useCameraMountReady } from "@/hooks/use-camera-mount-ready";
+import { useIsOnline } from "@/hooks/use-is-online";
 import { SCAN_TIPS_SEEN_KEY } from "@/lib/constants/storage-keys";
 import type { UnmatchedScanRecovery } from "@/lib/interfaces/scanner";
 import { readKv, writeKv } from "@/lib/storage/kv";
+import { useOpenStorageLabel } from "@/features/storage/api/use-open-storage-label";
 
 export default function ScanScreen() {
   const { t } = useTranslation();
@@ -82,6 +88,7 @@ export default function ScanScreen() {
   const focused = useIsFocused();
   const cameraMounted = useCameraMountReady(focused);
   const appState = useAppState();
+  const isOnline = useIsOnline();
   const sorter = useSorter();
   const orgId = useActiveOrgId();
   const { collection, collections, setScanTargetGuid } = useScanTarget();
@@ -95,6 +102,15 @@ export default function ScanScreen() {
       ? `${presetPicker.label} · ${t(`rules.modes.${activePresetMode}.title`)}`
       : presetPicker.label;
   const [collectionPickerOpen, setCollectionPickerOpen] = useState(false);
+  const [destinationPickerOpen, setDestinationPickerOpen] = useState(false);
+  const scanDestination = useScanDestination();
+  const destinationLabel = sorter.isReady
+    ? t("scan.destination.sorterChip")
+    : scanDestination.sortsCards
+      ? t("scan.destination.sortChip")
+      : scanDestination.storageLocation
+        ? t("scan.destination.storageChip", { name: scanDestination.storageLocation.name })
+        : t("scan.destination.noLocationChip");
   const [presetPickerOpen, setPresetPickerOpen] = useState(false);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
   const [foilTypePickerOpen, setFoilTypePickerOpen] = useState(false);
@@ -116,20 +132,18 @@ export default function ScanScreen() {
     ...cardSetsQueryOptions(collection?.guid ?? null),
     enabled: !!collection?.guid && (setPickerOpen || session.forcedSetCodes.length > 0),
   });
+  const [markFullBinsEmptyFailed, setMarkFullBinsEmptyFailed] = useState(false);
+  const markFullBinsEmpty = () => {
+    setMarkFullBinsEmptyFailed(false);
+    void session.markFullBinsEmpty().then((marked) => setMarkFullBinsEmptyFailed(!marked));
+  };
   const confirmMarkFullBinsEmpty = () =>
     Alert.alert(
       t("scan.emptyBin.confirmTitle", { bins: session.fullBinNumbers.join(", ") }),
       t("scan.emptyBin.confirmDescription"),
       [
         { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("scan.emptyBin.confirm"),
-          onPress: () => {
-            void session.markFullBinsEmpty().then((marked) => {
-              if (!marked) Alert.alert(t("scan.emptyBin.failed"));
-            });
-          },
-        },
+        { text: t("scan.emptyBin.confirm"), onPress: markFullBinsEmpty },
       ],
     );
   const forcedSetName =
@@ -159,6 +173,8 @@ export default function ScanScreen() {
     LIVE_DETECTION_PAUSED_PHASES.includes(session.phase),
     session.trackLiveCorners,
   );
+  const openStorageLabel = useOpenStorageLabel();
+  const openOrderPick = useOpenOrderPick();
   const lastQrLinkRef = useRef<{ linkKey: string; seenAt: number } | null>(null);
   const scannerQr = useScannerQrWatcher({
     active:
@@ -175,8 +191,14 @@ export default function ScanScreen() {
       if (last && last.linkKey === linkKey && Date.now() - last.seenAt < SCANNER_QR_REPEAT_MS) return;
       lastQrLinkRef.current = { linkKey, seenAt: Date.now() };
       if (session.isRunning) session.pause();
-      if (qrLink.kind === "share-link") {
+      if (qrLink.kind === "storage-label") {
+        openStorageLabel(qrLink.storageLabel);
+      } else if (qrLink.kind === "order-pick") {
+        openOrderPick(qrLink.orderPick);
+      } else if (qrLink.kind === "share-link") {
         router.push({ pathname: "/shared-link", params: { ...qrLink.shareLink } });
+      } else if (qrLink.kind === "short-link") {
+        router.push({ pathname: "/shared-link", params: { shortCode: qrLink.shortCode } });
       } else {
         router.push({ pathname: "/desktop-camera/[guid]", params: { guid: qrLink.collectionGuid } });
       }
@@ -221,8 +243,8 @@ export default function ScanScreen() {
         : t("scan.status.modes.scanOnce");
   const statusText = [
     scanModeLabel,
-    collection?.name ?? t("scan.chooseCollection"),
     savedCardName ? t("scan.status.saved", { name: savedCardName }) : t(`scan.phase.${session.phase}`),
+    ...(isOnline ? [] : [t("scan.status.offline")]),
   ].join(" · ");
   useScanStatusAnnouncements(session.phase, statusText);
   useScanLiveActivity({
@@ -266,6 +288,20 @@ export default function ScanScreen() {
           ? colors.warning
           : undefined;
   const pauseNotice = session.phase === "paused" && session.pauseReason && session.pauseReason !== "user";
+  const emergencyStopped = session.pauseReason === "emergency-stop";
+  const [resettingSorter, setResettingSorter] = useState(false);
+  const stopSorter = () => {
+    AccessibilityInfo.announceForAccessibility(t("scan.pause.emergency-stop.title"));
+    void session.emergencyStop();
+  };
+  const resetSorter = async () => {
+    setResettingSorter(true);
+    try {
+      await session.resetAfterEmergencyStop();
+    } finally {
+      setResettingSorter(false);
+    }
+  };
   const cameraLabel = (index: number) =>
     camera.devices[index]?.localizedName || t("scan.options.cameraFallback", { number: index + 1 });
   const selectedCameraIndex = camera.devices.findIndex((d) => d.id === device?.id);
@@ -281,17 +317,9 @@ export default function ScanScreen() {
   if (!permission.hasPermission) {
     return (
       <Screen header={<PageHeader title={t("tabs.scan")} />}>
-        <EmptyState
-          icon="camera"
-          title={t("scan.cameraPermissionTitle")}
-          description={t("scan.cameraPermissionDescription")}
-          action={
-            permission.canRequestPermission ? (
-              <Button label={t("scan.allowCamera")} onPress={() => void permission.requestPermission()} />
-            ) : (
-              <AppText tone="secondary">{t("scan.cameraPermissionSettings")}</AppText>
-            )
-          }
+        <CameraPermissionEmptyState
+          canRequestPermission={permission.canRequestPermission}
+          onRequestPermission={() => void permission.requestPermission()}
         />
       </Screen>
     );
@@ -323,6 +351,21 @@ export default function ScanScreen() {
       tone="success"
       title={t("scan.controlCards.applied")}
       description={controlCardDescription}
+    />
+  ) : pauseNotice && emergencyStopped ? (
+    <CameraNotice
+      tone={PAUSE_TONES["emergency-stop"]}
+      title={t("scan.pause.emergency-stop.title")}
+      description={t(`scan.pause.emergency-stop.${session.pauseDetail ?? "stopped"}`)}
+      actionLabel={resettingSorter ? undefined : t("scan.pause.emergency-stop.reset")}
+      onAction={() => void resetSorter()}
+    />
+  ) : pauseNotice && session.pauseReason === "bin-full" && markFullBinsEmptyFailed ? (
+    <CameraNotice
+      tone="destructive"
+      title={t("scan.emptyBin.failed")}
+      actionLabel={t("recovery.retry")}
+      onAction={markFullBinsEmpty}
     />
   ) : pauseNotice && session.pauseReason ? (
     <CameraNotice
@@ -375,9 +418,9 @@ export default function ScanScreen() {
           />
         ) : null
       ) : (
-        <View style={[StyleSheet.absoluteFill, { justifyContent: "center" }]}>
+        <CameraEmptyStateFrame>
           <EmptyState icon="camera" title={t("scan.noCamera")} />
-        </View>
+        </CameraEmptyStateFrame>
       )}
       {device ? (
         <View
@@ -418,6 +461,15 @@ export default function ScanScreen() {
             onPress={() => setOptionsOpen(true)}
           />
         </View>
+        {collection && !session.removal.isEnabled ? (
+          <View pointerEvents="box-none" style={{ flexDirection: "row" }}>
+            <CameraChip
+              icon={scanDestination.sortsCards ? "rules" : "storage"}
+              label={destinationLabel}
+              onPress={session.isRunning || sorter.isReady ? undefined : () => setDestinationPickerOpen(true)}
+            />
+          </View>
+        ) : null}
         <TorchBrightness torch={torch} />
         <View pointerEvents="box-none" style={{ flexDirection: "row", gap: SPACING.sm }}>
           <View accessibilityLiveRegion="polite" style={{ flexShrink: 1, minWidth: 0 }}>
@@ -469,6 +521,15 @@ export default function ScanScreen() {
           {notice}
           <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "center", gap: SPACING.md }}>
             <View pointerEvents="box-none" style={{ flex: 1, alignItems: "flex-start" }}>
+              {sorter.isConnected && !emergencyStopped ? (
+                <Button
+                  variant="destructive"
+                  icon="handStop"
+                  label={t("scan.emergencyStop")}
+                  accessibilityHint={t("scan.emergencyStopHint")}
+                  onPress={stopSorter}
+                />
+              ) : null}
               {collection && !sorter.isConnected && !session.isRunning ? (
                 <IconButton
                   icon="multiCard"
@@ -491,7 +552,7 @@ export default function ScanScreen() {
                 label={
                   session.isRunning ? t("scan.pauseAction") : session.phase === "paused" ? t("scan.resume") : t("scan.start")
                 }
-                disabled={!session.isRunning && !session.canStart}
+                disabled={emergencyStopped || (!session.isRunning && !session.canStart)}
                 onPress={
                   session.isRunning ? session.pause : session.phase === "paused" ? session.resume : session.start
                 }
@@ -529,6 +590,10 @@ export default function ScanScreen() {
         onAllowDuplicatesChange={session.setAllowDuplicates}
         handScan={session.handScan}
         onHandScanChange={session.setHandScan}
+        handScanBins={session.handScanBins}
+        onHandScanBinsChange={session.setHandScanBins}
+        hasBinPreset={session.hasBinPreset}
+        sortsCards={session.sortsCards}
         removeMode={session.removal.isEnabled}
         onRemoveModeChange={changeRemoveMode}
         presetName={presetLabel}
@@ -591,6 +656,12 @@ export default function ScanScreen() {
           setScanTargetGuid(guid);
         }}
         onClose={() => setCollectionPickerOpen(false)}
+      />
+      <ScanDestinationSheet
+        visible={destinationPickerOpen}
+        scanDestination={scanDestination}
+        offersSortWithRules
+        onClose={() => setDestinationPickerOpen(false)}
       />
       <OptionSheet
         visible={presetPickerOpen}

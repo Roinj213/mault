@@ -1,5 +1,6 @@
 import { EmptyState } from "@/components/empty-state";
 import { ListSkeleton } from "@/components/list-skeleton";
+import { LoadErrorCallout } from "@/components/load-error-callout";
 import { StatGroup } from "@/components/stat-group";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +42,12 @@ export function AccuracyReportView({
   const { collections, activeCollection } = useCollections();
   const selectedGuid = collectionGuid ?? activeCollection?.guid ?? null;
   const selected = collections.find((c) => c.guid === selectedGuid);
-  const { data: report, isLoading } = useQuery(
+  const {
+    data: report,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(
     accuracyReportQueryOptions(selectedGuid, null),
   );
   const [startOpen, setStartOpen] = useState(false);
@@ -55,7 +61,7 @@ export function AccuracyReportView({
     stats && stats.cardCount ? formatPercent(value / stats.cardCount) : "-";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Select
           value={selectedGuid ?? ""}
@@ -83,6 +89,11 @@ export function AccuracyReportView({
 
       {!selectedGuid ? (
         <EmptyState icon={IconTargetArrow} title={t("accuracy.pickCollection")} />
+      ) : isError && !report ? (
+        <LoadErrorCallout
+          message={t("errors.loadFailed")}
+          onRetry={() => void refetch()}
+        />
       ) : isLoading || !report || !stats ? (
         <ListSkeleton rows={6} />
       ) : (
@@ -91,35 +102,35 @@ export function AccuracyReportView({
             heading={t("accuracy.batchHeading")}
             gridClassName="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
             tiles={[
-              { key: "cards", label: t("accuracy.stats.cards"), value: stats.cardCount.toLocaleString() },
+              { key: "cards", label: t("accuracy.stats.cards"), value: stats.cardCount },
               {
                 key: "corrected",
                 label: t("accuracy.stats.corrected"),
-                value: stats.corrected.toLocaleString(),
+                value: stats.corrected,
                 detail: rate(stats.corrected),
               },
               {
                 key: "low",
                 label: t("accuracy.stats.lowConfidence"),
-                value: stats.lowConfidence.toLocaleString(),
+                value: stats.lowConfidence,
                 detail: rate(stats.lowConfidence),
               },
               {
                 key: "alternatives",
                 label: t("accuracy.stats.alternatives"),
-                value: stats.withAlternatives.toLocaleString(),
+                value: stats.withAlternatives,
                 detail: rate(stats.withAlternatives),
               },
               {
                 key: "reviewed",
                 label: t("accuracy.stats.reviewed"),
-                value: stats.reviewed.toLocaleString(),
+                value: stats.reviewed,
                 detail: rate(stats.reviewed),
               },
               {
                 key: "unmatched",
                 label: t("accuracy.stats.unmatched"),
-                value: stats.unmatched.toLocaleString(),
+                value: stats.unmatched,
               },
             ]}
           />
@@ -136,7 +147,7 @@ export function AccuracyReportView({
               description={t("accuracy.noChecksDescription")}
             />
           ) : (
-            <div className="overflow-hidden rounded-lg border">
+            <div className="overflow-hidden rounded-card bg-card">
               <Table>
                 <TableHeader>
                   <TableRow>

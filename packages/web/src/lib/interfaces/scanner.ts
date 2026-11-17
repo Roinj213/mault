@@ -15,7 +15,6 @@ import type {
   CornerDetection,
   CardScannerProps,
   CardSearchResult,
-  OcrDiagnostics,
   RouteOptions,
   ScanAttemptResult,
   SerialMessageListener,
@@ -76,11 +75,15 @@ export interface CameraRange {
 }
 
 export interface PiCameraReady {
+  focusMode?: "auto" | "manual";
+  lensPosition?: number;
   status: "ready";
   label: string;
   width: number;
   height: number;
   focus: CameraRange | null;
+  zoom: CameraRange | null;
+  zoomLevel?: number;
 }
 
 export type PiCameraHealth = PiCameraReady | { status: "down" | "absent" };
@@ -89,8 +92,13 @@ export interface CameraFocusControlProps {
   className?: string;
 }
 
+export interface CameraZoomControlProps {
+  className?: string;
+}
+
 export type CameraTrackSettings = MediaTrackSettings & {
   focusDistance?: number;
+  zoom?: number;
 };
 
 export type CameraTrackCapabilities = MediaTrackCapabilities & {
@@ -105,10 +113,13 @@ export interface CameraContextValue {
   errorMessage: string;
   focusRange: CameraRange | null;
   focusDistance: number | null;
+  zoomRange: CameraRange | null;
+  zoomLevel: number | null;
   cameras: MediaDeviceInfo[];
   camerasInUseElsewhere: MediaDeviceInfo[];
   selectedCameraId: string | null;
   setFocusDistance: (value: number | null) => void;
+  setZoomLevel: (value: number) => void;
   selectCamera: (deviceId: string) => void;
   retryCamera: () => Promise<void>;
   stopCamera: () => void;
@@ -129,7 +140,9 @@ export interface CameraContextValue {
   saveFlatbedPlacement: (placement: FlatbedPlacement) => void;
   feederCardSetup: FeederCardSetup;
   saveFeederCardSetup: (setup: FeederCardSetup) => void;
-  testFeederCardSetup: (setup: FeederCardSetup) => Promise<FeederCardSetupTestScan>;
+  testFeederCardSetup: (
+    setup: FeederCardSetup,
+  ) => Promise<FeederCardSetupTestScan>;
   takeDocumentScannerPages: () => DocumentScannerPages | null;
 }
 
@@ -226,6 +239,9 @@ export interface ScannedCardsContextValue {
   pause: () => void;
   pauseForAttention: (attention: StationAttentionDetails) => void;
   resume: () => void;
+  emergencyStop: () => Promise<void>;
+  resetAfterEmergencyStop: () => Promise<boolean>;
+  isEmergencyStopped: boolean;
   attention: StationAttention | null;
   reopenAttention: () => void;
   reportScannerError: (message: string | null) => void;
@@ -234,6 +250,7 @@ export interface ScannedCardsContextValue {
   showJamToast: (options: JamToastOptions) => void;
   removeCard: (scanId: string) => void;
   removeCards: (scanIds: string[]) => Promise<boolean>;
+  removeCardsWithUndo: (scanIds: string[]) => void;
   moveCardsToCollection: (
     input: MoveCardsToCollectionInput,
   ) => Promise<number | null>;
@@ -250,9 +267,19 @@ export interface ScannedCardsContextValue {
   clearCards: () => void;
 }
 
-export type SerialBoardType = "esp32" | "uno_r4";
+export type SerialBoardType = "esp32" | "uno_r4" | "raspberry_pi";
 
-export type SerialTransportType = "serial" | "bluetooth" | "cloud" | "pi";
+export type SerialTransportType =
+  | "serial"
+  | "bluetooth"
+  | "cloud"
+  | "pi"
+  | "pi-sorter";
+
+export interface SerialConnectOptions {
+  skipAutoTest?: boolean;
+  background?: boolean;
+}
 
 export type FlashFailureReason =
   | "wrong-chip"
@@ -344,6 +371,7 @@ export interface SerialContextValue {
   isRouteBusy: () => boolean;
   readIR: () => Promise<boolean[] | null>;
   sendNeutral: () => Promise<boolean>;
+  sendEmergencyStop: () => Promise<boolean>;
   sendTest: () => Promise<TestResult>;
   runTest: () => Promise<void>;
   checkFirmwareVersion: () => Promise<FirmwareCheckResult>;
@@ -380,6 +408,10 @@ export interface ScannerControlsProps {
   canFeedStandalone?: boolean;
   sessionLive?: boolean;
   onStop?: () => void;
+  onEmergencyStop?: () => void;
+  emergencyStopped?: boolean;
+  onResetAfterEmergencyStop?: () => void;
+  isResettingSorter?: boolean;
   onAutoFeedChange?: (enabled: boolean) => void;
   flatbedScan?: FlatbedScanFlow;
   onCalibrateFlatbed?: () => void;
@@ -396,6 +428,7 @@ export interface ScannerControlButtonProps {
 }
 
 export interface CameraMenuItemsProps {
+  hostControlled?: boolean;
   isCameraActive: boolean;
   cameras: MediaDeviceInfo[];
   documentScannerOptions: DocumentScannerOption[];
@@ -498,6 +531,8 @@ export interface ComputedBinFillLevels {
 
 export interface PendingBinCard {
   binNumber: number;
+  scannedAt: number;
+  unsaved: boolean;
   savedAt: number | null;
 }
 
@@ -625,14 +660,6 @@ export interface MonitorCardsState {
   setOpenScanId: (scanId: string | null) => void;
 }
 
-export type MobileMonitorTab = "cards" | "activity";
-
-export interface MobileMonitorTabItem {
-  key: MobileMonitorTab;
-  label: string;
-  badge?: number;
-}
-
 export interface MobileSessionMonitorProps {
   session: SessionMonitorState;
   cards: MonitorCardsState;
@@ -650,14 +677,8 @@ export interface MobileMonitorCardsProps {
   binCount?: number;
   canEditCards: boolean;
   onStartReview?: () => void;
-}
-
-export interface MobileMonitorActivityProps {
-  session: SessionMonitorState;
-  collectionGuid: string;
-  stats: ScanStats | null;
-  canEditCards: boolean;
-  onOpenCard?: (scanId: string) => void;
+  unmatchedCount: number;
+  onOpenUnmatched?: () => void;
 }
 
 export interface MobileCardTileProps {
@@ -668,13 +689,11 @@ export interface MobileCardTileProps {
 
 export interface MobileCardActionsDrawerProps {
   entry: GroupedScannedCard | null;
-  onOpenDetails: (scanId: string) => void;
   onClose: () => void;
 }
 
 export interface MobileCardActionsBodyProps {
   entry: GroupedScannedCard;
-  onOpenDetails: () => void;
   onClose: () => void;
 }
 
@@ -765,14 +784,12 @@ export interface ScannerChromeContext {
   autoFeed: boolean;
   allowDuplicates: boolean;
   isAtScanLimit: boolean;
-  bluetoothSupported: boolean;
   cameras: MediaDeviceInfo[];
   selectedCameraId: string | null;
   onPause: () => void;
   onResume: () => void;
   onScanOnce: () => void;
   onRetry: () => void;
-  onConnectBluetooth: () => void;
   onResolveSensorBlocked: () => void;
   onSelectCamera: (deviceId: string) => void;
   onAutoFeedChange: (value: boolean) => void;
@@ -783,10 +800,16 @@ export interface ScannerChromeContext {
   onFeed: () => void;
   onClearDevice: () => void;
   onResetDevice: () => void;
+  isEmergencyStopped: boolean;
+  isResettingSorter: boolean;
+  onEmergencyStop: () => void;
+  onResetAfterEmergencyStop: () => void;
   handScan: boolean;
   handScanActive: boolean;
   lastRoutedBin: LastRoutedBin | null;
   onHandScanChange: (value: boolean) => void;
+  handScanBins: boolean;
+  onHandScanBinsChange: (value: boolean) => void;
 }
 
 export type MobileScanEntryMode = "add" | "remove";
@@ -822,11 +845,6 @@ export interface OrientedCandidate extends OrientedSearch {
 
 export interface OrientedSearchPick extends OrientedCandidate {
   alternate: OrientedCandidate | null;
-}
-
-export interface TextSearchOutcome {
-  pick: OrientedSearchPick | null;
-  ocr: OcrDiagnostics | null;
 }
 
 export interface ScanAttemptOutcome extends ScanAttemptResult {
@@ -937,11 +955,6 @@ export interface BinCorrection {
   addedCard?: ScannedCard;
 }
 
-export interface CorrectedBinTarget {
-  bin?: BinConfig;
-  pickListName?: string;
-}
-
 export interface BinCorrectionDialogProps {
   correction: BinCorrection | null;
   onMoved: (correction: BinCorrection) => void;
@@ -951,7 +964,9 @@ export interface BinCorrectionDialogProps {
 export interface CorrectionAutoCloseTimerProps {
   seconds: number;
   willMove: boolean;
+  isPaused: boolean;
   onElapsed: () => void;
+  onKeepOpen: () => void;
 }
 
 export interface BinCorrectionTileProps {
@@ -991,7 +1006,7 @@ export interface RouteCardToBinParams {
   isAutoFeedEnabled: () => boolean;
   isPipelinedFeedEnabled: () => boolean;
   pause: () => void;
-  triggerAutoFeed: () => void;
+  triggerAutoFeedAfterRoutedCard: () => Promise<void>;
   onJam: (options: JamToastOptions) => void;
 }
 
@@ -1087,6 +1102,9 @@ export interface AutoFeedSerial {
     command: object,
     timeoutMs?: number,
   ) => Promise<SerialRequestResult>;
+  sendEmergencyStop: () => Promise<boolean>;
+  sendNeutral: () => Promise<boolean>;
+  supportsEmergencyStop: boolean;
   ignoreIrSensors: boolean;
 }
 
@@ -1105,10 +1123,12 @@ export interface PhoneCameraPairingDialogProps {
   onDisconnect: () => void;
 }
 
-export type ScannerConnectionState = "connected" | "connecting" | "disconnected";
+export type ScannerConnectionState =
+  | "connected"
+  | "connecting"
+  | "disconnected";
 
-export interface ConnectionStatusPillProps
-  extends ComponentProps<"button"> {
+export interface ConnectionStatusPillProps extends ComponentProps<"button"> {
   label: string;
   stateLabel: string;
   state: ScannerConnectionState;
@@ -1130,7 +1150,7 @@ export interface ScannerStatusBarProps {
   selectedCameraId: string | null;
   phonePairingStatus: PhoneCameraCaptureStatus;
   scanningBlocked: boolean;
-  onCameraConnect: () => void;
+  onCameraConnect?: () => void;
   onCameraDisconnect: () => void;
   onCameraSelect: (deviceId: string) => void;
   onOpenPhonePairing: () => void;
@@ -1156,11 +1176,14 @@ export interface ScannerStatusBarProps {
   onUpgrade: () => void;
   handScan: boolean;
   onHandScanChange: (enabled: boolean) => void;
+  handScanBins: boolean;
+  onHandScanBinsChange: (enabled: boolean) => void;
 }
 
 export interface SessionStatsPanelProps {
   stats: ScanStats | null;
   totalCards: number;
+  isBordered?: boolean;
 }
 
 export interface DebugCardSet {
@@ -1171,7 +1194,6 @@ export interface DebugCardSet {
     alternates: PlayingCardWithDistance[];
   };
 }
-
 
 export interface ScanSaveOptions {
   deviceGuid?: string;
@@ -1485,6 +1507,13 @@ export interface FlatbedPlacementEditorProps {
   onPlacementChange: (placement: FlatbedPlacement) => void;
 }
 
+export interface FlatbedPlacementFieldsProps {
+  glassWidthMm: number;
+  glassHeightMm: number;
+  placement: FlatbedPlacement | null;
+  onPlacementChange: (placement: FlatbedPlacement) => void;
+}
+
 export interface FlatbedPreview {
   imageUrl: string;
   file: File;
@@ -1579,6 +1608,16 @@ export interface MoveCardsToCollectionInput {
   scanIds: string[];
 }
 
+export interface PiScanSettingsOptions {
+  collectionGuid: string | undefined;
+  condition?: CardCondition;
+  setCondition?: (value: CardCondition) => void;
+  foilType: string | null;
+  preferredSetCodes: string[];
+  setFoilType: (value: string | null) => void;
+  setPreferredSetCodes: (value: string[]) => void;
+}
+
 export type QuarterTurns = 0 | 1 | 2 | 3;
 
 export interface ScanPlacement {
@@ -1591,7 +1630,9 @@ export interface DocumentScanArchiveBridge {
   getDocumentScanArchiveFolder: () => Promise<string | null>;
   chooseDocumentScanArchiveFolder: () => Promise<string | null>;
   clearDocumentScanArchiveFolder: () => Promise<void>;
-  archiveDocumentScan: (request: DesktopDocumentScanArchiveRequest) => Promise<void>;
+  archiveDocumentScan: (
+    request: DesktopDocumentScanArchiveRequest,
+  ) => Promise<void>;
 }
 
 export interface DocumentScanArchiveImages {

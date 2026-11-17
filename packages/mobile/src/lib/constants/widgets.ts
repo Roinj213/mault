@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import type {
   CardReviewWidgetProps,
   CollectionValueWidgetProps,
@@ -8,6 +9,8 @@ import type {
   WidgetLogo,
 } from "@/lib/interfaces/widgets";
 
+export const HOME_WIDGETS_SUPPORTED = Platform.OS === "ios";
+
 export const COLLECTION_VALUE_WIDGET_NAME = "CollectionValue";
 
 export const TOTAL_CARDS_WIDGET_NAME = "TotalCards";
@@ -17,13 +20,6 @@ export const TOP_CARDS_WIDGET_NAME = "TopCards";
 export const CARD_OF_THE_DAY_WIDGET_NAME = "CardOfTheDay";
 
 export const CARD_REVIEW_WIDGET_NAME = "CardReview";
-
-export const COLLECTION_WIDGET_NAMES = [
-  COLLECTION_VALUE_WIDGET_NAME,
-  TOTAL_CARDS_WIDGET_NAME,
-  TOP_CARDS_WIDGET_NAME,
-  CARD_OF_THE_DAY_WIDGET_NAME,
-] as const;
 
 export const WIDGET_COLLECTION_PARAMETER = "collection";
 
@@ -39,7 +35,6 @@ export const TOTAL_CARDS_WIDGET_MIN_DIGITS = 5;
 
 export const WIDGET_ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-export const WIDGET_VALUE_CHANGE_EPSILON = 0.005;
 
 export const WIDGET_SUMMARY_QUERY_KEY = "widget-summary";
 

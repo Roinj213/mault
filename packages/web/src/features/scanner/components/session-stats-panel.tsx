@@ -2,38 +2,41 @@ import { usePriceSource } from "@/hooks/use-price-source";
 import { useTranslation } from "react-i18next";
 import type { SessionStatsPanelProps } from "@/lib/interfaces/scanner";
 import { StatCell } from "@/components/stat-cell";
+import { CompactCount, CompactPrice } from "@/components/compact-value";
+import { cn } from "@/lib/utils";
 
 export function SessionStatsPanel({
   stats,
   totalCards,
+  isBordered = false,
 }: SessionStatsPanelProps) {
   const { t } = useTranslation("scanner");
   const { format } = usePriceSource();
   return (
     <>
-      <div className="rounded-lg border bg-input/20 dark:bg-input/30">
+      <div className={cn("overflow-hidden rounded-card bg-card", isBordered && "border")}>
         <div className="grid grid-cols-2 divide-x divide-y divide-border">
           <div className="col-span-2 divide-y divide-border">
             <StatCell
               label={t("totalCards")}
-              value={String(totalCards)}
+              value={<CompactCount value={totalCards} />}
             />
           </div>
           <StatCell
             label={t("unique")}
-            value={stats ? String(stats.uniqueCount) : "-"}
+            value={stats ? <CompactCount value={stats.uniqueCount} /> : "-"}
             className={!stats?.hasPricing ? "col-span-2" : undefined}
           />
           {stats?.hasPricing && (
             <StatCell
               label={t("sessionStatsPanel.value")}
-              value={format(stats.totalValue)}
+              value={<CompactPrice value={stats.totalValue} />}
             />
           )}
         </div>
         {stats?.mostValuable && (
-          <div className="p-2 border-t border-input">
-            <p className="text-2xs font-medium text-foreground/70 uppercase tracking-wide mb-0.5">
+          <div className="border-t border-border p-3">
+            <p className="mb-0.5 text-xs text-foreground/70">
               {t("mostValuable")}
             </p>
             <p className="text-xs font-semibold truncate">
@@ -47,8 +50,8 @@ export function SessionStatsPanel({
       </div>
 
       {stats && stats.rarities.length > 0 && (
-        <div className="rounded-lg border bg-input/20 dark:bg-input/30 p-2">
-          <p className="text-2xs font-medium text-foreground/70 uppercase tracking-wide mb-1.5">
+        <div className={cn("rounded-card bg-card p-3 md:p-2.5", isBordered && "border")}>
+          <p className="mb-1.5 text-xs text-foreground/70">
             {t("byRarity")}
           </p>
           <div className="flex flex-col gap-1">

@@ -1,3 +1,4 @@
+import { Progress } from "@/components/ui/progress";
 import { FooterDivider } from "@/components/status-footer";
 import {
   Tooltip,
@@ -6,9 +7,22 @@ import {
 } from "@/components/ui/tooltip";
 import { useBilling } from "@/features/billing/api/use-billing";
 import { billingPlanNameKey } from "@/features/billing/lib/billing-plan-name";
+import { dailyScanLimitResetCountdown } from "@magic-vault/shared";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { SETTINGS_PATHS } from "@/lib/constants/settings";
+
+function DailyScanLimitResetCountdown() {
+  const { t } = useTranslation("billing");
+  const { hours, minutes } = dailyScanLimitResetCountdown(new Date());
+  return (
+    <span className="block">
+      {hours > 0
+        ? t("planFooterTooltip.resetsInHours", { hours, minutes })
+        : t("planFooterTooltip.resetsInMinutes", { minutes })}
+    </span>
+  );
+}
 
 export function PlanBadge() {
   const { t } = useTranslation("billing");
@@ -45,18 +59,16 @@ export function PlanBadge() {
             {planName}
           </span>
           <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-14 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${usagePercent}%` }}
-              />
-            </div>
+            <Progress decorative value={usagePercent} className="w-14" />
             <span className="text-xs tabular-nums text-foreground/70">
               {t("plan.scansToday", { used, limit: dailyLimit })}
             </span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
+        <TooltipContent side="top">
+          <span className="block">{tooltip}</span>
+          {!isPaid && <DailyScanLimitResetCountdown />}
+        </TooltipContent>
       </Tooltip>
       <FooterDivider />
     </>

@@ -1,3 +1,4 @@
+import { STATUS_DOT_OFFLINE_CLASS } from "@/lib/constants/ui";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
   IconDeviceUsb,
   IconDeviceUsbFilled,
   IconDownload,
+  IconLoader2,
   IconPlus,
   IconQrcode,
   IconRotate2,
@@ -30,10 +32,7 @@ import type {
   ScannerConnectionState,
   ScannerStatusBarProps,
 } from "@/lib/interfaces/scanner";
-import {
-  SCANNER_CONNECTION_DOT_CLASS,
-  SORTER_LIMIT_MESSAGE_KEYS,
-} from "@/lib/constants/scanner";
+import { SORTER_LIMIT_MESSAGE_KEYS } from "@/lib/constants/scanner";
 import { cn } from "@/lib/utils";
 import { ConnectSorterMenuItems } from "@/features/scanner/components/connect-sorter-menu-items";
 import { CameraMenuItems } from "@/features/scanner/components/camera-menu-items";
@@ -56,12 +55,20 @@ function ConnectionStatusPill({
     >
       {icon}
       {label}
-      <span
-        className={cn(
-          "size-2 rounded-full",
-          SCANNER_CONNECTION_DOT_CLASS[state],
+      <span aria-hidden className="grid size-3 place-items-center">
+        {state === "connecting" ? (
+          <IconLoader2 className="size-3 animate-spin text-warning-foreground motion-reduce:animate-none" />
+        ) : (
+          <span
+            className={cn(
+              "size-2 rounded-full",
+              state === "connected"
+                ? "bg-success-foreground"
+                : STATUS_DOT_OFFLINE_CLASS,
+            )}
+          />
         )}
-      />
+      </span>
     </Button>
   );
 }
@@ -106,6 +113,8 @@ export function ScannerStatusBar({
   onUpgrade,
   handScan,
   onHandScanChange,
+  handScanBins,
+  onHandScanBinsChange,
 }: ScannerStatusBarProps) {
   const { t } = useTranslation("scanner");
   const { retractCard, isRetracting, retractLockedReason } = useRetractCard();
@@ -127,40 +136,50 @@ export function ScannerStatusBar({
 
   return (
     <div className="pointer-events-none absolute inset-x-2 top-2 z-40 flex flex-wrap gap-1.5 *:pointer-events-auto">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <ConnectionStatusPill
-              label={t("scannerMenu.camera")}
-              stateLabel={t(`scannerMenu.connectionStates.${cameraState}`)}
-              state={cameraState}
-              icon={<IconCameraSpark />}
-              data-tour="camera-status"
-            />
-          }
-        />
-        <DropdownMenuContent
-          align="start"
-          className="w-auto min-w-56 whitespace-nowrap"
-        >
-          <CameraMenuItems
-            isCameraActive={isCameraActive}
-            cameras={cameras}
-            documentScannerOptions={documentScannerOptions}
-            isFlatbedSelected={isFlatbedSelected}
-            selectedCameraId={selectedCameraId}
-            phonePairingStatus={phonePairingStatus}
-            scanningBlocked={scanningBlocked}
-            onCameraConnect={onCameraConnect}
-            onCameraDisconnect={onCameraDisconnect}
-            onCameraSelect={onCameraSelect}
-            onCalibrateFlatbed={onCalibrateFlatbed}
-            isFeederSelected={isFeederSelected}
-            onSetUpFeederCard={onSetUpFeederCard}
-            onOpenPhonePairing={onOpenPhonePairing}
+      {onCameraConnect ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <ConnectionStatusPill
+                label={t("scannerMenu.camera")}
+                stateLabel={t(`scannerMenu.connectionStates.${cameraState}`)}
+                state={cameraState}
+                icon={<IconCameraSpark />}
+                data-tour="camera-status"
+              />
+            }
           />
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <DropdownMenuContent
+            align="start"
+            className="w-auto min-w-56 whitespace-nowrap"
+          >
+            <CameraMenuItems
+              isCameraActive={isCameraActive}
+              cameras={cameras}
+              documentScannerOptions={documentScannerOptions}
+              isFlatbedSelected={isFlatbedSelected}
+              selectedCameraId={selectedCameraId}
+              phonePairingStatus={phonePairingStatus}
+              scanningBlocked={scanningBlocked}
+              onCameraConnect={onCameraConnect}
+              onCameraDisconnect={onCameraDisconnect}
+              onCameraSelect={onCameraSelect}
+              onCalibrateFlatbed={onCalibrateFlatbed}
+              isFeederSelected={isFeederSelected}
+              onSetUpFeederCard={onSetUpFeederCard}
+              onOpenPhonePairing={onOpenPhonePairing}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <ConnectionStatusPill
+          label={t("scannerMenu.camera")}
+          stateLabel={t(`scannerMenu.connectionStates.${cameraState}`)}
+          state={cameraState}
+          icon={<IconCameraSpark />}
+          data-tour="camera-status"
+        />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -276,6 +295,14 @@ export function ScannerStatusBar({
                   onCheckedChange={onAllowDuplicatesChange}
                 >
                   {t("scannerMenu.allowDuplicates")}
+                </DropdownMenuCheckboxItem>
+              )}
+              {handScan && (
+                <DropdownMenuCheckboxItem
+                  checked={handScanBins}
+                  onCheckedChange={onHandScanBinsChange}
+                >
+                  {t("scannerMenu.sortIntoBins")}
                 </DropdownMenuCheckboxItem>
               )}
               {webSerialSupported && (

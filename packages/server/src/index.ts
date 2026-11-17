@@ -4,19 +4,30 @@ import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { piCameraRouter } from "./routes/pi-camera";
 import { piUpdateRouter } from "./routes/pi-update";
-import { createPiSerialRouter } from "./routes/pi-serial";
-import { PI_SERIAL_PATH } from "./lib/constants/pi-serial";
-import { API_PORT, getApiHost } from "./lib/constants/server";
+import { createPiSerialRouter, createPiSorterRouter } from "./routes/pi-serial";
+import { PI_SERIAL_PATH, PI_SORTER_PATH } from "./lib/constants/pi-serial";
+import {
+  API_PORT,
+  getApiHost,
+  PUBLIC_REQUEST_BODY_MAX_BYTES,
+  REQUEST_BODY_MAX_BYTES,
+} from "./lib/constants/server";
 import { PI_SCAN_SESSION_PATH, piScanRouter } from "./routes/pi-scan";
 import { Hono } from "hono";
 import {
   PLAN_PREVIEW_HEADER,
   PUBLIC_API_KEY_HEADER,
+  SHARE_LINK_GUEST_KEY_HEADER,
   SYNC_API_PATH,
 } from "@magic-vault/shared";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { getWebUrl } from "./lib/constants/urls";
 import type { AppEnv } from "./middleware/auth";
+import {
+  compressResponses,
+  shouldCompressResponses,
+} from "./middleware/compression";
 import { adminRouter } from "./routes/admin";
 import { announcementsRouter } from "./routes/announcements";
 import { apiKeysRouter } from "./routes/api-keys";
@@ -26,6 +37,7 @@ import { businessRouter } from "./routes/business";
 import { cardHoldsRouter } from "./routes/card-holds";
 import { tradeOffersRouter } from "./routes/trade-offers";
 import { shareLinksRouter } from "./routes/share-links";
+import { importTemplatesRouter } from "./routes/import-templates";
 import { sortBinsRouter } from "./routes/bins";
 import { presetWorkflowsRouter } from "./routes/preset-workflows";
 import { botRouter } from "./routes/bot";
@@ -61,6 +73,7 @@ import { startDeviceOfflineAlerts } from "./lib/device-alerts";
 import { startInventorySnapshots } from "./lib/inventory";
 import { startApiUsageFlushing } from "./lib/api-usage";
 import { startCardMatchIndexWarmup } from "./lib/card-match-index";
+import { startShortLinkStartupSync } from "./lib/short-links";
 
 const app = new Hono<AppEnv>();
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -73,6 +86,7 @@ const appCors = cors({
     "Authorization",
     "X-Org-Id",
     PLAN_PREVIEW_HEADER,
+    SHARE_LINK_GUEST_KEY_HEADER,
   ],
 });
 const publicApiCors = cors({
@@ -87,6 +101,22 @@ app.use((c, next) =>
     ? publicApiCors(c, next)
     : appCors(c, next),
 );
+
+const payloadTooLarge = bodyLimit({
+  maxSize: REQUEST_BODY_MAX_BYTES,
+  onError: (c) => c.json({ success: false, message: "Payload too large." }, 413),
+});
+const publicPayloadTooLarge = bodyLimit({
+  maxSize: PUBLIC_REQUEST_BODY_MAX_BYTES,
+  onError: (c) => c.json({ success: false, message: "Payload too large." }, 413),
+});
+app.use((c, next) =>
+  c.req.path.startsWith("/public/")
+    ? publicPayloadTooLarge(c, next)
+    : payloadTooLarge(c, next),
+);
+
+if (shouldCompressResponses()) app.use(compressResponses);
 
 if (process.env.AUTH_PROVIDER === "local") {
   app.route("/local-auth", localAuthRouter);
@@ -117,6 +147,7 @@ app.route("/business", businessRouter);
 app.route("/card-holds", cardHoldsRouter);
 app.route("/trade-offers", tradeOffersRouter);
 app.route("/share-links", shareLinksRouter);
+app.route("/import-templates", importTemplatesRouter);
 app.route("/admin", adminRouter);
 app.route("/admin", impersonationRouter);
 app.route("/public", publicRouter);
@@ -124,6 +155,7 @@ app.route("/pi-camera", piCameraRouter);
 app.route("/pi-update", piUpdateRouter);
 app.route(PI_SCAN_SESSION_PATH, piScanRouter);
 app.route(PI_SERIAL_PATH, createPiSerialRouter(upgradeWebSocket));
+app.route(PI_SORTER_PATH, createPiSorterRouter(upgradeWebSocket));
 app.route("/stream", streamRoute);
 app.route("/sorter-link", createSorterLinkRouter(upgradeWebSocket));
 app.route("/v1", publicApiRouter);
@@ -145,6 +177,7 @@ startDeviceOfflineAlerts();
 startInventorySnapshots();
 startApiUsageFlushing();
 startCardMatchIndexWarmup();
+startShortLinkStartupSync();
 
 const server = serve(
   { fetch: app.fetch, port: API_PORT, hostname: getApiHost() },

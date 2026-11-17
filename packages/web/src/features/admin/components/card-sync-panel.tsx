@@ -1,3 +1,5 @@
+import { Progress } from "@/components/ui/progress";
+import { LANGUAGE_LABELS } from "@magic-vault/shared";
 import { SettingsSection } from "@/components/settings-section";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +15,6 @@ import { usePiHost } from "@/hooks/use-pi-host";
 import { formatDuration } from "@/features/admin/lib/format-duration";
 import { browserSyncParallel } from "@/lib/constants/admin";
 import { SYNC_STATUS_COLORS } from "@/lib/constants/colors";
-import { LANGUAGE_LABELS } from "@/lib/constants/languages";
 import {
   SYNC_VECTORIZE_CONCURRENCY_DEFAULT,
   SYNC_VECTORIZE_CONCURRENCY_OPTIONS,
@@ -30,7 +31,6 @@ export function CardSyncPanel() {
     isRunning,
     total,
     done,
-    progress,
     etaMs,
     cardsPerMinute,
     embeddingCount,
@@ -78,7 +78,7 @@ export function CardSyncPanel() {
         </p>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 md:gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 shrink-0">
             {!isRunning && (
@@ -189,14 +189,16 @@ export function CardSyncPanel() {
         )}
 
         {!isRunning && (
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-2 text-sm">
+          <div className="flex flex-col gap-3 md:gap-2">
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm">
+                {t("cardImageVectors.forceResyncLabel")}
+              </span>
               <Switch
-                size="sm"
+                aria-label={t("cardImageVectors.forceResyncLabel")}
                 checked={forceResync}
                 onCheckedChange={setForceResync}
               />
-              {t("cardImageVectors.forceResyncLabel")}
             </label>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -233,19 +235,12 @@ export function CardSyncPanel() {
 
         {total > 0 && (
           <div className="flex flex-col gap-1.5">
-            <div
-              role="progressbar"
+            <Progress
+              size="lg"
               aria-label={t("cardImageVectors.progressLabel")}
-              aria-valuemin={0}
-              aria-valuemax={total}
-              aria-valuenow={done}
-              className="h-2 rounded-full bg-muted overflow-hidden"
-            >
-              <div
-                className="h-full bg-foreground transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+              value={done}
+              max={total}
+            />
             <div className="flex gap-4 text-xs text-foreground/70 tabular-nums">
               <span>
                 {t("cardImageVectors.progressCount", { done, total })}
@@ -309,21 +304,12 @@ export function CardSyncPanel() {
 
         {!!syncState.printingMarksTotal && (
           <div className="flex flex-col gap-1.5">
-            <div
-              role="progressbar"
+            <Progress
+              size="lg"
               aria-label={t("cardImageVectors.printingMarksLabel")}
-              aria-valuemin={0}
-              aria-valuemax={syncState.printingMarksTotal}
-              aria-valuenow={syncState.printingMarksDone ?? 0}
-              className="h-2 rounded-full bg-muted overflow-hidden"
-            >
-              <div
-                className="h-full bg-foreground transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, ((syncState.printingMarksDone ?? 0) / syncState.printingMarksTotal) * 100)}%`,
-                }}
-              />
-            </div>
+              value={syncState.printingMarksDone ?? 0}
+              max={syncState.printingMarksTotal}
+            />
             <div className="flex gap-4 text-xs text-foreground/70 tabular-nums">
               <span>
                 {t("cardImageVectors.printingMarksCount", {
@@ -343,8 +329,8 @@ export function CardSyncPanel() {
         )}
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
-        <div className="px-3 py-2 border-b bg-muted/30">
+      <div className="overflow-hidden rounded-lg bg-foreground/6">
+        <div className="border-b px-3 py-2">
           <p className="text-xs font-medium text-foreground/70">
             {t("log.heading")}
           </p>

@@ -1,6 +1,12 @@
+import { IconBadge } from "@/components/icon-badge";
 import { DeleteDialog } from "@/components/delete-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { LoadErrorCallout } from "@/components/load-error-callout";
 import { PageHeader } from "@/components/page-header";
+import { LibraryViewTabs } from "@/features/library/components/library-view-tabs";
+import { LibraryValueModeTabs } from "@/features/library/components/library-value-mode-tabs";
+import { useCollectionChanges } from "@/features/library/api/use-collection-changes";
+import type { LibraryValueMode } from "@/lib/interfaces/library";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +30,7 @@ import {
 } from "@/lib/constants/collections";
 import { MOBILE_NAV_SCROLL_PADDING_CLASS } from "@/lib/constants/nav";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import {
   IconAlbum,
   IconEraser,
@@ -39,6 +46,7 @@ import type { Collection } from "@magic-vault/shared";
 
 export default function CollectionsPage() {
   const { t } = useTranslation("collections");
+  const { t: tCommon } = useTranslation("common");
   const {
     collections,
     activeCollection,
@@ -49,15 +57,18 @@ export default function CollectionsPage() {
     emptyCollection,
   } = useCollections();
   const { activeOrg } = useOrg();
-  const { isLoading } = useQuery({
+  const { isLoading, isError, refetch } = useQuery({
     ...collectionsQueryOptions,
     enabled: !!activeOrg,
   });
+  const showsLoadError = isError && collections.length === 0;
 
   const { locks, currentUserId } = useCollectionLocks();
   const viewersByGuid = useSessionViewersByGuid();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [valueMode, setValueMode] = useState<LibraryValueMode>("value");
+  const changeOf = useCollectionChanges(valueMode === "change");
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
   );
@@ -79,6 +90,7 @@ export default function CollectionsPage() {
   const [selectedGuids, setSelectedGuids] = useState<Set<string>>(new Set());
   const [lastToggledGuid, setLastToggledGuid] = useState<string | null>(null);
   const [bulkAction, setBulkAction] = useState<"empty" | "delete" | null>(null);
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
   useHotkeys({
     clearSelection:
       selectedGuids.size > 0 ? () => setSelectedGuids(new Set()) : undefined,
@@ -114,10 +126,34 @@ export default function CollectionsPage() {
     const action = bulkAction;
     const guids = liveSelectedGuids;
     setBulkAction(null);
-    for (const guid of guids) {
-      if (action === "delete") await deleteCollection(guid);
-      else if (action === "empty") await emptyCollection(guid);
+    if (!action || guids.length === 0) return;
+    setIsBulkRunning(true);
+    const total = guids.length;
+    const progressToastId = toast.loading(
+      t(`selection.progress.${action}`, { current: 1, total }),
+    );
+    let failedCount = 0;
+    for (const [index, guid] of guids.entries()) {
+      toast.loading(t(`selection.progress.${action}`, { current: index + 1, total }), {
+        id: progressToastId,
+      });
+      const succeeded =
+        action === "delete"
+          ? await deleteCollection(guid)
+          : await emptyCollection(guid);
+      if (!succeeded) failedCount += 1;
     }
+    if (failedCount === 0) {
+      toast.success(t(`selection.progress.${action}Done`, { count: total }), {
+        id: progressToastId,
+      });
+    } else {
+      toast.dismiss(progressToastId);
+      toast.error(
+        t(`selection.progress.${action}Failed`, { count: failedCount, total }),
+      );
+    }
+    setIsBulkRunning(false);
     setSelectedGuids(new Set());
     void queryClient.invalidateQueries({
       queryKey: collectionsQueryOptions.queryKey,
@@ -129,26 +165,23 @@ export default function CollectionsPage() {
     {
       key: "collections",
       label: t("page.stats.collections"),
-      value: collections.length.toLocaleString(),
+      value: collections.length,
     },
     {
       key: "live",
       label: t("page.stats.live"),
-      value: liveCount.toLocaleString(),
+      value: liveCount,
     },
     {
       key: "cards",
       label: t("page.stats.cards"),
-      value: collections
-        .reduce((sum, c) => sum + c.cardCount, 0)
-        .toLocaleString(),
+      value: collections.reduce((sum, c) => sum + c.cardCount, 0),
     },
     {
       key: "games",
       label: t("page.stats.games"),
-      value: new Set(
-        collections.flatMap((c) => (c.game ? [c.game.guid] : [])),
-      ).size.toLocaleString(),
+      value: new Set(collections.flatMap((c) => (c.game ? [c.game.guid] : [])))
+        .size,
     },
   ];
 
@@ -190,8 +223,9 @@ export default function CollectionsPage() {
       )}
     >
       <PageHeader
-        title={t("page.title")}
+        title={tCommon("nav.library")}
         description={t("page.subtitle")}
+        tabs={<LibraryViewTabs value="collections" />}
         actions={
           <CreateCollectionDialog
             trigger={({ disabled }) => (
@@ -204,14 +238,8 @@ export default function CollectionsPage() {
         }
       >
         {!isLoading && collections.length > 0 && (
-          <>
-            <StatGroup
-              heading={t("page.stats.heading")}
-              tiles={stats}
-              live={liveCount > 0}
-              gridClassName="grid-cols-2 sm:grid-cols-4"
-            />
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-48 flex-1">
               <IconSearch className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-foreground/70" />
               <Input
                 type="search"
@@ -223,31 +251,51 @@ export default function CollectionsPage() {
                 className="pl-8"
               />
             </div>
-          </>
+            <LibraryValueModeTabs value={valueMode} onChange={setValueMode} />
+          </div>
         )}
       </PageHeader>
 
       <div
         className={cn(
-          "mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6",
+          "mx-auto flex w-full max-w-6xl flex-col gap-5 md:gap-2 p-4 md:px-3 md:py-2",
           liveSelectedGuids.length > 0 && "pb-24 md:pb-24",
         )}
       >
+        {!isLoading && collections.length > 0 && (
+          <StatGroup
+            heading={t("page.stats.heading")}
+            tiles={stats}
+            live={liveCount > 0}
+            gridClassName="grid-cols-2 sm:grid-cols-4"
+          />
+        )}
+
         {isLoading && (
           <div className={COLLECTIONS_GRID_CLASS}>
             {Array.from({ length: COLLECTIONS_SKELETON_COUNT }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-lg border">
-                <Skeleton className="h-40 rounded-none" />
-                <div className="space-y-1.5 border-t p-3">
-                  <Skeleton className="h-3 w-32" />
-                  <Skeleton className="h-2.5 w-20" />
+              <div key={i} className="overflow-hidden rounded-card border border-border bg-card">
+                <Skeleton className="h-32 rounded-none" />
+                <div className="flex flex-col gap-1.5 border-t px-3 py-2">
+                  <Skeleton className="h-3.5 w-32" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3.5 w-14" />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {!isLoading && collections.length === 0 && (
+        {showsLoadError && (
+          <LoadErrorCallout
+            message={t("page.loadFailed")}
+            onRetry={() => void refetch()}
+          />
+        )}
+
+        {!isLoading && !showsLoadError && collections.length === 0 && (
           <EmptyState
             icon={IconAlbum}
             title={t("noCollectionsYet")}
@@ -291,6 +339,8 @@ export default function CollectionsPage() {
                   isActivating={isActivating}
                   isMutating={isMutating}
                   onActivate={() => activateCollection(collection.guid)}
+                  valueMode={valueMode}
+                  change={valueMode === "change" ? changeOf(collection.guid) : null}
                   onEdit={() => setEditTarget(collection)}
                   onEmpty={() =>
                     setEmptyChoice({ targets: [target], bulk: false })
@@ -305,11 +355,11 @@ export default function CollectionsPage() {
                   <button
                     type="button"
                     disabled={disabled}
-                    className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-foreground/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
+                    className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-border text-sm text-foreground/70 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
                   >
-                    <span className="rounded-lg border border-dashed p-3">
+                    <IconBadge size="xl">
                       <IconPlus className="size-5" />
-                    </span>
+                    </IconBadge>
                     {t("newCollection")}
                   </button>
                 )}
@@ -352,7 +402,7 @@ export default function CollectionsPage() {
                 <Button
                   variant="ghost"
                   className={COLLECTION_SELECTION_ISLAND_BUTTON_CLASS}
-                  disabled={isMutating}
+                  disabled={isMutating || isBulkRunning}
                   onClick={() =>
                     setEmptyChoice({
                       targets: collections
@@ -367,8 +417,7 @@ export default function CollectionsPage() {
                 </Button>
                 <Button
                   variant="destructive"
-                  className="bg-destructive text-white hover:bg-destructive/90 dark:bg-destructive dark:hover:bg-destructive/90"
-                  disabled={isMutating}
+                  disabled={isMutating || isBulkRunning}
                   onClick={() => setBulkAction("delete")}
                 >
                   <IconTrash />

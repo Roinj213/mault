@@ -7,6 +7,9 @@ export interface OrgSettingsDraft {
   control: Control<OrgSettingsDraftFormValues>;
   savedPrimaryColor: string | null;
   isLoading: boolean;
+  isLoadError: boolean;
+  isRetryingLoad: boolean;
+  retryLoad: () => void;
   isDirty: boolean;
   isSaving: boolean;
   saveError: boolean;
@@ -50,8 +53,10 @@ export interface SettingsPageProps {
   isSaving?: boolean;
   saveError?: boolean;
   isLoading?: boolean;
-  refreshing?: boolean;
-  onRefresh?: () => void;
+  isLoadError?: boolean;
+  isRetryingLoad?: boolean;
+  onRetryLoad?: () => void;
+  onRefresh?: () => unknown;
   onSave?: () => void;
   onDiscard?: () => void;
   isSaveBarVisible?: boolean;
@@ -101,4 +106,11 @@ export interface NeonFullOrganization {
   name: string;
   members?: { id: string; userId: string; role: OrgRole; user?: { name?: string; email?: string } }[];
   invitations?: { id: string; email: string; role: OrgRole; status: string }[];
+}
+
+export interface RuleEnabledSwitchProps {
+  accessibilityLabel: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { CardImage } from "@/components/card-image";
 import {
   Drawer,
   DrawerContent,
@@ -15,8 +16,6 @@ import type {
 import {
   IconBox,
   IconCheck,
-  IconCopy,
-  IconExternalLink,
   IconTrash,
 } from "@tabler/icons-react";
 import { useState } from "react";
@@ -25,7 +24,6 @@ import { useTranslation } from "react-i18next";
 
 function MobileCardActionsBody({
   entry,
-  onOpenDetails,
   onClose,
 }: MobileCardActionsBodyProps) {
   const { t } = useTranslation("cards");
@@ -37,7 +35,6 @@ function MobileCardActionsBody({
     setCondition,
     confirm,
     setFoil,
-    copyName,
     remove,
     canMoveToLocation,
     canMove,
@@ -51,7 +48,7 @@ function MobileCardActionsBody({
     action();
     onClose();
   };
-  const actionClass = "h-11 w-full justify-start gap-3 text-sm";
+  const actionClass = "w-full justify-start gap-3";
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const storedCount = entry.storedCount ?? (entry.storageLocation ? 1 : 0);
   const requestRemove = () => {
@@ -64,16 +61,10 @@ function MobileCardActionsBody({
   };
 
   return (
-    <div className="flex flex-col gap-4 overflow-y-auto px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="flex flex-col gap-4 md:gap-2 overflow-y-auto px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-3">
-        <div className="aspect-[2.5/3.5] w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-          {entry.card.image?.small && (
-            <img
-              src={entry.card.image.small}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          )}
+        <div className="aspect-[2.5/3.5] w-12 shrink-0 overflow-hidden rounded-md bg-muted">
+          <CardImage src={entry.card.image?.small} alt="" />
         </div>
         <div className="min-w-0">
           <DrawerTitle className="truncate text-base font-semibold">
@@ -86,49 +77,33 @@ function MobileCardActionsBody({
       </div>
 
       <div className="flex flex-col">
-        <Button
-          variant="ghost"
-          className={actionClass}
-          onClick={run(onOpenDetails)}
-        >
-          <IconExternalLink className="size-5" />
-          {t("cardContextMenu.open")}
-        </Button>
         {canConfirm && (
           <Button
             variant="ghost"
-            className={actionClass}
+            size="lg" className={actionClass}
             onClick={run(confirm)}
           >
-            <IconCheck className="size-5" />
+            <IconCheck />
             {t("cardContextMenu.markCorrect")}
           </Button>
         )}
         {canMove && (
           <Button
             variant="ghost"
-            className={actionClass}
+            size="lg" className={actionClass}
             onClick={() => setMoveToLocationOpen(true)}
           >
-            <IconBox className="size-5" />
+            <IconBox />
             {t("cardContextMenu.moveToLocation")}
           </Button>
         )}
-        <Button
-          variant="ghost"
-          className={actionClass}
-          onClick={run(() => void copyName())}
-        >
-          <IconCopy className="size-5" />
-          {t("cardContextMenu.copyName")}
-        </Button>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-foreground/70">
+        <p className="text-xs font-medium text-foreground/70">
           {t("cardContextMenu.foil")}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {[null, ...foilOptions].map((option) => (
             <Button
               key={option ?? "none"}
@@ -143,10 +118,10 @@ function MobileCardActionsBody({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-foreground/70">
+        <p className="text-xs font-medium text-foreground/70">
           {t("condition.label")}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {CARD_CONDITIONS.map((option) => (
             <Button
               key={option}
@@ -171,10 +146,11 @@ function MobileCardActionsBody({
       )}
       <Button
         variant="destructive"
-        className="h-11 w-full text-sm"
+        size="lg"
+        className="w-full"
         onClick={requestRemove}
       >
-        <IconTrash className="size-5" />
+        <IconTrash />
         {confirmingRemove
           ? t("storageDeleteWarning.deleteAnyway")
           : t("cardContextMenu.remove", { count: entry.scanIds.length })}
@@ -203,7 +179,6 @@ function MobileCardActionsBody({
 
 export function MobileCardActionsDrawer({
   entry,
-  onOpenDetails,
   onClose,
 }: MobileCardActionsDrawerProps) {
   const [shownEntry, setShownEntry] = useState(entry);
@@ -221,7 +196,6 @@ export function MobileCardActionsDrawer({
           <MobileCardActionsBody
             key={shownEntry.scanId}
             entry={shownEntry}
-            onOpenDetails={() => onOpenDetails(shownEntry.scanId)}
             onClose={onClose}
           />
         )}

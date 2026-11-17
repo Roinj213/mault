@@ -12,7 +12,7 @@
   "camera": {
     "permissionDenied": "Kamerazugriff verweigert. Bitte erlaube den Kamerazugriff und versuche es erneut.",
     "allInUse": "Alle angeschlossenen Kameras werden bereits von einem anderen Sortierer verwendet. Schließe eine weitere Kamera für diesen Sortierer an.",
-    "piUnavailable": "Die Webcam am Raspberry Pi ist nicht verfügbar.",
+    "piUnavailable": "Die Kamera am Sortierer ist nicht verfügbar.",
     "documentScannerUnavailable": "Der Dokumentenscanner konnte nicht geöffnet werden. Prüfe, ob er eingeschaltet ist und nicht von einer anderen App verwendet wird."
   },
   "scanEngine": {
@@ -53,7 +53,8 @@
     "pause": "Pause",
     "resume": "Weiter",
     "stop": "Stopp",
-    "openScanner": "Scanner öffnen"
+    "openScanner": "Scanner öffnen",
+    "requestFailed": "Der Pi ist nicht erreichbar. Prüfe die Verbindung und versuche es erneut."
   },
   "serial": {
     "connectionFailed": {
@@ -61,6 +62,8 @@
       "description": "Verbindung fehlgeschlagen. Stelle sicher, dass kein anderes Programm das Gerät verwendet."
     },
     "piMissing": "Am Raspberry Pi ist kein Sortierer angeschlossen.",
+    "piSorterBuiltIn": "Integrierter Raspberry-Pi-Sortierer",
+    "piSorterUnavailable": "Warten auf die integrierte Pi-Sortierersteuerung. Prüfe, ob der Dienst läuft.",
     "piBusy": "Der USB-Anschluss am Pi wird schon verwendet. Trenne ihn im anderen Browser oder stoppe den Scan auf dem Pi und versuche es erneut.",
     "piScanBusy": "Auf dem Pi läuft ein Scan, deshalb kann dieser Browser den Sorter nicht übernehmen. Stoppe zuerst den Scan.",
     "bluetoothPermissionBlocked": "Die Bluetooth-Berechtigung ist für diesen Browser blockiert. Überprüfe die Website-Einstellungen deines Browsers (oder chrome://settings/content/bluetoothDevices), um Bluetooth zuzulassen, und versuche es erneut.",
@@ -233,6 +236,14 @@
     "pickListComplete": {
       "title": "Pickliste vollständig",
       "description": "Jede Karte der Liste liegt in Fach {{bin}}."
+    },
+    "removed": {
+      "title_one": "{{count}} Karte entfernt",
+      "title_other": "{{count}} Karten entfernt",
+      "undo": "Rückgängig"
+    },
+    "editFailed": {
+      "title": "Die Änderung konnte nicht gespeichert werden und wurde zurückgesetzt."
     }
   },
   "cardScanner": {
@@ -255,6 +266,10 @@
       "title": "Keine Karte erkannt",
       "description": "Der Sensor von Modul 1 erkennt keine Karte - führe eine zu, bevor du scannst."
     },
+    "cardStuckInModuleOne": {
+      "title": "Karte steckt in Modul 1",
+      "description": "Eine Karte steckt in Modul 1 fest. Entferne sie und setze dann fort."
+    },
     "feedFailed": {
       "title": "Zufuhr fehlgeschlagen"
     },
@@ -274,7 +289,7 @@
     },
     "deviceCleared": {
       "title": "Gerät geleert",
-      "description": "Alle unteren Klappen wurden geöffnet, um festsitzende Karten zu lösen."
+      "description": "Alle Bodenklappen wurden geöffnet, um festsitzende Karten zu lösen."
     },
     "lastSearchImageAlt": "Letztes Suchbild",
     "pausedTabHidden": {
@@ -320,7 +335,7 @@
     "startTooltip": "Die erste Karte zuführen und den Scan starten",
     "autoFeedOnTooltip": "Auto-Zuführung an, die nächste Karte wird nach jedem Scan automatisch zugeführt",
     "autoFeedOffTooltip": "Auto-Zuführung aus, jede Karte manuell zuführen",
-    "clearDeviceTooltip": "Gerät leeren (öffnet alle unteren Klappen)",
+    "clearDeviceTooltip": "Gerät leeren (öffnet alle Bodenklappen)",
     "retractCardTooltip": "Karte zurückziehen (Zuführung läuft rückwärts)",
     "stopPiScan": "Sortierung stoppen und den Sorter freigeben",
     "resetToNeutralTooltip": "Grundstellung (schließt alle Klappen und Paddel, zentriert die Schieber)",
@@ -357,6 +372,7 @@
     "autoFeed": "Automatische Zufuhr",
     "allowDuplicates": "Duplikate zulassen",
     "scanWithoutSorter": "Ohne Sortierer scannen",
+    "sortIntoBins": "In Fächer sortieren",
     "calibrate": "Sortierer einrichten",
     "retryConnection": "Verbindung erneut versuchen",
     "phoneCameraConnected": "Telefonkamera verbunden",
@@ -559,15 +575,9 @@
     "sessionReleased": "Sitzung freigegeben",
     "releaseFailed": "Sitzung konnte nicht freigegeben werden",
     "leaveSession": "Sitzung verlassen",
-    "searchPlaceholder": "Sitzungen durchsuchen...",
-    "noSearchResultsTitle": "Keine passenden Sitzungen",
-    "noSearchResultsDescription": "Versuche einen anderen Suchbegriff",
     "title": "Live-Ansicht",
     "subtitle": "Sieh einem Sortierer von jedem Gerät aus live beim Scannen zu.",
-    "noSessionsFound": "Keine Sitzungen gefunden",
-    "noSessionsHint": "Aktive Sitzungen werden hier angezeigt",
-    "liveNow": "Gerade live",
-    "allCollections": "Alle Sammlungen"
+    "liveNow": "Gerade live"
   },
   "repackCompleteDialog": {
     "description": "Alle Packs sind fertig, deshalb ist das Scannen pausiert. Nimm das Pack aus Fach {{bin}} und wähle, wohin es kommt. Jede Karte wird dort in der Reihenfolge erfasst, in der sie gescannt wurde."
@@ -597,8 +607,8 @@
   "usePhoneAsCamera": "Telefon als Kamera verwenden",
   "requestingCameraAccess": "Kamerazugriff wird angefordert…",
   "cameraConnecting": "Verbindung zur Kamera wird hergestellt…",
-  "cardCount_one": "{{count}} Karte",
-  "cardCount_other": "{{count}} Karten",
+  "cardCount_one": "{{count, compact}} Karte",
+  "cardCount_other": "{{count, compact}} Karten",
   "isScanningTooltip": "{{name}} scannt gerade",
   "cameraAccessError": "Kamera konnte nicht aufgerufen werden. Bitte überprüfe dein Gerät.",
   "staleDeviceDialog": {
@@ -609,7 +619,13 @@
   },
   "cameraFocus": {
     "label": "Fokus",
-    "auto": "Auto"
+    "auto": "Auto",
+    "autoOnHelp": "Auto stellt ständig neu scharf, daher kann ein Bild unscharf sein, während die Linse sucht. Im Sortierer liegt die Karte immer im selben Abstand: Schalte Auto aus und schiebe den Regler, bis der Kartentext scharf ist. Lass Auto nur an, wenn du Karten in wechselndem Abstand in der Hand hältst.",
+    "autoOffHelp": "Der manuelle Fokus bleibt, wo du ihn einstellst. Das ist für einen Sortierer am besten, weil jede Karte im selben Abstand liegt. Schiebe den Regler, bis der Kartentext scharf ist. Schalte Auto ein, wenn du Karten in der Hand hältst."
+  },
+  "cameraZoom": {
+    "label": "Zoom",
+    "description": "Zoome hinein, bis die Karte den Großteil des Scanbereichs füllt. Mehr Pixel auf der Karte ergeben eine bessere Übereinstimmung; lass einen kleinen Rand, damit die Kanten sichtbar bleiben."
   },
   "stations": {
     "label": "Sortierer {{number}}",
@@ -675,8 +691,8 @@
       "pauseAll": "Alle pausieren",
       "resumeAll": "Alle fortsetzen",
       "resumeSelected": "Fortsetzen ({{count}})",
-      "sessionCount_one": "{{count}} in dieser Sitzung",
-      "sessionCount_other": "{{count}} in dieser Sitzung"
+      "sessionCount_one": "{{count, compact}} in dieser Sitzung",
+      "sessionCount_other": "{{count, compact}} in dieser Sitzung"
     },
     "cpuInferenceLimitReached": {
       "title": "WASM betreibt jeweils einen Sortierer",
@@ -700,6 +716,7 @@
         "hopperEmpty": "Der Kartenschacht ist leer",
         "feederError": "Fehler im Einzug",
         "noCardDetected": "Keine Karte ist beim Scanner angekommen",
+        "cardStuckInModuleOne": "Eine Karte steckt in Modul 1 fest",
         "sorterNotResponding": "Der Sortierer antwortet nicht",
         "routingFailed": "Eine Karte konnte nicht einsortiert werden",
         "binLimit": "Fach {{bins}} ist voll",
@@ -711,7 +728,8 @@
         "scanLimit": "Tägliches Scanlimit erreicht",
         "sorterLimit": "Sortiererlimit erreicht",
         "collectionLocked": "Die Sammlung ist gesperrt",
-        "scannerError": "Kamerafehler"
+        "scannerError": "Kamerafehler",
+        "emergencyStopped": "Not-Stopp"
       },
       "fixes": {
         "resume": "Fortsetzen",
@@ -740,14 +758,11 @@
     "reload": "Neu laden"
   },
   "mobileMonitor": {
-    "tabCards": "Karten",
-    "tabActivity": "Aktivität",
     "cards": "Karten",
     "searchPlaceholder": "Karten suchen",
     "needsReview": "Zu prüfen",
     "back": "Zurück zu den Sitzungen",
     "bin": "Fach {{number}}",
-    "noActivity": "Noch nichts gescannt. Scans erscheinen hier, sobald sie passieren.",
     "status": {
       "connected": "Live",
       "connecting": "Verbinde…",
@@ -784,7 +799,9 @@
       "countdown_one": "Schließt in {{count}} Sekunde",
       "countdown_other": "Schließt in {{count}} Sekunden",
       "doneMoved": "Als umgelegt markiert",
-      "done": "Fertig"
+      "done": "Fertig",
+      "paused": "Countdown pausiert",
+      "keepOpen": "Offen lassen"
     },
     "keys": {
       "enter": "Enter",
@@ -812,43 +829,6 @@
     "cameraErrorTitle": "Kamera konnte nicht geöffnet werden",
     "cameraErrorDescription": "Erlaube dieser Website in den Browser-Einstellungen den Kamerazugriff und versuche es erneut.",
     "retry": "Erneut versuchen"
-  },
-  "home": {
-    "greeting": "Hallo, {{name}}",
-    "greetingNoName": "Willkommen zurück",
-    "totalValue": "Sammlungswert",
-    "collectionCount_one": "{{count}} Sammlung",
-    "collectionCount_other": "{{count}} Sammlungen",
-    "scannedToday": "Heute gescannt",
-    "thisWeek": "Diese Woche",
-    "collections": "Sammlungen",
-    "activityTitle": "Scans, letzte 14 Tage",
-    "activityLabel": "Gescannte Karten pro Tag in den letzten 14 Tagen",
-    "activityPoint_one": "{{date}}: {{count}} Karte",
-    "activityPoint_other": "{{date}}: {{count}} Karten",
-    "today": "Heute",
-    "mostValuable": "Wertvollste",
-    "recentlyScanned": "Zuletzt gescannt",
-    "seeAllStats": "Alle Statistiken",
-    "actions": {
-      "newCollection": "Neu",
-      "stats": "Statistik",
-      "buySell": "Handel"
-    },
-    "activeCollection": "Aktiv",
-    "scanHero": {
-      "title": "Scannen starten",
-      "sortInto": "In {{collection}} sortieren",
-      "noCollection": "Wähle eine Sammlung zum Sortieren"
-    },
-    "actionHints": {
-      "newCollection": "Sammlung anlegen",
-      "buySell": "Ankauf und Picks",
-      "buySellOpen_one": "{{count}} offener Ankauf",
-      "buySellOpen_other": "{{count}} offene Ankäufe",
-      "stats": "Diagramme und Verlauf"
-    },
-    "statsHeading": "Übersicht"
   },
   "resetToNeutral": {
     "done": "Sortierer in Grundstellung",
@@ -892,8 +872,10 @@
     "allowDuplicatesDescription": "Denselben Druck mehrfach speichern",
     "handScan": "Karten automatisch erkennen",
     "handScanDescription": "Ohne Sortierer scannen. Halte eine Karte ruhig ins Bild, dann wird sie automatisch gescannt.",
+    "handScanBins": "In Fächer sortieren",
+    "handScanBinsDescription": "Zeigt mit deiner Vorlage, in welches Fach jede Karte gehört. Aus lassen, um Karten nur in der Sammlung zu speichern.",
     "camera": "Kamera",
-    "preset": "Regel-Vorlage",
+    "preset": "Regelvorlage",
     "choosePreset": "Vorlage wählen",
     "chooseCamera": "Kamera wählen",
     "cameraFallback": "Kamera {{number}}",
@@ -916,9 +898,6 @@
     "cameraOffDescription": "Erlaube den Kamerazugriff, um zu scannen.",
     "startCamera": "Kamera starten",
     "retry": "Erneut",
-    "noSorterTitle": "Kein Sortierer verbunden",
-    "noSorterDescription": "Verbinde deinen Sortierer, oder tippe auf den Auslöser, um eine Karte zu scannen.",
-    "connect": "Verbinden",
     "bin": "Fach {{number}}",
     "pause": "Scannen pausieren",
     "start": "Scannen starten",
@@ -947,7 +926,8 @@
       "neutralDescription": "Alle Servos in ihre Ruheposition bringen",
       "sorterDescription": "Verbindung, Selbsttest und Status"
     },
-    "condition": "Zustand"
+    "condition": "Zustand",
+    "foilType": "Foil-Typ"
   },
   "mobileSorter": {
     "title": "Sortierer",
@@ -957,11 +937,11 @@
       "serial": "USB",
       "bluetooth": "Bluetooth",
       "cloud": "WLAN",
-      "pi": "Dieser Pi"
+      "pi": "Dieser Pi",
+      "pi-sorter": "Integrierter Pi-Sortierer"
     },
     "connectHint": "Schalte den Sortierer ein und verbinde dich.",
     "connectBluetooth": "Über Bluetooth verbinden",
-    "connectUsb": "Über USB verbinden",
     "connectPi": "Sortierer an diesem Pi verbinden",
     "unsupported": "Dieser Browser kann sich nicht direkt mit einem Sortierer verbinden. Verbinde dich unten über WLAN oder nutze Chrome auf Android.",
     "actions": "Aktionen",
@@ -1070,7 +1050,6 @@
   },
   "controlCards": {
     "openPage": "Steuerkarten drucken",
-    "openPageDescription": "QR-Karten, die Scan-Einstellungen ändern, wenn der Sortierer sie liest",
     "applied": "Steuerkarte angewendet",
     "rejected": {
       "title": "Steuerkarte nicht angewendet"
@@ -1255,12 +1234,39 @@
       "scanning": "Glas wird gescannt...",
       "scanAgain": "Erneut scannen",
       "dragHint": "Ziehe einen Rahmen um die Karte, falls der erkannte Rahmen nicht passt.",
-      "boxTooSmall": "Der Rahmen ist zu klein für eine Karte. Ziehe einen größeren Rahmen um sie.",
+      "boxTooSmall": "Der Rahmen ist zu klein für eine Karte. Ziehe einen größeren Rahmen um sie oder gib eine größere Größe ein.",
+      "fields": {
+        "leftMm": "Links (mm)",
+        "topMm": "Oben (mm)",
+        "widthMm": "Breite (mm)",
+        "heightMm": "Höhe (mm)"
+      },
+      "fieldsHint": "Du kannst Position und Größe des Rahmens auch eintippen, gemessen von der oberen linken Ecke des Glases.",
       "save": "Position speichern",
       "cancel": "Abbrechen",
       "previewAlt": "Scan des gesamten Flachbettglases",
       "editorLabel": "Flachbettglas. Ziehe, um die Position der Karte zu markieren.",
       "previewFailed": "Das Glas konnte nicht gescannt werden. Prüfe, ob der Scanner eingeschaltet ist, und versuche es erneut."
+    }
+  },
+  "emergencyStop": {
+    "stop": "Stopp",
+    "stopTooltip": "Not-Stopp: Einzug, Klappen und Schieber sofort anhalten",
+    "stoppedTitle": "Sortierer gestoppt",
+    "stoppedDescription": "Entferne alle Karten, die noch im Sortierer liegen, und setze ihn dann zurück, um fortzufahren.",
+    "stoppedSessionDescription": "Entferne alle Karten, die noch im Sortierer liegen, und starte dann erneut, um ihn zurückzusetzen.",
+    "reset": "Sortierer zurücksetzen",
+    "unsupported": {
+      "title": "Die aktuelle Karte wird noch einsortiert",
+      "description": "Die Firmware dieses Sortierers kann nicht mitten in einer Karte anhalten. Das Scannen stoppt nach dieser Karte. Aktualisiere die Firmware, um sofort anzuhalten."
+    },
+    "unconfirmed": {
+      "title": "Der Sortierer hat den Stopp nicht bestätigt",
+      "description": "Schalte den Sortierer aus, falls er sich noch bewegt, und prüfe dann die Verbindung."
+    },
+    "resetFailed": {
+      "title": "Sortierer konnte nicht zurückgesetzt werden",
+      "description": "Der Sortierer hat das Zurücksetzen nicht bestätigt. Prüfe die Verbindung und versuche es erneut."
     }
   }
 }

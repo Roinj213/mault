@@ -1,3 +1,4 @@
+import { LANGUAGE_LABELS } from "@magic-vault/shared";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,6 @@ import {
   PUBLIC_CARD_FILTER_LEGEND_CLASS,
   PUBLIC_CARD_FILTER_SEARCHABLE_MIN_OPTIONS,
 } from "@/lib/constants/public-cards";
-import { LANGUAGE_LABELS } from "@/lib/constants/languages";
 import { countActivePublicCardFilters } from "@/features/public-cards/lib/public-card-filters";
 import type { PublicCardFilterPanelProps } from "@/lib/interfaces/public-cards";
 import {
@@ -66,9 +66,9 @@ export function PublicCardFilterPanel({
   ];
 
   return (
-    <div className="flex min-w-0 shrink-0 flex-col gap-5">
+    <div className="flex min-w-0 shrink-0 flex-col gap-5 md:gap-3">
       <div className="flex items-center gap-2">
-        <h2 className="min-w-0 truncate text-sm font-semibold">{t("publicBrowse.filtersHeading")}</h2>
+        <h2 className="min-w-0 truncate font-heading text-sm font-semibold">{t("publicBrowse.filtersHeading")}</h2>
         {activeCount > 0 && (
           <Button variant="ghost" className="ml-auto shrink-0" onClick={onClear}>
             {t("publicBrowse.clearFilters", { count: activeCount })}

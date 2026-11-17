@@ -12,7 +12,7 @@
   "camera": {
     "permissionDenied": "Camera permission denied. Please allow camera access and try again.",
     "allInUse": "Every connected camera is already used by another sorter. Plug in another camera for this sorter.",
-    "piUnavailable": "The webcam on the Raspberry Pi is not available.",
+    "piUnavailable": "The sorter camera is unavailable.",
     "documentScannerUnavailable": "Couldn't open the document scanner. Check that it is on and not in use by another app."
   },
   "scanEngine": {
@@ -53,7 +53,8 @@
     "pause": "Pause",
     "resume": "Resume",
     "stop": "Stop",
-    "openScanner": "Open scanner"
+    "openScanner": "Open scanner",
+    "requestFailed": "Couldn't reach the Pi. Check its connection and try again."
   },
   "serial": {
     "connectionFailed": {
@@ -61,6 +62,8 @@
       "description": "Failed to connect. Make sure no other application is using the device."
     },
     "piMissing": "No sorter is plugged into this Raspberry Pi.",
+    "piSorterBuiltIn": "Built-in Raspberry Pi sorter",
+    "piSorterUnavailable": "Waiting for the built-in Pi sorter controller. Check that its service is running.",
     "piBusy": "The Pi's USB port is already in use. Disconnect it in the other browser, or stop the scan running on the Pi, then try again.",
     "piScanBusy": "A scan is running on the Pi, so this browser cannot take the sorter. Stop the scan first.",
     "bluetoothPermissionBlocked": "Bluetooth permission is blocked for this browser. Check your browser's site settings (or chrome://settings/content/bluetoothDevices) to allow Bluetooth, then try again.",
@@ -233,6 +236,14 @@
     "pickListComplete": {
       "title": "Pick list complete",
       "description": "Every card on the list is in bin {{bin}}."
+    },
+    "removed": {
+      "title_one": "Removed {{count}} card",
+      "title_other": "Removed {{count}} cards",
+      "undo": "Undo"
+    },
+    "editFailed": {
+      "title": "Couldn't save that change. It's been put back."
     }
   },
   "cardScanner": {
@@ -254,6 +265,10 @@
     "noCardDetected": {
       "title": "No card detected",
       "description": "Module 1's sensor doesn't see a card - feed one before scanning."
+    },
+    "cardStuckInModuleOne": {
+      "title": "Card stuck in module 1",
+      "description": "A card is stuck in module 1. Remove it, then resume."
     },
     "feedFailed": {
       "title": "Feed failed"
@@ -357,6 +372,7 @@
     "autoFeed": "Auto-feed",
     "allowDuplicates": "Allow duplicates",
     "scanWithoutSorter": "Scan without sorter",
+    "sortIntoBins": "Sort into bins",
     "calibrate": "Sorter setup",
     "retryConnection": "Retry Connection",
     "phoneCameraConnected": "Phone Camera Connected",
@@ -559,15 +575,9 @@
     "sessionReleased": "Session released",
     "releaseFailed": "Failed to release session",
     "leaveSession": "Leave session",
-    "searchPlaceholder": "Search sessions...",
-    "noSearchResultsTitle": "No matching sessions",
-    "noSearchResultsDescription": "Try a different search term",
     "title": "Live view",
     "subtitle": "Watch a sorter scan in real time from any device.",
-    "noSessionsFound": "No sessions found",
-    "noSessionsHint": "Active sessions will appear here",
-    "liveNow": "Live now",
-    "allCollections": "All collections"
+    "liveNow": "Live now"
   },
   "repackCompleteDialog": {
     "description": "Every pack is complete, so scanning is paused. Take the pack out of bin {{bin}} and pick where it's going. Each card is recorded there in the order it was scanned."
@@ -597,8 +607,8 @@
   "usePhoneAsCamera": "Use Phone as Camera",
   "requestingCameraAccess": "Requesting camera access…",
   "cameraConnecting": "Connecting to camera…",
-  "cardCount_one": "{{count}} card",
-  "cardCount_other": "{{count}} cards",
+  "cardCount_one": "{{count, compact}} card",
+  "cardCount_other": "{{count, compact}} cards",
   "isScanningTooltip": "{{name}} is scanning",
   "cameraAccessError": "Could not access camera. Please check your device.",
   "staleDeviceDialog": {
@@ -609,7 +619,13 @@
   },
   "cameraFocus": {
     "label": "Focus",
-    "auto": "Auto"
+    "auto": "Auto",
+    "autoOnHelp": "Auto keeps refocusing, so a frame can blur while the lens hunts. On a sorter the card always sits at the same distance: turn Auto off and slide until the card text is sharp. Leave Auto on only when you hold cards by hand at changing distances.",
+    "autoOffHelp": "Manual focus stays where you set it, which is best for a sorter because every card sits at the same distance. Slide until the card text is sharp. Turn Auto on if you hold cards by hand."
+  },
+  "cameraZoom": {
+    "label": "Zoom",
+    "description": "Zoom in until the card fills most of the scan box. More pixels on the card means a better match; leave a small margin so the edges stay in view."
   },
   "stations": {
     "label": "Sorter {{number}}",
@@ -675,8 +691,8 @@
       "pauseAll": "Pause all",
       "resumeAll": "Resume all",
       "resumeSelected": "Resume ({{count}})",
-      "sessionCount_one": "{{count}} this session",
-      "sessionCount_other": "{{count}} this session"
+      "sessionCount_one": "{{count, compact}} this session",
+      "sessionCount_other": "{{count, compact}} this session"
     },
     "cpuInferenceLimitReached": {
       "title": "WASM runs one sorter at a time",
@@ -700,6 +716,7 @@
         "hopperEmpty": "Hopper is empty",
         "feederError": "Feeder error",
         "noCardDetected": "No card reached the scanner",
+        "cardStuckInModuleOne": "A card is stuck in module 1",
         "sorterNotResponding": "Sorter isn't responding",
         "routingFailed": "A card couldn't be routed",
         "binLimit": "Bin {{bins}} is full",
@@ -711,7 +728,8 @@
         "scanLimit": "Daily scan limit reached",
         "sorterLimit": "Sorter limit reached",
         "collectionLocked": "Collection is locked",
-        "scannerError": "Camera error"
+        "scannerError": "Camera error",
+        "emergencyStopped": "Emergency stop"
       },
       "fixes": {
         "resume": "Resume",
@@ -740,14 +758,11 @@
     "reload": "Reload"
   },
   "mobileMonitor": {
-    "tabCards": "Cards",
-    "tabActivity": "Activity",
     "cards": "Cards",
     "searchPlaceholder": "Search cards",
     "needsReview": "Needs review",
     "back": "Back to sessions",
     "bin": "Bin {{number}}",
-    "noActivity": "Nothing scanned yet. Scans show up here as they happen.",
     "status": {
       "connected": "Live",
       "connecting": "Connecting…",
@@ -784,7 +799,9 @@
       "countdown_one": "Closing in {{count}} second",
       "countdown_other": "Closing in {{count}} seconds",
       "doneMoved": "Marked as moved",
-      "done": "Done"
+      "done": "Done",
+      "paused": "Countdown paused",
+      "keepOpen": "Keep open"
     },
     "keys": {
       "enter": "Enter",
@@ -812,43 +829,6 @@
     "cameraErrorTitle": "Couldn't open the camera",
     "cameraErrorDescription": "Allow camera access for this site in your browser settings, then try again.",
     "retry": "Try again"
-  },
-  "home": {
-    "greeting": "Hi, {{name}}",
-    "greetingNoName": "Welcome back",
-    "totalValue": "Collection value",
-    "collectionCount_one": "{{count}} collection",
-    "collectionCount_other": "{{count}} collections",
-    "scannedToday": "Scanned today",
-    "thisWeek": "This week",
-    "collections": "Collections",
-    "activityTitle": "Scans, last 14 days",
-    "activityLabel": "Cards scanned per day over the last 14 days",
-    "activityPoint_one": "{{date}}: {{count}} card",
-    "activityPoint_other": "{{date}}: {{count}} cards",
-    "today": "Today",
-    "mostValuable": "Most valuable",
-    "recentlyScanned": "Recently scanned",
-    "seeAllStats": "See all stats",
-    "actions": {
-      "newCollection": "New",
-      "stats": "Stats",
-      "buySell": "Buy & sell"
-    },
-    "activeCollection": "Active",
-    "scanHero": {
-      "title": "Start scanning",
-      "sortInto": "Sort into {{collection}}",
-      "noCollection": "Pick a collection to sort into"
-    },
-    "actionHints": {
-      "newCollection": "Add a collection",
-      "buySell": "Intake and picks",
-      "buySellOpen_one": "{{count}} open intake",
-      "buySellOpen_other": "{{count}} open intakes",
-      "stats": "Charts and history"
-    },
-    "statsHeading": "Overview"
   },
   "resetToNeutral": {
     "done": "Sorter reset to neutral",
@@ -892,6 +872,8 @@
     "allowDuplicatesDescription": "Save the same printing more than once",
     "handScan": "Auto-detect cards",
     "handScanDescription": "Scan without a sorter. Hold a card still in view and it scans on its own.",
+    "handScanBins": "Sort into bins",
+    "handScanBinsDescription": "Show which bin each card goes in, using your rule preset. Leave off to just save cards to the collection.",
     "camera": "Camera",
     "preset": "Rule preset",
     "choosePreset": "Choose a preset",
@@ -916,9 +898,6 @@
     "cameraOffDescription": "Allow camera access to start scanning.",
     "startCamera": "Start camera",
     "retry": "Retry",
-    "noSorterTitle": "No sorter connected",
-    "noSorterDescription": "Connect your sorter to sort cards, or tap the shutter to scan one card.",
-    "connect": "Connect",
     "bin": "Bin {{number}}",
     "pause": "Pause scanning",
     "start": "Start scanning",
@@ -947,7 +926,8 @@
       "neutralDescription": "Move every servo back to its resting position",
       "sorterDescription": "Connection, self-test and status"
     },
-    "condition": "Condition"
+    "condition": "Condition",
+    "foilType": "Foil type"
   },
   "mobileSorter": {
     "title": "Sorter",
@@ -957,11 +937,11 @@
       "serial": "USB",
       "bluetooth": "Bluetooth",
       "cloud": "Wi-Fi",
-      "pi": "This Pi"
+      "pi": "This Pi",
+      "pi-sorter": "Built-in Pi sorter"
     },
     "connectHint": "Turn on your sorter, then connect to it.",
     "connectBluetooth": "Connect over Bluetooth",
-    "connectUsb": "Connect over USB",
     "connectPi": "Connect the sorter on this Pi",
     "unsupported": "This browser can't connect to a sorter directly. Connect to one over Wi-Fi below, or use Chrome on Android.",
     "actions": "Actions",
@@ -1070,7 +1050,6 @@
   },
   "controlCards": {
     "openPage": "Print control cards",
-    "openPageDescription": "QR cards that change scan settings when the sorter reads them",
     "applied": "Control card applied",
     "rejected": {
       "title": "Control card not applied"
@@ -1255,12 +1234,39 @@
       "scanning": "Scanning the glass...",
       "scanAgain": "Scan again",
       "dragHint": "Drag a box around the card if the detected box is off.",
-      "boxTooSmall": "The box is too small for a card. Drag a larger box around it.",
+      "boxTooSmall": "The box is too small for a card. Drag a larger box around it or enter a larger size.",
+      "fields": {
+        "leftMm": "Left (mm)",
+        "topMm": "Top (mm)",
+        "widthMm": "Width (mm)",
+        "heightMm": "Height (mm)"
+      },
+      "fieldsHint": "You can also type the box position and size, measured from the top left corner of the glass.",
       "save": "Save position",
       "cancel": "Cancel",
       "previewAlt": "Scan of the whole flatbed glass",
       "editorLabel": "Flatbed glass. Drag to mark where the card sits.",
       "previewFailed": "Couldn't scan the glass. Check that the scanner is on and try again."
+    }
+  },
+  "emergencyStop": {
+    "stop": "Stop",
+    "stopTooltip": "Emergency stop: halt the feeder, paddles and pushers now",
+    "stoppedTitle": "Sorter stopped",
+    "stoppedDescription": "Remove any card left in the sorter, then reset it to continue.",
+    "stoppedSessionDescription": "Remove any card left in the sorter, then start again to reset it.",
+    "reset": "Reset sorter",
+    "unsupported": {
+      "title": "The current card will still be sorted",
+      "description": "This sorter's firmware can't stop mid-card. Scanning stops after this card. Update the firmware to stop instantly."
+    },
+    "unconfirmed": {
+      "title": "The sorter didn't confirm the stop",
+      "description": "Switch the sorter off if it is still moving, then check the connection."
+    },
+    "resetFailed": {
+      "title": "Couldn't reset the sorter",
+      "description": "The sorter didn't confirm the reset. Check the connection and try again."
     }
   }
 }

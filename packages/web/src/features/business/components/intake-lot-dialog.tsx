@@ -1,3 +1,4 @@
+import { LANGUAGE_LABELS } from "@magic-vault/shared";
 import { ResponsiveSegmented } from "@/components/responsive-segmented";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,13 +26,13 @@ import {
   gameLanguagesQueryOptions,
   gamesQueryOptions,
 } from "@/features/games/api/games";
-import { EMPTY_LANGUAGES, LANGUAGE_LABELS } from "@/lib/constants/languages";
+import { EMPTY_LANGUAGES } from "@/lib/constants/languages";
 import type { IntakeLotDialogProps } from "@/lib/interfaces/business";
 import {
+  INTAKE_COLLECTION_MODES,
   intakeLotSchema,
   type IntakeLotFormValues,
-} from "@/schemas/business.schema";
-import { INTAKE_COLLECTION_MODES } from "@magic-vault/shared";
+} from "@magic-vault/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IconLoader2 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
@@ -135,7 +136,7 @@ export function IntakeLotDialog({
         </DialogHeader>
         <form
           id="intake-lot-form"
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 md:gap-2"
           onSubmit={form.handleSubmit(submit)}
         >
           <Controller
@@ -194,7 +195,7 @@ export function IntakeLotDialog({
             )}
           />
           {collectionMode === "new" ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 md:gap-2 sm:grid-cols-2">
               <Controller
                 name="gameGuid"
                 control={form.control}

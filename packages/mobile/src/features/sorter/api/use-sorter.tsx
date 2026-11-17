@@ -57,7 +57,7 @@ import {
   CLOUD_SORTER_ID_PREFIX,
 } from "@/lib/constants/sorter";
 import { LAST_SORTER_ID_KEY, SORTER_AUTO_CONNECT_KEY } from "@/lib/constants/storage-keys";
-import type { Device } from "@/lib/interfaces/devices";
+import type { Device } from "@magic-vault/shared";
 import type {
   ByteTransport,
   CloudOpenResult,
@@ -511,7 +511,9 @@ export function SorterProvider({ children }: { children: ReactNode }) {
     [],
   );
   const feed = useCallback(() => link.feed(), []);
+  const readSensors = useCallback(() => link.readSensors(), []);
   const sendNeutral = useCallback(() => link.sendNeutral(), []);
+  const sendEmergencyStop = useCallback(() => link.sendEmergencyStop(), []);
   const clearDevice = useCallback(async () => {
     await link.sendCommand({ clearDevice: true });
   }, []);
@@ -600,7 +602,9 @@ export function SorterProvider({ children }: { children: ReactNode }) {
       sendRequest,
       sendRoute,
       feed,
+      readSensors,
       sendNeutral,
+      sendEmergencyStop,
       clearDevice,
       retractCard,
       sendCommand,
@@ -631,7 +635,9 @@ export function SorterProvider({ children }: { children: ReactNode }) {
       sendRequest,
       sendRoute,
       feed,
+      readSensors,
       sendNeutral,
+      sendEmergencyStop,
       clearDevice,
       retractCard,
       sendCommand,

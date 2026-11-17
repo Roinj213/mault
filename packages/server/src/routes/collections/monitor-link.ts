@@ -73,13 +73,15 @@ export const monitorLinkRoute = new Hono<AppEnv>()
     if (!link) {
       return c.json({ success: false, message: "Collection not found." }, 404);
     }
-    const { guid: linkGuid, token, expiresAt } = link;
+    const { guid: linkGuid, token, shortCode, shortUrl, expiresAt } = link;
     return c.json({
       success: true,
       message: "Created monitor link.",
       data: {
         guid: linkGuid,
         token,
+        shortCode,
+        shortUrl,
         expiresAt: expiresAt.toISOString(),
       } satisfies MonitorLink,
     });

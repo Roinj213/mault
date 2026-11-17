@@ -14,6 +14,7 @@ export function PageHeader({
   actions,
   tabs,
   children,
+  spansFullWidth = false,
 }: PageHeaderProps) {
   const { t } = useTranslation("common");
   const backButtonLabel = backLabel ?? t("mobileMenu.back");
@@ -24,7 +25,12 @@ export function PageHeader({
         !tabs && "pb-2.5",
       )}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2.5 px-4 pt-2.5 md:px-5">
+      <div
+        className={cn(
+          "mx-auto flex w-full flex-col gap-2 px-4 pt-2.5 md:pt-2",
+          spansFullWidth ? "md:px-3" : "max-w-6xl md:px-5",
+        )}
+      >
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex min-w-0 items-center gap-2">
             {backTo && (
@@ -48,7 +54,7 @@ export function PageHeader({
             </div>
           </div>
           {actions && (
-            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            <div className="flex flex-wrap items-center gap-1.5">{actions}</div>
           )}
         </div>
         {children}

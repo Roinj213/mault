@@ -1,3 +1,5 @@
+import { FOIL_GRADIENT_CLASS } from "@/lib/constants/ui";
+import { CardImage } from "@/components/card-image";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -126,11 +128,9 @@ export function ScannedCardTable({
               )}
               <TableCell>
                 <div className="relative h-10 aspect-[2.5/3.5] overflow-hidden rounded-sm">
-                  <img
-                    src={card.image?.normal || ""}
+                  <CardImage
+                    src={card.image?.small || card.image?.normal}
                     alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
                   />
                 </div>
               </TableCell>
@@ -143,7 +143,7 @@ export function ScannedCardTable({
                         e.stopPropagation();
                         onOpen(row);
                       }}
-                      className="truncate text-left font-medium hover:underline focus-visible:underline outline-none"
+                      className="truncate rounded-sm text-left font-medium hover:underline focus-visible:underline outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
                       {card.name}
                     </button>
@@ -158,7 +158,7 @@ export function ScannedCardTable({
                   />
                   {row.isFoil && (
                     <span
-                      className="shrink-0 rounded-full p-0.5 bg-gradient-to-br from-fuchsia-400 via-cyan-400 to-amber-300"
+                      className={cn("shrink-0 rounded-full p-0.5", FOIL_GRADIENT_CLASS)}
                       title={row.foilType ?? t("foil")}
                       role="img"
                       aria-label={row.foilType ?? t("foil")}
@@ -205,10 +205,7 @@ export function ScannedCardTable({
                     render={
                       <Badge
                         variant={matchPercent >= 80 ? "default" : "destructive"}
-                        className={cn(
-                          "tabular-nums",
-                          matchPercent < 80 && "bg-destructive text-white",
-                        )}
+                        className="tabular-nums"
                       >
                         {matchPercent.toFixed(2)}%
                       </Badge>

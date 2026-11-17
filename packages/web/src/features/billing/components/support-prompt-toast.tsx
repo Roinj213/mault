@@ -1,4 +1,6 @@
-import { DONATE_URL } from "@magic-vault/shared";
+import { cn } from "@/lib/utils";
+import { GITHUB_STAR_PILL_CLASS } from "@/lib/constants/ui";
+import { DONATE_URL, formatCompactNumber } from "@magic-vault/shared";
 import { Button } from "@/components/ui/button";
 import { optOutOfSupportPrompt } from "@/features/billing/lib/support-prompt";
 import {
@@ -25,7 +27,7 @@ export function SupportPromptToast({
   const close = () => toast.dismiss(toastId);
 
   return (
-    <div className="flex w-[356px] max-w-full flex-col gap-3 rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg">
+    <div className="flex w-[356px] max-w-full flex-col gap-3 rounded-xl bg-popover p-4 text-popover-foreground shadow-popover ring-1 ring-border">
       <div className="flex items-start gap-2.5">
         <IconHeart className="mt-0.5 size-4 shrink-0 text-destructive" />
         <div className="flex flex-col gap-1">
@@ -44,15 +46,13 @@ export function SupportPromptToast({
             {t("supportPrompt.starOnGithub")}
             {githubStars != null && (
               <span
-                className="ml-0.5 inline-flex items-center gap-0.5 rounded-full border bg-muted px-1.5 text-2xs text-foreground/80"
+                className={cn(GITHUB_STAR_PILL_CLASS, "ml-0.5")}
                 aria-label={t("supportPrompt.githubStars", {
                   count: githubStars,
                 })}
               >
-                <IconStarFilled className="size-3 text-warning" />
-                {new Intl.NumberFormat(i18n.language, {
-                  notation: "compact",
-                }).format(githubStars)}
+                <IconStarFilled className="size-3 text-warning-foreground" />
+                {formatCompactNumber(githubStars, i18n.language)}
               </span>
             )}
           </a>
@@ -83,7 +83,7 @@ export function SupportPromptToast({
             </Button>
           )}
         </div>
-        <div className="flex justify-end gap-1">
+        <div className="flex justify-end gap-1.5">
           <Button
             variant="ghost"
             className="text-foreground/70"

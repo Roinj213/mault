@@ -102,7 +102,7 @@ export function NotificationRuleList({
       )}
 
       {rules.length > 0 && (
-        <ul className="flex flex-col divide-y rounded-lg border">
+        <ul className="flex flex-col divide-y divide-border">
           {rules.map((rule) => (
             <li key={rule.guid} className="flex items-center gap-3 px-3 py-2">
               <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
@@ -127,7 +127,9 @@ export function NotificationRuleList({
                     )}
                   </span>
                 ) : (
-                  <p className="text-destructive">{t("rules.noChannel")}</p>
+                  <p role="alert" className="text-destructive">
+                    {t("rules.noChannel")}
+                  </p>
                 )}
                 <RuleSummary rules={rule.rules} />
               </div>
@@ -159,7 +161,7 @@ export function NotificationRuleList({
                 </Button>
                 <Button
                   size="icon"
-                  variant="outline-destructive"
+                  variant="destructive"
                   disabled={change.isPending}
                   aria-label={t("rules.delete", { name: rule.name })}
                   title={t("rules.delete", { name: rule.name })}

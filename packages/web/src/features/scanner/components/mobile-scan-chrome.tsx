@@ -23,6 +23,7 @@ import {
   IconCards,
   IconChevronRight,
   IconDots,
+  IconHandStop,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
   IconTrash,
@@ -77,6 +78,23 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
   })();
 
   const notice = (() => {
+    if (chrome.isEmergencyStopped) {
+      return (
+        <MobileScanNotice
+          tone="error"
+          title={t("emergencyStop.stoppedTitle")}
+          description={t("emergencyStop.stoppedDescription")}
+          action={
+            <Button
+              onClick={chrome.onResetAfterEmergencyStop}
+              disabled={chrome.isResettingSorter}
+            >
+              {t("emergencyStop.reset")}
+            </Button>
+          }
+        />
+      );
+    }
     if (chrome.isAtScanLimit) {
       return (
         <MobileScanNotice
@@ -150,23 +168,6 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
         />
       );
     }
-    if (!chrome.isConnected && !chrome.handScan && sessionScanCount === 0) {
-      return (
-        <MobileScanNotice
-          title={t("mobileScan.noSorterTitle")}
-          description={t("mobileScan.noSorterDescription")}
-          action={
-            chrome.bluetoothSupported ? (
-              <Button
-                onClick={chrome.onConnectBluetooth}
-              >
-                {t("mobileScan.connect")}
-              </Button>
-            ) : undefined
-          }
-        />
-      );
-    }
     return null;
   })();
 
@@ -176,7 +177,10 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
         <div className="flex items-center gap-2 px-4 pt-3">
           <span className={MOBILE_SCAN_CHIP_CLASS}>
             {running && (
-              <span className="size-2 shrink-0 rounded-full bg-success animate-pulse motion-reduce:animate-none" />
+              <span
+                aria-hidden
+                className="size-2 shrink-0 rounded-full bg-success animate-pulse motion-reduce:animate-none"
+              />
             )}
             <span role="status" aria-live="polite" className="truncate">
               {phaseLabel}
@@ -186,12 +190,9 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
             <button
               type="button"
               onClick={() => setRemovalQueueOpen(true)}
-              className={cn(
-                MOBILE_SCAN_CHIP_CLASS,
-                "shrink-0 text-destructive",
-              )}
+              className={cn(MOBILE_SCAN_CHIP_CLASS, "shrink-0")}
             >
-              <IconTrash className="size-4 shrink-0" />
+              <IconTrash aria-hidden className="size-4 shrink-0 text-destructive" />
               {t("scanRemoval.queuedCount", { count: removalQueuedCount })}
               <IconChevronRight className="size-4 shrink-0" />
             </button>
@@ -240,11 +241,21 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 px-4 pb-[calc(var(--mobile-nav-space,0px)+1rem)]">
+        <div className="flex flex-col gap-3 md:gap-2 px-4 pb-[calc(var(--mobile-nav-space,0px)+1rem)]">
           <div role="status" aria-live="polite">
             {notice}
           </div>
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-1.5">
+            {chrome.isConnected && !chrome.isEmergencyStopped && (
+              <Button
+                variant="destructive"
+                className="mr-auto"
+                onClick={chrome.onEmergencyStop}
+              >
+                <IconHandStop />
+                {t("emergencyStop.stop")}
+              </Button>
+            )}
             <button
               type="button"
               aria-label={t("mobileScan.controls.open")}
@@ -258,7 +269,10 @@ export function MobileScanChrome({ chrome }: MobileScanChromeProps) {
             </button>
             <button
               type="button"
-              disabled={!canShoot}
+              disabled={
+                chrome.isEmergencyStopped ||
+                (sorterDriven && running ? false : !canShoot)
+              }
               aria-label={
                 sorterDriven
                   ? running

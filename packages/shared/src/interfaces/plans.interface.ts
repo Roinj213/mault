@@ -93,3 +93,13 @@ export interface MemberSeatLimitErrorBody {
   message: string;
   limit: number;
 }
+
+export interface DailyScanLimitResetCountdown {
+  hours: number;
+  minutes: number;
+}
+
+export interface MemberSeatLock {
+  orgId: string;
+  limit: number;
+}

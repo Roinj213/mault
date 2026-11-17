@@ -7,6 +7,7 @@ import type {
 } from "../interfaces/sort-bins.interface";
 
 export const SET_NAME_MAX_LENGTH = 50;
+export const SET_DESCRIPTION_MAX_LENGTH = 1000;
 export const PRESET_STAGE_PATH_SEPARATOR = " \u203a ";
 export const COUNT_OPERATORS: ConditionOperator[] = [
   "count_equals",
@@ -59,3 +60,11 @@ export const REPACK_UNIQUE_BY_PRINTING = "$printing";
 export const REPACK_UNIQUE_BY_NAME = "$name";
 
 export const SCAN_ONLY_DEFAULT_BIN = 7;
+
+export const MULTI_VALUE_OPERATORS: ConditionOperator[] = [
+  "in",
+  "not_in",
+  "contains_any",
+  "contains_all",
+  "contains_none",
+];

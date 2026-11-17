@@ -1,12 +1,13 @@
 import { useReviewQueueCards } from "@/features/cards/api/use-review-queue";
 import { ReviewQueueList } from "@/features/cards/components/review-queue-panel";
-import { CARD_REVIEW_SEARCH_PARAM } from "@/lib/constants/cards";
+import { cardGridPathKeepingSearchParams } from "@/lib/card-search-params";
 import type { ReviewQueuePanelProps } from "@/lib/interfaces/cards";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export function ReviewQueuePanel({ session }: ReviewQueuePanelProps) {
   const navigate = useNavigate();
-  const { data, isPending, isError } = useReviewQueueCards(session);
+  const [searchParams] = useSearchParams();
+  const { data, isPending, isError, refetch } = useReviewQueueCards(session);
 
   return (
     <ReviewQueueList
@@ -14,15 +15,25 @@ export function ReviewQueuePanel({ session }: ReviewQueuePanelProps) {
       totalCards={data?.totalCards ?? 0}
       isPending={isPending}
       isError={isError}
+      onRetry={() => void refetch()}
       currentScanId={session.currentScanId}
       reviewedScanIds={session.reviewedScanIds}
       removedScanIds={session.removedScanIds}
       onOpen={(scanId) =>
-        navigate(`/app/cards/${scanId}?${CARD_REVIEW_SEARCH_PARAM}=1`, {
+        navigate(
+          cardGridPathKeepingSearchParams(
+            `/app/cards/${scanId}`,
+            searchParams,
+            "1",
+          ),
+          { replace: true },
+        )
+      }
+      onExit={() =>
+        navigate(cardGridPathKeepingSearchParams("/app", searchParams, null), {
           replace: true,
         })
       }
-      onExit={() => navigate("/app", { replace: true })}
     />
   );
 }

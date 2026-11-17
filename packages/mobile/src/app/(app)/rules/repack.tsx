@@ -13,7 +13,6 @@ import {
   type RepackSlot,
 } from "@magic-vault/shared";
 import { AppText } from "@/components/ui/app-text";
-import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { OptionSheet } from "@/components/ui/option-sheet";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { SaveBar } from "@/components/ui/save-bar";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Surface } from "@/components/ui/surface";
@@ -36,7 +36,8 @@ import { useActiveOrgId } from "@/hooks/use-org";
 import { useTheme } from "@/hooks/use-theme";
 import { REPACK_ALLOW_DUPLICATES_VALUE } from "@/lib/constants/rules";
 import { SCREEN_GUTTER, SPACING } from "@/lib/constants/theme";
-import type { RepackFormValues } from "@/lib/interfaces/forms";
+import { translateFormErrorMessage } from "@/lib/form-validation";
+import type { RepackFormInput, RepackFormValues } from "@/lib/interfaces/forms";
 
 function createSlot(): RepackSlot {
   return { id: Crypto.randomUUID(), rule: emptyRules(), targetCount: 1 };
@@ -48,12 +49,21 @@ export default function RepackEditorScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const orgId = useActiveOrgId();
-  const { activeSet, bins, fieldDefinitions, freeformOptions, isPending: isRulesDataPending } = useRulesData();
+  const {
+    activeSet,
+    bins,
+    fieldDefinitions,
+    freeformOptions,
+    isPending: isRulesDataPending,
+    isError: isRulesDataError,
+    refetch: refetchRulesData,
+    isRefetching: isRefetchingRulesData,
+  } = useRulesData();
   const [uniqueByOpen, setUniqueByOpen] = useState(false);
   const editable = !!activeSet?.isActive && !!activeSet.isRepackMode;
   const siftBin = getRepackSiftBin(bins);
 
-  const serverValues = useMemo<RepackFormValues | undefined>(
+  const serverValues = useMemo<RepackFormInput | undefined>(
     () =>
       activeSet
         ? {
@@ -65,7 +75,7 @@ export default function RepackEditorScreen() {
         : undefined,
     [activeSet],
   );
-  const form = useForm<RepackFormValues>({
+  const form = useForm<RepackFormInput, unknown, RepackFormValues>({
     resolver: zodResolver(repackSchema),
     values: serverValues,
     resetOptions: { keepDirtyValues: true },
@@ -111,9 +121,15 @@ export default function RepackEditorScreen() {
       <PageHeader title={t("rules.repack.title")} subtitle={activeSet?.name} onBack={() => router.back()} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingHorizontal: SCREEN_GUTTER, paddingTop: SCREEN_GUTTER, paddingBottom: SPACING.xxl * 2, gap: SPACING.xl }}
+        contentContainerStyle={{ paddingHorizontal: SCREEN_GUTTER, paddingTop: SCREEN_GUTTER, paddingBottom: SPACING.xxl * 2, gap: SPACING.lg + SPACING.xs }}
       >
-        {isRulesDataPending ? (
+        {isRulesDataError && !activeSet ? (
+          <QueryErrorState
+            title={t("rules.loadFailed")}
+            onRetry={() => void refetchRulesData()}
+            isRetrying={isRefetchingRulesData}
+          />
+        ) : isRulesDataPending ? (
           <PageSkeleton />
         ) : (
           <>
@@ -122,17 +138,15 @@ export default function RepackEditorScreen() {
             </AppText>
             {save.isError ? <Callout tone="destructive" title={t("rules.repack.saveFailed")} /> : null}
 
-            <View style={{ gap: SPACING.sm }}>
-              <ListGroup>
-                <ListRow
-                  title={t("rules.repack.uniqueByLabel")}
-                  subtitle={t("rules.repack.uniqueByDescription")}
-                  value={uniqueByOptions.find((o) => o.value === uniqueBy)?.label}
-                  disabled={!editable}
-                  onPress={() => setUniqueByOpen(true)}
-                />
-              </ListGroup>
-            </View>
+            <ListGroup>
+              <ListRow
+                title={t("rules.repack.uniqueByLabel")}
+                subtitle={t("rules.repack.uniqueByDescription")}
+                value={uniqueByOptions.find((o) => o.value === uniqueBy)?.label}
+                disabled={!editable}
+                onPress={() => setUniqueByOpen(true)}
+              />
+            </ListGroup>
 
             <Controller
               control={form.control}
@@ -184,52 +198,62 @@ export default function RepackEditorScreen() {
               render={({ field }) => (
                 <View style={{ gap: SPACING.md }}>
                   <SectionHeader title={t("rules.repack.slotsLabel")} />
-                  {field.value.map((slot, index) => (
-                    <Surface key={slot.id} style={{ gap: SPACING.md }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
-                        <AppText weight="medium" style={{ flex: 1 }}>
-                          {t("rules.repack.slotCountLabel")}
-                        </AppText>
-                        <Input
-                          compact
-                          accessibilityLabel={t("rules.repack.slotCountLabel")}
-                          keyboardType="number-pad"
-                          editable={editable}
-                          value={String(slot.targetCount)}
-                          onChangeText={(text) => {
+                  {field.value.map((slot, index) => {
+                    const targetCountError = form.formState.errors.repackSlots?.[index]?.targetCount?.message;
+                    return (
+                      <Surface key={slot.id} style={{ gap: SPACING.md }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
+                          <AppText weight="medium" style={{ flex: 1 }}>
+                            {t("rules.repack.slotCountLabel")}
+                          </AppText>
+                          <Input
+                            compact
+                            accessibilityLabel={t("rules.repack.slotCountLabel")}
+                            keyboardType="number-pad"
+                            editable={editable}
+                            value={slot.targetCount == null ? "" : String(slot.targetCount)}
+                            onChangeText={(text) => {
+                              const digits = text.replace(/\D/g, "");
+                              const next = [...field.value];
+                              next[index] = { ...slot, targetCount: digits === "" ? null : Number(digits) };
+                              field.onChange(next);
+                            }}
+                          />
+                          <IconButton
+                            icon="trash"
+                            size={36}
+                            accessibilityLabel={t("rules.repack.removeSlot")}
+                            disabled={!editable}
+                            onPress={() => field.onChange(field.value.filter((_, i) => i !== index))}
+                          />
+                        </View>
+                        {targetCountError ? (
+                          <AppText size="xs" accessibilityRole="alert" style={{ color: colors.destructiveForeground }}>
+                            {translateFormErrorMessage(t, targetCountError)}
+                          </AppText>
+                        ) : null}
+                        <RuleGroupEditor
+                          group={slot.rule}
+                          onChange={(rule) => {
                             const next = [...field.value];
-                            next[index] = { ...slot, targetCount: Math.max(1, Number(text.replace(/\D/g, "")) || 1) };
+                            next[index] = { ...slot, rule };
                             field.onChange(next);
                           }}
-                        />
-                        <IconButton
-                          icon="trash"
-                          size={36}
-                          accessibilityLabel={t("rules.repack.removeSlot")}
+                          fieldDefinitions={fieldDefinitions}
+                          freeformOptions={freeformOptions}
                           disabled={!editable}
-                          onPress={() => field.onChange(field.value.filter((_, i) => i !== index))}
                         />
-                      </View>
-                      <RuleGroupEditor
-                        group={slot.rule}
-                        onChange={(rule) => {
-                          const next = [...field.value];
-                          next[index] = { ...slot, rule };
-                          field.onChange(next);
-                        }}
-                        fieldDefinitions={fieldDefinitions}
-                        freeformOptions={freeformOptions}
-                        disabled={!editable}
-                      />
-                    </Surface>
-                  ))}
-                  <Button
-                    variant="secondary"
-                    icon="plus"
-                    label={t("rules.repack.addSlot")}
-                    disabled={!editable}
-                    onPress={() => field.onChange([...field.value, createSlot()])}
-                  />
+                      </Surface>
+                    );
+                  })}
+                  <ListGroup>
+                    <ListRow
+                      icon="plus"
+                      title={t("rules.repack.addSlot")}
+                      disabled={!editable}
+                      onPress={() => field.onChange([...field.value, createSlot()])}
+                    />
+                  </ListGroup>
                 </View>
               )}
             />

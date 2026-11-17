@@ -1,20 +1,20 @@
 export const COLLECTIONS_GRID_CLASS =
-  "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
+  "grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-1.5 lg:grid-cols-3";
 
 export const COLLECTION_TILE_CLASS =
-  "group relative isolate flex flex-col overflow-hidden rounded-lg border bg-card transition-[border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-lg motion-reduce:transition-none";
+  "group relative isolate flex flex-col overflow-hidden rounded-card border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-primary/40 hover:ring-2 hover:ring-primary/20 motion-reduce:transition-none";
 
 export const COLLECTION_TILE_ACTIVE_CLASS =
-  "border-primary/60 ring-1 ring-primary/30";
+  "border-primary/60 ring-2 ring-primary/30";
 
 export const COLLECTION_TILE_LIVE_CLASS =
-  "border-warning-border ring-1 ring-warning-border";
+  "border-warning-border ring-2 ring-warning-border/60";
 
 export const COLLECTION_TILE_SELECTED_CLASS =
   "border-primary ring-2 ring-primary";
 
 export const COLLECTION_SELECTION_ISLAND_CLASS =
-  "fixed inset-x-0 bottom-[calc(var(--mobile-nav-space,0px)+1.5rem)] z-50 mx-auto flex w-fit items-center gap-3 rounded-lg bg-foreground px-1.5 py-1.5 pl-3 text-xs text-background shadow-2xl ring-1 ring-foreground/20 animate-in fade-in-0 slide-in-from-bottom-4 duration-150 motion-reduce:animate-none";
+  "fixed inset-x-0 bottom-[calc(var(--mobile-nav-space,0px)+1.5rem)] z-50 mx-auto flex w-fit items-center gap-3 rounded-lg bg-foreground px-1.5 py-1.5 pl-3 text-xs text-background shadow-popover ring-1 ring-border animate-in fade-in-0 slide-in-from-bottom-4 duration-150 motion-reduce:animate-none";
 
 export const COLLECTION_SELECTION_ISLAND_BUTTON_CLASS =
   "text-background hover:bg-background/15 hover:text-background dark:hover:bg-background/15";

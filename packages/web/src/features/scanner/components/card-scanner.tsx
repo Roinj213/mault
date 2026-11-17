@@ -10,6 +10,8 @@ import { useCollections } from "@/features/collections/api/use-collections";
 import { reportSerialEvent } from "@/features/notifications/api/notification-settings";
 import { useCameraContext } from "@/features/scanner/api/use-camera";
 import { useCardScanner } from "@/features/scanner/api/use-card-scanner";
+import { applyPiScanState } from "@/features/scanner/lib/pi-scan-store";
+import { updatePiScanSettings } from "@/features/scanner/api/pi-scan-session";
 import { feedCardFromDocumentScanner } from "@/features/scanner/lib/document-scanner-feed";
 import { useFlatbedScan } from "@/features/scanner/api/use-flatbed-scan";
 import { useStandaloneDocumentFeeder } from "@/features/scanner/api/use-standalone-document-feeder";
@@ -37,7 +39,6 @@ import { EmptyBinToLocationDialog } from "@/features/storage/components/empty-bi
 import { useConnectWithStaleCheck } from "@/hooks/use-connect-with-stale-check";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { usePiHost } from "@/hooks/use-pi-host";
-import { isRemoteBrowser } from "@/lib/host";
 import { useRole } from "@/hooks/use-role";
 import {
   PAUSE_WHEN_HIDDEN_STATUSES,
@@ -69,7 +70,10 @@ import { useStationToast } from "@/features/scanner/api/use-station-toast";
 import { SETTINGS_PATHS } from "@/lib/constants/settings";
 import type { EmptyBinOptions } from "@magic-vault/shared";
 import { useIgnoreIrSensors } from "@/features/scanner/lib/ignore-ir-sensors";
-import { useHandScan } from "@/features/scanner/lib/hand-scan";
+import {
+  useHandScan,
+  useHandScanBins,
+} from "@/features/scanner/lib/hand-scan";
 import { isWebBluetoothSupported } from "@/lib/web-bluetooth";
 
 export function CardScanner({
@@ -86,8 +90,8 @@ export function CardScanner({
   const { isAdmin } = useRole();
   const isMobile = useIsMobile();
   const piHost = usePiHost();
-  const piRemote = piHost && isRemoteBrowser();
-  const previewRotated = !isMobile || (piHost && isRemoteBrowser());
+  const piRemote = piHost;
+  const previewRotated = !isMobile || piHost;
   const {
     addCard,
     addUnmatchedCard,
@@ -100,6 +104,9 @@ export function CardScanner({
     registerResumeHook,
     pause,
     pauseForAttention,
+    emergencyStop,
+    resetAfterEmergencyStop,
+    isEmergencyStopped,
     reportScannerError,
     attention,
     reopenAttention,
@@ -166,6 +173,7 @@ export function CardScanner({
   } = useConnectWithStaleCheck();
   const bluetoothSupported = isWebBluetoothSupported();
   const [isFeeding, setIsFeeding] = useState(false);
+  const [isResettingSorter, setIsResettingSorter] = useState(false);
   const [isClearingDevice, setIsClearingDevice] = useState(false);
   const {
     resetToNeutral,
@@ -174,14 +182,17 @@ export function CardScanner({
   } = useResetToNeutral();
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [handScan, setHandScan] = useHandScan();
+  const [handScanBins, setHandScanBins] = useHandScanBins();
   const handScanActive = handScan && !isConnected;
   const { isRemoveModeActive, queueScannedCard, handleRemovalNoMatch } =
     useScanRemoval();
   const visibleLastRoutedBin = isRemoveModeActive ? null : lastRoutedBin;
   const { hasCatchAll, selectedSet } = useBinConfigs();
   const { activeCollection } = useCollections();
-  const piScan = usePiScanSession();
-  const setPiAutoFeed = piScan.setAutoFeed;
+  const allowDuplicatesRef = useRef(true);
+  const getAllowDuplicates = useCallback(() => allowDuplicatesRef.current, []);
+  const piScan = usePiScanSession(getAllowDuplicates);
+  const { setAutoFeed: setPiAutoFeed, startOrResume: startPiScan } = piScan;
   const changeAutoFeed = useCallback(
     (enabled: boolean) => {
       setAutoFeed(enabled);
@@ -210,7 +221,7 @@ export function CardScanner({
   const {
     status,
     errorMessage,
-    isCameraActive,
+    isCameraActive: isBrowserCameraActive,
     debugImageUrl,
     videoRef,
     displayCanvasRef,
@@ -224,8 +235,8 @@ export function CardScanner({
     cameras,
     selectedCameraId,
     selectCamera,
-    allowDuplicates,
-    setAllowDuplicates,
+    allowDuplicates: browserAllowDuplicates,
+    setAllowDuplicates: setBrowserAllowDuplicates,
     cameraSource,
     phonePairingStatus,
     phonePairingUrl,
@@ -241,11 +252,6 @@ export function CardScanner({
       details,
       capturedBackImageUrl,
     ) => {
-      if (isRemoveModeActive) {
-        if (cards.length > 0) queueScannedCard(cards[0], cards.slice(1));
-        else handleRemovalNoMatch();
-        return;
-      }
       if (cards.length > 0) {
         recordScanOutcome(true);
         const placement = addCard(
@@ -263,11 +269,12 @@ export function CardScanner({
         });
       }
     },
-    onNoMatch: (capturedImageUrl, vectorizedOn, details, capturedBackImageUrl) => {
-      if (isRemoveModeActive) {
-        handleRemovalNoMatch();
-        return;
-      }
+    onNoMatch: (
+      capturedImageUrl,
+      vectorizedOn,
+      details,
+      capturedBackImageUrl,
+    ) => {
       recordScanOutcome(false);
       const placement = addUnmatchedCard(
         capturedImageUrl,
@@ -281,12 +288,18 @@ export function CardScanner({
         backImageUrl: capturedBackImageUrl,
       });
     },
+    isRemoval: () => isRemoveModeActive,
+    onRemoval: (cards) => {
+      if (cards.length > 0) queueScannedCard(cards[0], cards.slice(1));
+      else handleRemovalNoMatch();
+    },
     rotated: previewRotated,
     onControlCode: (command) => void applyControlCode(command),
     checkFoilByNudge: isRemoveModeActive ? undefined : checkFoilByNudge,
     autoCapture: handScanActive,
     skipDuplicateCheck: isRemoveModeActive,
   });
+  const isCameraActive = piRemote ? piScan.cameraReady : isBrowserCameraActive;
   const piScanLive =
     piScan.state.phase === "running" || piScan.state.phase === "paused";
   const displayStatus: ScannerStatus = piScanLive
@@ -296,6 +309,20 @@ export function CardScanner({
     : piRemote && piScan.cameraReady
       ? "paused"
       : status;
+  const allowDuplicates = piScanLive
+    ? (piScan.state.allowDuplicates ?? true)
+    : browserAllowDuplicates;
+  allowDuplicatesRef.current = allowDuplicates;
+  const setAllowDuplicates = useCallback(
+    (value: boolean) => {
+      setBrowserAllowDuplicates(value);
+      if (piScanLive)
+        void updatePiScanSettings({ allowDuplicates: value }).then((result) => {
+          if (result.data) applyPiScanState(result.data);
+        });
+    },
+    [piScanLive, setBrowserAllowDuplicates],
+  );
   setAllowDuplicatesRef.current = setAllowDuplicates;
   const isSideControls = controlsPosition === "side";
 
@@ -348,13 +375,14 @@ export function CardScanner({
   const heldCardArrivalRef = useRef(false);
 
   const handleCardArrived = useCallback(() => {
+    if (piRemote) return;
     if (document.hidden || isFeedHalted()) {
       heldCardArrivalRef.current = true;
       return;
     }
     if (status === "paused") handleResume();
     captureCard();
-  }, [status, handleResume, captureCard, isFeedHalted]);
+  }, [piRemote, status, handleResume, captureCard, isFeedHalted]);
 
   const handleResumeClick = useCallback(() => {
     handleResume();
@@ -424,6 +452,7 @@ export function CardScanner({
   }, [isReady, resetToNeutral]);
 
   const handleFeed = useCallback(async () => {
+    if (piRemote) return;
     if (!isReady) return;
     setIsFeeding(true);
     try {
@@ -521,6 +550,7 @@ export function CardScanner({
   }, [
     toast,
     isReady,
+    piRemote,
     ignoreIrSensors,
     feederConfig.feedRetryCount,
     prepareDevice,
@@ -572,6 +602,7 @@ export function CardScanner({
   }, [isReady, ignoreIrSensors, sendRequest]);
 
   const handleForceScanClick = useCallback(async () => {
+    if (piRemote) return;
     if (await isModuleOneEmpty()) {
       toast.error(t("cardScanner.noCardDetected.title"), {
         description: t("cardScanner.noCardDetected.description"),
@@ -579,7 +610,7 @@ export function CardScanner({
       return;
     }
     handleForceScan();
-  }, [toast, isModuleOneEmpty, handleForceScan, t]);
+  }, [piRemote, toast, isModuleOneEmpty, handleForceScan, t]);
 
   useEffect(() => {
     return registerCardArrivedHook(handleCardArrived);
@@ -651,7 +682,8 @@ export function CardScanner({
   }, [isFlatbedMode, flatbedPlacement, selectedCameraId]);
 
   useEffect(() => {
-    if (cameraSource !== "document-scanner" || documentScannerMode !== "feeder") return;
+    if (cameraSource !== "document-scanner" || documentScannerMode !== "feeder")
+      return;
     return registerFeedSource(() =>
       feedCardFromDocumentScanner({
         feedDocumentScannerCard,
@@ -690,7 +722,11 @@ export function CardScanner({
   }, [registerPauseHook, handlePause]);
 
   const handleResumeScanning = useCallback(async () => {
-    if (!(await prepareDevice())) return;
+    if (piScan.cameraReady) {
+      startPiScan();
+      return;
+    }
+    if (piRemote || !(await prepareDevice())) return;
     clearFeedHalt();
     if (heldCardArrivalRef.current && (await isModuleOneEmpty())) {
       heldCardArrivalRef.current = false;
@@ -702,6 +738,9 @@ export function CardScanner({
     handleResume();
     if (autoFeed) void handleFeed();
   }, [
+    piRemote,
+    piScan.cameraReady,
+    startPiScan,
     prepareDevice,
     clearFeedHalt,
     isModuleOneEmpty,
@@ -713,7 +752,7 @@ export function CardScanner({
 
   useDesktopScannerControls({
     status,
-    enabled: isActive && !piScan.cameraReady,
+    enabled: isActive && !piRemote && !piScan.cameraReady,
     isConnected,
     isReady,
     autoFeed,
@@ -759,6 +798,16 @@ export function CardScanner({
     wasReadyRef.current = canScan;
   }, [canScan, handlePause, handleResume, piScan.cameraReady, status]);
 
+  const handleResetAfterEmergencyStop = async () => {
+    setIsResettingSorter(true);
+    try {
+      await resetAfterEmergencyStop();
+    } finally {
+      setIsResettingSorter(false);
+    }
+  };
+  const piScanEmergencyStopped = piScan.state.emergencyStopped === true;
+
   const scannerControls = (
     <ScannerControls
       flatbedScan={isFlatbedMode ? flatbedScan : undefined}
@@ -779,11 +828,7 @@ export function CardScanner({
       isClearingDevice={isClearingDevice}
       onForceScan={handleForceScanClick}
       onPause={piScan.cameraReady ? () => void piScan.pause() : pause}
-      onResume={
-        piScan.cameraReady
-          ? () => void piScan.startOrResume()
-          : handleResumeScanning
-      }
+      onResume={handleResumeScanning}
       onFeed={
         piScan.cameraReady
           ? () => {
@@ -806,6 +851,20 @@ export function CardScanner({
       sessionFeed={piScan.cameraReady}
       sessionLive={piScanLive}
       onStop={() => void piScan.stop()}
+      onEmergencyStop={
+        piScan.cameraReady
+          ? () => void piScan.emergencyStop()
+          : () => void emergencyStop()
+      }
+      emergencyStopped={
+        piScan.cameraReady ? piScanEmergencyStopped : isEmergencyStopped
+      }
+      onResetAfterEmergencyStop={
+        piScan.cameraReady
+          ? undefined
+          : () => void handleResetAfterEmergencyStop()
+      }
+      isResettingSorter={isResettingSorter}
       onAutoFeedChange={changeAutoFeed}
     />
   );
@@ -886,15 +945,26 @@ export function CardScanner({
         className={cn("relative isolate overflow-hidden bg-black", className)}
       >
         <video ref={videoRef} className="hidden" playsInline muted />
+        {piRemote && isCameraActive && (
+          <PiCameraPreview
+            alt={t("piScan.preview")}
+            rotated
+            flipped={device?.flipCamera}
+            className="absolute max-w-none"
+          />
+        )}
         <canvas
           ref={displayCanvasRef}
           aria-label={t("a11y.cameraPreview")}
-          className="absolute"
+          className={cn("absolute", piRemote && "hidden")}
         />
         <canvas
           ref={overlayCanvasRef}
           aria-hidden
-          className="absolute z-20 pointer-events-none"
+          className={cn(
+            "absolute z-20 pointer-events-none",
+            piRemote && "hidden",
+          )}
         />
         <CameraConnectingOverlay />
         {renderChrome({
@@ -909,14 +979,12 @@ export function CardScanner({
           autoFeed,
           allowDuplicates,
           isAtScanLimit,
-          bluetoothSupported,
           cameras,
           selectedCameraId,
           onPause: pause,
           onResume: () => void handleResumeScanning(),
           onScanOnce: () => void handleForceScanClick(),
           onRetry: handleRetryError,
-          onConnectBluetooth: connectBluetooth,
           onResolveSensorBlocked: reopenSensorBlockedToast,
           onSelectCamera: selectCamera,
           onAutoFeedChange: setAutoFeed,
@@ -927,10 +995,17 @@ export function CardScanner({
           onFeed: () => void handleFeed(),
           onClearDevice: () => void handleClearDevice(),
           onResetDevice: () => void handleResetToNeutral(),
+          isEmergencyStopped,
+          isResettingSorter,
+          onEmergencyStop: () => void emergencyStop(),
+          onResetAfterEmergencyStop: () =>
+            void handleResetAfterEmergencyStop(),
           handScan,
           handScanActive,
           lastRoutedBin: visibleLastRoutedBin,
           onHandScanChange: setHandScan,
+          handScanBins,
+          onHandScanBinsChange: setHandScanBins,
         })}
         {dialogs}
       </div>
@@ -955,6 +1030,7 @@ export function CardScanner({
     dailyLimitReached: isAtScanLimit,
     onRetryError: handleRetryError,
     cameraMenu: {
+      hostControlled: piRemote,
       isCameraActive,
       cameras,
       documentScannerOptions,
@@ -998,17 +1074,22 @@ export function CardScanner({
         className,
       )}
     >
-      <div className={showStatusStrip ? "flex flex-col" : "contents"}>
+      <div
+        className={cn(
+          showStatusStrip ? "flex flex-col" : "contents",
+          showStatusStrip && piRemote && "max-md:flex-1 max-md:min-h-0",
+        )}
+      >
         <div
           className={cn(
-            "relative isolate overflow-hidden bg-background rounded-lg border",
-            viewerTouchesPanelEdges && "rounded-none border-x-0 border-t-0",
+            "relative isolate overflow-hidden rounded-card bg-card",
+            viewerTouchesPanelEdges && "rounded-none border-b",
             isSideControls
               ? "h-full aspect-[2.5/3.5] shrink-0"
               : "w-full h-full max-w-full",
             !compact && !isSideControls && "md:aspect-[2.5/3.5]",
-            isRemoveModeActive &&
-              "border-destructive ring-2 ring-destructive/40",
+            piRemote && !isSideControls && "max-md:flex-1 max-md:min-h-0",
+            isRemoveModeActive && "ring-2 ring-destructive ring-inset",
           )}
         >
           <video ref={videoRef} className="hidden" playsInline muted />
@@ -1043,12 +1124,13 @@ export function CardScanner({
             <Tooltip>
               <TooltipTrigger
                 aria-label={t("a11y.showLastSearchImage")}
-                className="absolute bottom-2 left-2 z-30 flex items-center justify-center size-7 rounded-lg bg-background/70 text-foreground backdrop-blur-sm hover:bg-background/90 transition-colors">
-                <IconEye size={16} />
+                className="absolute bottom-2 left-2 z-30 flex items-center justify-center size-7 rounded-lg bg-background/70 text-foreground backdrop-blur-sm hover:bg-background/90 transition-colors"
+              >
+                <IconEye className="size-4" />
               </TooltipTrigger>
               <TooltipContent
                 side="right"
-                className="bg-background text-foreground border border-border p-0 shadow-lg max-w-none"
+                className="max-w-none overflow-hidden rounded-xl bg-popover p-0 text-popover-foreground shadow-popover ring-1 ring-border"
               >
                 <img
                   src={debugImageUrl}
@@ -1076,7 +1158,7 @@ export function CardScanner({
             selectedCameraId={selectedCameraId}
             phonePairingStatus={phonePairingStatus}
             scanningBlocked={scanningBlocked}
-            onCameraConnect={handleRetryError}
+            onCameraConnect={piRemote ? undefined : handleRetryError}
             onCameraDisconnect={handleStopCamera}
             onCameraSelect={selectCamera}
             onOpenPhonePairing={handleOpenPhonePairing}
@@ -1105,6 +1187,8 @@ export function CardScanner({
             onAllowDuplicatesChange={setAllowDuplicates}
             handScan={handScan}
             onHandScanChange={setHandScan}
+            handScanBins={handScanBins}
+            onHandScanBinsChange={setHandScanBins}
           />
         </div>
         {showStatusStrip && (

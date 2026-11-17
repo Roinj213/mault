@@ -4,6 +4,7 @@ export const BUILD_CHECKLIST_STORAGE_KEY = "magic-vault:build-checklist";
 export const IGNORE_IR_SENSORS_STORAGE_KEY =
   "magic-vault:scanner-ignore-ir-sensors";
 export const HAND_SCAN_STORAGE_KEY = "magic-vault:scanner-hand-scan";
+export const HAND_SCAN_BINS_STORAGE_KEY = "magic-vault:scanner-hand-scan-bins";
 export const FLATBED_PLACEMENT_STORAGE_KEY_PREFIX =
   "magic-vault:flatbed-placement:";
 export const FEEDER_CARD_SETUP_STORAGE_KEY_PREFIX =
@@ -45,6 +46,7 @@ export const CARD_SCAN_TIMELINE_STORAGE_KEY = "magic-vault:card-scan-timeline";
 export const DEVICE_PREFS_STORAGE_KEY_PREFIX = "magic-vault:device-prefs:";
 
 export const CAMERA_FOCUS_STORAGE_KEY = "magic-vault:camera-focus";
+export const CAMERA_ZOOM_STORAGE_KEY = "magic-vault:camera-zoom";
 
 export const SUPPORT_PROMPT_STORAGE_KEY = "magic-vault:support-prompt";
 
@@ -72,3 +74,5 @@ export const SCAN_STATS_PANEL_EXPANDED_STORAGE_KEYS = {
   color: "magic-vault:scan-stats-color-expanded",
   set: "magic-vault:scan-stats-set-expanded",
 } as const;
+
+export const SINGLE_KEY_HOTKEYS_STORAGE_KEY = "magic-vault:single-key-hotkeys";

@@ -66,6 +66,7 @@ export interface WidgetCard {
   collectionGuid: string;
   name: string;
   detail: string;
+  detailDirection: "up" | "down" | "";
   price: string;
   imageUri: string;
   url: string;
@@ -177,6 +178,7 @@ export interface WidgetSummaryPropsOptions {
   t: TFunction;
   locale: string;
   formatPrice: (value: number) => string;
+  formatCompactPrice: (value: number) => string;
   summary: WidgetSummary;
   cardImageUris: Map<string, string>;
   logo: WidgetLogo;

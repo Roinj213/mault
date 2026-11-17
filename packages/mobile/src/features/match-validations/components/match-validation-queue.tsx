@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import { CardArt } from "@/components/cards/card-art";
 import { useTranslation } from "react-i18next";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MATCH_VALIDATION_REVIEWS_REQUIRED,
   type MatchValidationVerdict,
@@ -11,10 +11,12 @@ import {
   toOcrOverlayRegions,
 } from "@magic-vault/shared";
 import { AppText } from "@/components/ui/app-text";
+import { BottomActionBar } from "@/components/ui/bottom-action-bar";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pill } from "@/components/ui/pill";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OcrRegionCrops } from "@/features/cards/components/ocr-region-crops";
 import {
@@ -35,7 +37,6 @@ import { absoluteUrl } from "@/lib/url";
 export function MatchValidationQueue({ gameKey }: MatchValidationGameFilterProps) {
   const { t, i18n } = useTranslation();
   const colors = useTheme();
-  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const queueQuery = useQuery(matchValidationQueueQueryOptions(gameKey));
   const { refetch: refetchQueue, isFetching: isFetchingQueue } = queueQuery;
@@ -73,15 +74,15 @@ export function MatchValidationQueue({ gameKey }: MatchValidationGameFilterProps
     aspectRatio: CARD_ASPECT_RATIO,
     borderRadius: CARD_ART_RADIUS,
     overflow: "hidden" as const,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.muted,
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: SCREEN_GUTTER, paddingBottom: SPACING.xl, gap: SPACING.md }}>
-        {queueQuery.isPending || isLoadingMore ? (
+      <ScrollView contentContainerStyle={{ padding: SCREEN_GUTTER, paddingBottom: SPACING.xl, gap: SPACING.lg + SPACING.xs }}>
+        {queueQuery.isError && !current ? (
+          <QueryErrorState onRetry={() => void queueQuery.refetch()} isRetrying={queueQuery.isFetching} />
+        ) : queueQuery.isPending || isLoadingMore ? (
           <View style={{ flexDirection: "row", gap: SPACING.md }}>
             <View style={{ flex: 1, aspectRatio: CARD_ASPECT_RATIO }}>
               <Skeleton height="100%" radius={CARD_ART_RADIUS} />
@@ -137,9 +138,9 @@ export function MatchValidationQueue({ gameKey }: MatchValidationGameFilterProps
                 </AppText>
                 <View style={imageFrame}>
                   {catalogUrl ? (
-                    <Image
+                    <CardArt
                       key={current.scanId}
-                      source={{ uri: catalogUrl }}
+                      imageUrl={catalogUrl}
                       style={{ flex: 1 }}
                       contentFit="cover"
                       accessibilityLabel={t("matchValidations.matchedCardAlt", { name: cardName })}
@@ -211,15 +212,7 @@ export function MatchValidationQueue({ gameKey }: MatchValidationGameFilterProps
       </ScrollView>
 
       {current && !isLoadingMore ? (
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            paddingHorizontal: SCREEN_GUTTER,
-            paddingTop: SPACING.md,
-            paddingBottom: SPACING.md + insets.bottom,
-          }}
-        >
+        <BottomActionBar>
           <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
             <IconButton
               icon="arrowLeft"
@@ -260,7 +253,7 @@ export function MatchValidationQueue({ gameKey }: MatchValidationGameFilterProps
               onPress={skip}
             />
           </View>
-        </View>
+        </BottomActionBar>
       ) : null}
     </View>
   );

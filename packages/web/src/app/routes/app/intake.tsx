@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/empty-state";
+import { LoadErrorCallout } from "@/components/load-error-callout";
 import { MobilePageHeader } from "@/components/mobile-page-header";
 import { Button } from "@/components/ui/button";
 import { DrawerTitle } from "@/components/ui/drawer";
@@ -17,7 +18,10 @@ import { IntakeLotList } from "@/features/business/components/intake-lot-list";
 import { BusinessViewSwitch } from "@/features/business/components/business-view-switch";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useServerPagedList } from "@/hooks/use-server-paged-list";
-import { MOBILE_NAV_SCROLL_PADDING_CLASS } from "@/lib/constants/nav";
+import {
+  MOBILE_CIRCLE_BUTTON_CLASS,
+  MOBILE_NAV_SCROLL_PADDING_CLASS,
+} from "@/lib/constants/nav";
 import { cn } from "@/lib/utils";
 import {
   BUSINESS_INTAKE_VIEW,
@@ -46,6 +50,8 @@ export default function IntakePage() {
     items: lots,
     pagination,
     isLoading,
+    isError,
+    refetch,
   } = useServerPagedList(
     (request) => intakeLotsQueryOptions(orgId, request),
     selectedParam,
@@ -144,7 +150,7 @@ export default function IntakePage() {
               MOBILE_NAV_SCROLL_PADDING_CLASS,
             )}
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:gap-2">
               {access?.isLocked && <BusinessUpgradeCallout />}
               <IntakeLotDetail
                 key={selectedGuid}
@@ -182,8 +188,8 @@ export default function IntakePage() {
           title={tCommon("nav.intake")}
           actions={
             <Button
-              variant="outline"
-              size="icon"
+              variant="ghost"
+              className={MOBILE_CIRCLE_BUTTON_CLASS}
               aria-label={t("intake.new")}
               disabled={access?.isLocked}
               onClick={() => setCreateOpen(true)}
@@ -269,7 +275,7 @@ export default function IntakePage() {
             />
           </section>
         ) : (
-          <section className="col-span-8 flex max-h-full flex-col gap-4 overflow-y-auto p-4 lg:col-span-9">
+          <section className="col-span-8 flex max-h-full flex-col gap-4 overflow-y-auto p-4 md:gap-2 md:px-3 md:py-2 lg:col-span-9">
             {access?.isLocked && <BusinessUpgradeCallout />}
             {selectedGuid ? (
               <IntakeLotDetail
@@ -280,13 +286,19 @@ export default function IntakePage() {
                 onOpenReviewGrid={openReviewGrid}
               />
             ) : (
-              !isLoading && (
+              !isLoading &&
+              (isError && lots.length === 0 ? (
+                <LoadErrorCallout
+                  message={t("errors.loadFailed")}
+                  onRetry={refetch}
+                />
+              ) : (
                 <EmptyState
                   icon={IconCash}
                   title={t("intake.pickTitle")}
                   description={t("intake.pickDescription")}
                 />
-              )
+              ))
             )}
           </section>
         )}

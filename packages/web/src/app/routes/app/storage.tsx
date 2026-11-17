@@ -1,6 +1,12 @@
+import { cn } from "@/lib/utils";
+import { PAGE_TITLE_CLASS } from "@/lib/constants/nav";
+import { useStorageLocationDialogs } from "@/features/storage/api/use-storage-location-dialogs";
+import { useStorageReviewStart } from "@/features/storage/api/use-storage-review-start";
+import { StorageLocationDialogs } from "@/features/storage/components/storage-location-dialogs";
+import { LibraryViewTabs } from "@/features/library/components/library-view-tabs";
 import { Callout } from "@/components/callout";
-import { DeleteDialog } from "@/components/delete-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { LoadErrorCallout } from "@/components/load-error-callout";
 import { HotkeyHint } from "@/components/hotkey-hint";
 import { ListSkeleton } from "@/components/list-skeleton";
 import { Button } from "@/components/ui/button";
@@ -9,12 +15,10 @@ import { AddCardDialog } from "@/features/cards/components/add-card-dialog";
 import { useCollections } from "@/features/collections/api/use-collections";
 import { useStorageAccess } from "@/features/storage/api/use-storage-access";
 import {
-  fetchNextUnreviewedStorageCard,
   storageLocationPageQueryOptions,
   storageLocationQueryOptions,
   storageLocationUnreviewedCardsQueryOptions,
 } from "@/features/storage/api/storage-locations";
-import { useReviewLayout } from "@/features/cards/api/use-card-view-preferences";
 import { ReviewGrid } from "@/features/cards/components/review-grid";
 import { ReviewQueueList } from "@/features/cards/components/review-queue-panel";
 import { useStorageReviewQueue } from "@/features/storage/api/use-storage-review-queue";
@@ -30,10 +34,10 @@ import { ShareLinkTriggerButton } from "@/components/share-link-trigger-button";
 import { ShareStorageLinkDialog } from "@/features/storage/components/share-storage-link-dialog";
 import { StorageLocationContent } from "@/features/storage/components/storage-location-content";
 import { StorageLocationList } from "@/features/storage/components/storage-location-list";
-import { StorageLocationNameDialog } from "@/features/storage/components/storage-location-name-dialog";
 import { StorageSearchResults } from "@/features/storage/components/storage-search-results";
 import { StorageUpgradeNote } from "@/features/storage/components/storage-upgrade-note";
 import { MobileStorage } from "@/features/storage/components/mobile-storage";
+import { useStorageLabelOrgSwitch } from "@/features/storage-labels/api/use-storage-label-org-switch";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useHotkeys } from "@/hooks/use-hotkeys";
@@ -41,23 +45,26 @@ import { usePriceSource } from "@/hooks/use-price-source";
 import {
   STORAGE_CARD_SEARCH_PARAM,
   STORAGE_LOCATION_SEARCH_PARAM,
-  STORAGE_PAGE_SEARCH_PARAM,
   LEGACY_STORAGE_PICKS_VIEW,
   LEGACY_STORAGE_VIEW_PARAM,
   STORAGE_PICK_LIST_PATH,
   STORAGE_REVIEW_SEARCH_PARAM,
+  STORAGE_PANEL_PADDING_TOP,
   STORAGE_TOOLBAR_TOP_CSS_VARIABLE,
+  storageLabelsPath,
 } from "@/lib/constants/storage";
+import { writeStorageSelectionSearchParams } from "@/features/storage/lib/storage-search-params";
+import type { StorageSelectionSearchParams } from "@/lib/interfaces/storage";
 import { useElementHeight } from "@/hooks/use-element-height";
 import { ORDER_PARAM, picksPath } from "@/lib/constants/business";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/constants/timing";
-import { toast } from "@/lib/toast";
 import {
   IconBox,
   IconEdit,
   IconListCheck,
   IconListSearch,
   IconPlus,
+  IconPrinter,
   IconTrash,
 } from "@tabler/icons-react";
 import { useCallback, useState, type CSSProperties } from "react";
@@ -74,9 +81,15 @@ function DesktopStoragePage() {
   const { format } = usePriceSource();
   const { isLocked } = useStorageAccess();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const dialogs = useStorageLocationDialogs();
+  const {
+    setCreateOpen,
+    setRenameOpen,
+    setDeleteOpen,
+    setShareOpen,
+    setMenuLocation,
+    openLocationAction,
+  } = dialogs;
   const [addCardOpen, setAddCardOpen] = useState(false);
   const { collections } = useCollections();
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,11 +107,14 @@ function DesktopStoragePage() {
     items: locations,
     pagination,
     isLoading,
+    isError,
+    refetch,
   } = useServerPagedList(
     (request) => storageLocationPageQueryOptions(activeOrg?.id, request),
     selectedParam,
   );
   const hasLocations = pagination.total > 0;
+  const showsLoadError = isError && !hasLocations;
   const selectedGuid = selectedParam ?? locations[0]?.guid;
   const { data: selectedLocation } = useQuery(
     storageLocationQueryOptions(selectedGuid),
@@ -110,14 +126,12 @@ function DesktopStoragePage() {
   const openScanId = searchParams.get(STORAGE_CARD_SEARCH_PARAM);
   const reviewParam = searchParams.get(STORAGE_REVIEW_SEARCH_PARAM);
   const isReviewing = reviewParam === "1";
-  const pageParam = searchParams.get(STORAGE_PAGE_SEARCH_PARAM);
   const isCardOpen = !!selected && !isSearching && !!openScanId;
   const isGridReviewing =
     !!selected &&
     !isSearching &&
     !openScanId &&
     reviewParam === CARD_REVIEW_GRID_PARAM_VALUE;
-  const [reviewLayout, setReviewLayout] = useReviewLayout();
   const isOneByOneReviewing = isCardOpen && isReviewing;
   const reviewQueue = useStorageReviewQueue(
     selected?.guid,
@@ -127,61 +141,43 @@ function DesktopStoragePage() {
     storageLocationUnreviewedCardsQueryOptions(selected?.guid, isGridReviewing),
   );
 
-  const select = useCallback(
-    (guid: string) =>
+  const shownLocationGuid = selectedGuid;
+  const showSelection = useCallback(
+    (
+      selection: Omit<StorageSelectionSearchParams, "shownLocationGuid">,
+    ) =>
       setSearchParams(
-        { [STORAGE_LOCATION_SEARCH_PARAM]: guid },
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          writeStorageSelectionSearchParams(next, {
+            ...selection,
+            shownLocationGuid,
+          });
+          return next;
+        },
         { replace: true },
       ),
-    [setSearchParams],
+    [shownLocationGuid, setSearchParams],
+  );
+
+  const select = useCallback(
+    (guid: string | null) => showSelection({ locationGuid: guid }),
+    [showSelection],
   );
 
   const openCard = (guid: string, scanId: string, review = isReviewing) =>
-    setSearchParams(
-      {
-        [STORAGE_LOCATION_SEARCH_PARAM]: guid,
-        [STORAGE_CARD_SEARCH_PARAM]: scanId,
-        ...(review ? { [STORAGE_REVIEW_SEARCH_PARAM]: "1" } : {}),
-        ...(pageParam ? { [STORAGE_PAGE_SEARCH_PARAM]: pageParam } : {}),
-      },
-      { replace: true },
-    );
+    showSelection({
+      locationGuid: guid,
+      scanId,
+      reviewParamValue: review ? "1" : null,
+    });
 
   const closeCard = useCallback(() => {
-    if (!selected) return;
-    setSearchParams(
-      {
-        [STORAGE_LOCATION_SEARCH_PARAM]: selected.guid,
-        ...(pageParam ? { [STORAGE_PAGE_SEARCH_PARAM]: pageParam } : {}),
-      },
-      { replace: true },
-    );
-  }, [selected, pageParam, setSearchParams]);
+    if (shownLocationGuid) select(shownLocationGuid);
+  }, [shownLocationGuid, select]);
 
-  const openReviewGrid = () => {
-    if (!selected) return;
-    setReviewLayout("grid");
-    setSearchParams(
-      {
-        [STORAGE_LOCATION_SEARCH_PARAM]: selected.guid,
-        [STORAGE_REVIEW_SEARCH_PARAM]: CARD_REVIEW_GRID_PARAM_VALUE,
-      },
-      { replace: true },
-    );
-  };
-
-  const startReview = async () => {
-    if (!selected) return;
-    if (reviewLayout === "grid") {
-      openReviewGrid();
-      return;
-    }
-    const first = await fetchNextUnreviewedStorageCard(selected.guid).catch(
-      () => null,
-    );
-    if (first) openCard(selected.guid, first, true);
-    else toast.info(t("review.nothingLeft"));
-  };
+  const { setReviewLayout, openReviewGrid, startReview } =
+    useStorageReviewStart(selected, openCard);
 
   const canStartReview =
     !isLocked &&
@@ -214,8 +210,11 @@ function DesktopStoragePage() {
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
       {!showsLocationHeading && (
-        <h1 className="sr-only">{tCommon("nav.storage")}</h1>
+        <h1 className="sr-only">{tCommon("nav.library")}</h1>
       )}
+      <div className="shrink-0 border-b px-3 pt-1">
+        <LibraryViewTabs value="storage" />
+      </div>
       <div className="grid flex-1 min-h-0 grid-cols-12 overflow-hidden">
         {isOneByOneReviewing && selected ? (
           <section className="col-span-4 flex h-full flex-col overflow-hidden border-r lg:col-span-3">
@@ -224,6 +223,7 @@ function DesktopStoragePage() {
               totalCards={reviewQueue.totalCards}
               isPending={reviewQueue.isPending}
               isError={reviewQueue.isError}
+              onRetry={reviewQueue.retry}
               currentScanId={openScanId}
               reviewedScanIds={reviewQueue.reviewedScanIds}
               removedScanIds={reviewQueue.removedScanIds}
@@ -256,6 +256,18 @@ function DesktopStoragePage() {
                 </Button>
                 {!isLocked && (
                   <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={t("labels.printLabels")}
+                    title={t("labels.printLabels")}
+                    nativeButton={false}
+                    render={<Link to={storageLabelsPath()} />}
+                  >
+                    <IconPrinter />
+                  </Button>
+                )}
+                {!isLocked && (
+                  <Button
                     size="icon"
                     aria-label={t("page.newLocation")}
                     title={t("page.newLocation")}
@@ -285,6 +297,16 @@ function DesktopStoragePage() {
               selectedGuid={isSearching ? undefined : selected?.guid}
               isLoading={isLoading}
               onSelect={openLocation}
+              actions={
+                isLocked
+                  ? undefined
+                  : {
+                      disabled: isMutating,
+                      onShare: (location) => openLocationAction(location, setShareOpen),
+                      onRename: (location) => openLocationAction(location, setRenameOpen),
+                      onDelete: (location) => openLocationAction(location, setDeleteOpen),
+                    }
+              }
             />
           </section>
         )}
@@ -310,6 +332,7 @@ function DesktopStoragePage() {
               total={reviewGridPage.data?.total ?? 0}
               isLoading={reviewGridPage.isPending}
               isError={reviewGridPage.isError}
+              onRetry={() => void reviewGridPage.refetch()}
               onOpenOneByOne={(card) => {
                 setReviewLayout("single");
                 openCard(selected.guid, card.scanId, true);
@@ -319,19 +342,19 @@ function DesktopStoragePage() {
           </section>
         ) : (
           <section
-            className="col-span-8 flex max-h-full flex-col gap-4 overflow-y-auto p-4 lg:col-span-9"
+            className="col-span-8 flex max-h-full flex-col gap-4 overflow-y-auto p-4 md:gap-2 md:px-3 md:py-2 lg:col-span-9"
             style={
               {
-                [STORAGE_TOOLBAR_TOP_CSS_VARIABLE]: `calc(${locationHeaderHeight}px - 1rem)`,
+                [STORAGE_TOOLBAR_TOP_CSS_VARIABLE]: `calc(${locationHeaderHeight}px - ${STORAGE_PANEL_PADDING_TOP})`,
               } as CSSProperties
             }
           >
             {selected && !isSearching && (
               <div
                 ref={setLocationHeaderElement}
-                className="sticky -top-4 z-50 -mx-4 -mt-4 flex items-center gap-2 border-b bg-background/80 p-2 pl-4 backdrop-blur-2xl">
+                className="sticky -top-4 z-50 -mx-4 -mt-4 flex items-center gap-1.5 border-b bg-background/80 p-2 pl-4 backdrop-blur-2xl md:-top-2 md:-mx-3 md:-mt-2 md:pl-3">
                 <div className="mr-auto min-w-0">
-                  <h1 className="truncate font-heading text-lg font-semibold">
+                  <h1 className={cn(PAGE_TITLE_CLASS, "truncate")}>
                     {selected.name}
                   </h1>
                   <p className="text-xs tabular-nums text-foreground/70">
@@ -369,6 +392,16 @@ function DesktopStoragePage() {
                 )}
                 {!isLocked && (
                   <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={t("labels.printLabel")}
+                      title={t("labels.printLabel")}
+                      nativeButton={false}
+                      render={<Link to={storageLabelsPath([selected.guid])} />}
+                    >
+                      <IconPrinter />
+                    </Button>
                     <ShareStorageLinkDialog
                       locationGuid={selected.guid}
                       renderTrigger={(activeLinkCount) => (
@@ -387,17 +420,23 @@ function DesktopStoragePage() {
                       aria-label={t("page.rename")}
                       title={t("page.rename")}
                       disabled={isMutating}
-                      onClick={() => setRenameOpen(true)}
+                      onClick={() => {
+                        setMenuLocation(null);
+                        setRenameOpen(true);
+                      }}
                     >
                       <IconEdit />
                     </Button>
                     <Button
-                      variant="outline-destructive"
+                      variant="destructive"
                       size="icon"
                       aria-label={t("page.delete")}
                       title={t("page.delete")}
                       disabled={isMutating}
-                      onClick={() => setDeleteOpen(true)}
+                      onClick={() => {
+                        setMenuLocation(null);
+                        setDeleteOpen(true);
+                      }}
                     >
                       <IconTrash />
                     </Button>
@@ -419,6 +458,11 @@ function DesktopStoragePage() {
 
             {isLoading ? (
               <ListSkeleton />
+            ) : showsLoadError ? (
+              <LoadErrorCallout
+                message={t("page.loadFailed")}
+                onRetry={refetch}
+              />
             ) : !hasLocations ? (
               <EmptyState
                 icon={IconBox}
@@ -459,39 +503,14 @@ function DesktopStoragePage() {
           locationGuid={selected.guid}
         />
       )}
-      <StorageLocationNameDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title={t("page.newLocation")}
-        submitLabel={t("nameDialog.create")}
-        onSubmit={async (name) => {
-          const guid = await create(name);
-          if (guid) select(guid);
-          return !!guid;
-        }}
-      />
-      <StorageLocationNameDialog
-        open={renameOpen}
-        onOpenChange={setRenameOpen}
-        initialName={selected?.name}
-        title={t("page.rename")}
-        submitLabel={t("nameDialog.save")}
-        onSubmit={(name) =>
-          selected ? rename(selected.guid, name) : Promise.resolve(false)
-        }
-      />
-      <DeleteDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("page.deleteTitle", { name: selected?.name ?? "" })}
-        description={t("page.deleteDescription")}
-        confirm={{ type: "name", name: selected?.name ?? "" }}
-        onConfirm={async () => {
-          setDeleteOpen(false);
-          if (selected && (await remove(selected.guid))) {
-            setSearchParams({}, { replace: true });
-          }
-        }}
+      <StorageLocationDialogs
+        dialogs={dialogs}
+        selected={selected}
+        create={create}
+        rename={rename}
+        remove={remove}
+        onCreated={select}
+        onSelectedDeleted={() => select(null)}
       />
     </div>
   );
@@ -500,11 +519,13 @@ function DesktopStoragePage() {
 export default function StoragePage() {
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
+  const isSwitchingToLabelOrg = useStorageLabelOrgSwitch();
   if (
     searchParams.get(LEGACY_STORAGE_VIEW_PARAM) === LEGACY_STORAGE_PICKS_VIEW
   ) {
     return <Navigate to={picksPath(searchParams.get(ORDER_PARAM))} replace />;
   }
+  if (isSwitchingToLabelOrg) return <ListSkeleton />;
   if (isMobile) return <MobileStorage />;
   return <DesktopStoragePage />;
 }

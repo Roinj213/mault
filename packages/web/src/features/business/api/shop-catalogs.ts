@@ -3,10 +3,9 @@ import { fetchPublicCards, publicCardsKeys } from "@/features/public-cards/api/p
 import { PUBLIC_CARDS_SOURCE_PATHS } from "@/lib/constants/public-cards";
 import type { PublicCardsSource } from "@/lib/interfaces/public-cards";
 import {
-  SHARE_LINK_TOKEN_PARAM,
   SHOP_CATALOG_GUID_PARAM,
-  SHOP_CATALOG_PATH_PREFIX,
   SHOP_PHOTO_UPLOAD_FIELD,
+  buildShopCatalogLinkUrl,
   type Result,
   type ShopCatalog,
   type ShopCatalogInfo,
@@ -58,11 +57,7 @@ export function deleteShopCatalog(guid: string): Promise<Result<null>> {
 }
 
 export function buildShopCatalogUrl(catalog: ShopCatalog): string | null {
-  const base = `${window.location.origin}${SHOP_CATALOG_PATH_PREFIX}/${catalog.guid}`;
-  if (catalog.isPublic) return base;
-  if (!catalog.linkToken) return null;
-  const params = new URLSearchParams({ [SHARE_LINK_TOKEN_PARAM]: catalog.linkToken });
-  return `${base}?${params}`;
+  return buildShopCatalogLinkUrl(window.location.origin, catalog);
 }
 
 export const publicShopCatalogQueryOptions = (source: PublicCardsSource) =>

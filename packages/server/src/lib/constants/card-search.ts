@@ -84,6 +84,33 @@ export const POKEMON_JAPAN_EXT_KEYS = {
 } as const;
 export const POKEMON_JAPAN_RARITY_NONE = "None";
 
+export const DIGIMON_TCGPLAYER_CATEGORY_ID = 63;
+export const DIGIMON_CARDMARKET_GAME_ID = 17;
+export const DIGIMON_LANGUAGES = ["en"];
+export const DIGIMON_EXT_KEYS = {
+  cardType: ["cardType", "Card Type"],
+  colors: ["color", "Color"],
+  level: ["levelLv", "Level"],
+  form: ["digimonForm", "Form"],
+  attribute: ["digimonAttribute", "Attribute"],
+  traits: ["digimonType", "Type"],
+  dp: ["digimonPowerDp", "DP"],
+  playCost: ["playCost", "Play Cost"],
+  effects: [
+    ["description", "Description"],
+    ["inheritedEffect", "Inherited Effect"],
+    ["securityEffect", "Security Effect"],
+  ],
+} as const;
+export const DIGIMON_PRODUCT_NUMBER_TAG_PATTERN =
+  /\s+-\s+[A-Z]+\d*-\d+[A-Z]?(?=\s*(?:[([]|$))/;
+export const DIGIMON_PRODUCT_VARIANT_TAG_PATTERN =
+  /\s*(?:\((?!X Antibody\))[^)]*\)|\[[^\]]*\])/g;
+export const DIGIMON_RARE_PRINTING_NAME_PATTERN =
+  "\\s-\\s[A-Z]+[0-9]*-[0-9]+|\\[|\\((?!X Antibody\\)|Alternate Art\\))";
+export const DIGIMON_RARITY_NONE = "None";
+export const DIGIMON_SET_ABBREVIATION_PATTERN = /^([A-Z]+)-0*(\d+)(_[A-Z]+)?$/;
+
 export const FAB_STANDARD_FOILING = "S";
 export const FAB_TCGPLAYER_FOIL_NAMES: Record<string, string> = {
   S: "Normal",
@@ -134,7 +161,11 @@ export const CARD_MATCH_LIMIT = 5;
 
 export const CARD_MATCH_RUNNER_UP_SEARCH_LIMIT = 20;
 
-export const CARD_MATCH_INDEX_PAGE_SIZE = 20_000;
+export const CARD_MATCH_INDEX_PAGE_SIZE = 10_000;
+export const CARD_MATCH_EMBEDDING_SEND_HEADER_BYTES = 4;
+export const CARD_MATCH_HALFVEC_MIN_PGVECTOR_VERSION = "0.7.0";
+export const CARD_MATCH_INDEX_WARMUP_CONCURRENCY = 3;
+export const CARD_MATCH_INDEX_PI_WARMUP_CONCURRENCY = 1;
 export const CARD_MATCH_INDEX_REVALIDATE_MS = 60_000;
 export const CARD_MATCH_GAME_LANGS_CACHE_MAX_ENTRIES = 100;
 export const CARD_MATCH_INDEX_ROWS_PER_EVENT_LOOP_TURN = 2_000;
@@ -146,8 +177,6 @@ export const CARD_MATCH_INDEX_INT8_EMBEDDING_MAX = 127;
 export const CARD_MATCH_INDEX_DEFAULT_MAX_MB = 1024;
 export const CARD_MATCH_INDEX_PI_DEFAULT_MAX_MB = 384;
 export const CARD_MATCH_INDEX_EVICTION_MIN_IDLE_MS = 10 * 60_000;
-export const CARD_VECTOR_INDEX_M = 32;
-export const CARD_VECTOR_INDEX_EF_CONSTRUCTION = 200;
 export const RANDOM_SAMPLE_CANDIDATE_MULTIPLIER = 5;
 
 export const MATCH_GAME_DEFAULT_LANG = "en";
@@ -157,3 +186,16 @@ export const MATCH_GAME_LANG_BY_GAME_KEY: Record<string, string> = {
 };
 
 export const MATCH_GAME_KEYS_MAX = 12;
+
+export const CATALOG_RELEASE_DATE_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}";
+
+export const CATALOG_LEADING_COLLECTOR_NUMBER_PATTERN = "^[0-9]{1,9}";
+export const STORED_CARD_CACHE_TTL_MS = 60_000;
+export const STORED_CARD_CACHE_MAX_ENTRIES = 2_000;
+export const CATALOG_SEARCH_CACHE_TTL_MS = 60_000;
+export const CATALOG_SEARCH_CACHE_MAX_ENTRIES = 300;
+export const GAMES_LIST_CACHE_MAX_AGE_MS = 60_000;
+export const ORG_OCR_SETTING_CACHE_TTL_MS = 30_000;
+export const ORG_OCR_SETTING_CACHE_MAX_ENTRIES = 5_000;
+export const CARD_IMAGE_PROXY_CACHE_CONTROL =
+  "public, max-age=604800, stale-while-revalidate=86400";

@@ -6,11 +6,32 @@ export interface CardMatchSourceRow {
   collectorNumber: string | null;
   rarePrinting: boolean;
   promoPrinting: boolean;
+  printedLanguageCode?: boolean | null;
   printedSetTotal?: number | null;
   printingMarkGroups?: PrintingMarkGroups | null;
   embedding: Float32Array;
   backEmbedding: Float32Array | null;
 }
+
+export interface CardMatchIndexPageRow extends Record<string, unknown> {
+  card_id: string;
+  name: string;
+  set_code: string;
+  collector_number: string | null;
+  rare_printing: boolean;
+  promo_printing: boolean;
+  printed_language_code: boolean | null;
+  printed_set_total: number | null;
+  printing_mark_groups: PrintingMarkGroups | null;
+  embedding: Buffer;
+  back_embedding: Buffer | null;
+}
+
+export type CardMatchEmbeddingTransferFormat = "vector" | "halfvec";
+
+export type CardMatchEmbeddingDecoder = (
+  sentBytes: Uint8Array | null,
+) => Float32Array | null;
 
 export interface CardMatchSegment {
   gameKey: string;
@@ -29,6 +50,7 @@ export interface CardMatchSegment {
   textBytes: number;
   rarePrinting: Uint8Array;
   promoPrinting: Uint8Array;
+  printedLanguageCode: Int8Array;
   printedSetTotals: Int32Array;
   printingMarkRegionKeys: string[];
   printingMarkGroupKeys: string[];

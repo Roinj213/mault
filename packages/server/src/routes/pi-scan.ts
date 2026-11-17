@@ -1,11 +1,13 @@
 import {
   PI_SCAN_SESSION_PATH,
+  type PiScanRemovalAction,
   type PiScanSessionSettingsBody,
   type PiScanSessionStartBody,
 } from "@magic-vault/shared";
 import { Hono } from "hono";
 import {
   getPiScanSession,
+  emergencyStopPiScanSession,
   pausePiScanSession,
   resumePiScanSession,
   startPiScanSession,
@@ -13,6 +15,7 @@ import {
   requestPiScanFeed,
   resetPiScanSessionStats,
   updatePiScanSettings,
+  updatePiScanRemoval,
 } from "../lib/pi-scan/session";
 import {
   rejectWhileImpersonating,
@@ -38,12 +41,10 @@ export const piScanRouter = new Hono<AppEnv>()
         409,
       );
     const body = await c.req.json<PiScanSessionStartBody>();
-    const header = c.req.header("Authorization") ?? "";
     const result = await startPiScanSession({
       orgId: c.get("orgId"),
       userId: c.get("userId"),
       jwtClaims: c.get("jwtClaims"),
-      accessToken: header.startsWith("Bearer ") ? header.slice(7) : "",
       body,
     });
     if (!result.ok) {
@@ -61,6 +62,19 @@ export const piScanRouter = new Hono<AppEnv>()
     }
     return c.json({ success: true, data: state });
   })
+  .post(
+    "/emergency-stop",
+    requireAuth,
+    requireOrg,
+    rejectWhileImpersonating,
+    async (c) => {
+      const state = await emergencyStopPiScanSession(c.get("orgId"));
+      if (!state) {
+        return c.json({ success: false, message: "No scan is running." }, 409);
+      }
+      return c.json({ success: true, data: state });
+    },
+  )
   .post("/resume", requireAuth, requireOrg, rejectWhileImpersonating, (c) => {
     const state = resumePiScanSession(c.get("orgId"));
     if (!state) {
@@ -68,19 +82,60 @@ export const piScanRouter = new Hono<AppEnv>()
     }
     return c.json({ success: true, data: state });
   })
-  .post("/settings", requireAuth, requireOrg, rejectWhileImpersonating, async (c) => {
-    const body = await c.req.json<PiScanSessionSettingsBody>();
-    const state = updatePiScanSettings(
-      c.get("orgId"),
-      body.foilType,
-      body.preferredSetCodes,
-      body.autoFeed,
-    );
-    if (!state) {
-      return c.json({ success: false, message: "No scan is running." }, 409);
-    }
-    return c.json({ success: true, data: state });
-  })
+  .post(
+    "/settings",
+    requireAuth,
+    requireOrg,
+    rejectWhileImpersonating,
+    async (c) => {
+      const body = await c.req.json<PiScanSessionSettingsBody>();
+      const state = updatePiScanSettings(
+        c.get("orgId"),
+        body.foilType,
+        body.preferredSetCodes,
+        body.autoFeed,
+        body.condition,
+        body,
+      );
+      if (!state) {
+        return c.json({ success: false, message: "No scan is running." }, 409);
+      }
+      return c.json({ success: true, data: state });
+    },
+  )
+  .post(
+    "/removal",
+    requireAuth,
+    requireOrg,
+    rejectWhileImpersonating,
+    async (c) => {
+      const body = await c.req.json<PiScanRemovalAction>();
+      if (
+        !body ||
+        !["select", "drop", "clear", "remove"].includes(body.action)
+      ) {
+        return c.json(
+          { success: false, message: "Invalid removal action." },
+          400,
+        );
+      }
+      const state = await updatePiScanRemoval(
+        c.get("orgId"),
+        c.get("userId"),
+        body,
+      );
+      if (!state)
+        return c.json(
+          {
+            success: false,
+            message:
+              "The removal queue is busy or the selection is unavailable.",
+          },
+          409,
+        );
+      return c.json({ success: true, data: state });
+    },
+  )
   .post("/feed", requireAuth, requireOrg, rejectWhileImpersonating, (c) => {
     const state = requestPiScanFeed(c.get("orgId"));
     if (!state) {
@@ -88,13 +143,22 @@ export const piScanRouter = new Hono<AppEnv>()
     }
     return c.json({ success: true, data: state });
   })
-  .post("/reset-stats", requireAuth, requireOrg, rejectWhileImpersonating, (c) => {
-    const state = resetPiScanSessionStats(c.get("orgId"));
-    if (!state) {
-      return c.json({ success: false, message: "No scan session to reset." }, 409);
-    }
-    return c.json({ success: true, data: state });
-  })
+  .post(
+    "/reset-stats",
+    requireAuth,
+    requireOrg,
+    rejectWhileImpersonating,
+    (c) => {
+      const state = resetPiScanSessionStats(c.get("orgId"));
+      if (!state) {
+        return c.json(
+          { success: false, message: "No scan session to reset." },
+          409,
+        );
+      }
+      return c.json({ success: true, data: state });
+    },
+  )
   .delete("/", requireAuth, requireOrg, rejectWhileImpersonating, (c) => {
     return c.json({ success: true, data: stopPiScanSession(c.get("orgId")) });
   });

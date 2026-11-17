@@ -1,6 +1,7 @@
 export const IMPERSONATION_ISSUER = "magic-vault-impersonation";
 export const MONITOR_LINK_ISSUER = "magic-vault-monitor-link";
 export const STORAGE_SHARE_LINK_ISSUER = "magic-vault-storage-share-link";
+export const CARD_SHARE_LINK_ISSUER = "magic-vault-card-share-link";
 export const SHOP_CATALOG_ISSUER = "magic-vault-shop-catalog";
 export const IMPERSONATION_TTL_SECONDS = 60 * 60;
 export const MONITOR_LINK_GUEST_NAME = "Guest";
@@ -10,3 +11,14 @@ export const MONITOR_LINK_INVALID_MESSAGE = "This link is invalid or has expired
 export const LOCAL_AUDIT_EVENTS_LIMIT = 100;
 export const SCANNING_BLOCKED_WHILE_IMPERSONATING_MESSAGE =
   "Scanning and sorter hardware are disabled while impersonating.";
+
+export const MONITOR_LINK_GUEST_SESSION_EVENTS: ReadonlySet<string> = new Set([
+  "card_added",
+  "card_updated",
+  "card_removed",
+  "cards_removed",
+  "cards_cleared",
+  "cards_tags_changed",
+  "cards_condition_changed",
+  "cards_foil_changed",
+]);

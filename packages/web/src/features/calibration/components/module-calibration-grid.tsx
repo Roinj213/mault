@@ -1,3 +1,4 @@
+import { getCalibrationKey } from "@magic-vault/shared";
 import { FirmwareFeatureGate } from "@/components/firmware-feature-gate";
 import { SliderField } from "@/components/slider-field";
 import { Callout } from "@/components/callout";
@@ -11,7 +12,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getCalibrationKey } from "@/features/calibration/lib/calibration-utils";
 import { cn } from "@/lib/utils";
 import {
   MODULE_DELAY_FIELDS,
@@ -161,14 +161,20 @@ export function ServoControl({
                 })
               : t("moduleCalibrationGrid.noPositionSelected")}
           </span>
-          <Tooltip>
-            <TooltipTrigger
-              render={<span className="text-sm font-bold">{percent}%</span>}
-            />
-            <TooltipContent>
-              {t("moduleCalibrationGrid.percentSliderTooltip")}
-            </TooltipContent>
-          </Tooltip>
+          <span className="flex items-center gap-1.5">
+            <span className="text-sm font-bold">{percent}%</span>
+            <Tooltip>
+              <TooltipTrigger
+                aria-label={t("moduleCalibrationGrid.percentSliderTooltip")}
+                className="rounded-sm text-foreground/70 hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <IconInfoCircle className="size-3.5" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                {t("moduleCalibrationGrid.percentSliderTooltip")}
+              </TooltipContent>
+            </Tooltip>
+          </span>
         </div>
         <Slider
           aria-labelledby={`${servoLabelId} ${editingPositionId}`}
@@ -211,7 +217,7 @@ export function ServoControl({
           <Tooltip>
             <TooltipTrigger
               render={
-                <div className="flex flex-row flex-1 bg-background border-y justify-between px-2 items-center">
+                <div className="flex flex-row flex-1 bg-card border-y justify-between px-2 items-center">
                   <p className="text-xs text-foreground/70">
                     {SERVO_PULSE_MIN}
                   </p>
@@ -351,7 +357,7 @@ export function ModuleCalibrationGrid({
 
   return (
     <div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px rounded-lg border bg-border"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
       data-tour="module-calibration-grid"
     >
       {modules.map((module) => {
@@ -361,11 +367,11 @@ export function ModuleCalibrationGrid({
           : cal;
         const showRaw = rawModeByModule[module] ?? false;
         return (
-          <div key={module} className="p-2 flex flex-col gap-5 bg-background">
+          <div key={module} className="flex flex-col gap-5 md:gap-2 rounded-lg bg-foreground/6 p-3">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold font-heading">
+              <h3 className="font-heading text-sm font-semibold">
                 {t("moduleLabel", { module })}
-              </h2>
+              </h3>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-medium">
                   {t("moduleCalibrationGrid.rawPulseToggleLabel")}

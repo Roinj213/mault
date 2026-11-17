@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { DynamicDialog } from "@/components/ui/responsive-dialog";
 import { useCameraContext } from "@/features/scanner/api/use-camera";
 import { FlatbedPlacementEditor } from "@/features/scanner/components/flatbed-placement-editor";
+import { FlatbedPlacementFields } from "@/features/scanner/components/flatbed-placement-fields";
 import { documentScanErrorMessage } from "@/features/scanner/lib/document-scan-errors";
 import {
   detectCardPlacement,
@@ -113,13 +114,19 @@ export function FlatbedPlacementDialog({
         </>
       }
     >
-      <div className="flex flex-col gap-3 text-control">
+      <div className="flex flex-col gap-3 md:gap-2 text-control">
         <Callout variant="info">{t("flatbed.calibration.instructions")}</Callout>
         {errorMessage && <Callout variant="error">{errorMessage}</Callout>}
         {preview ? (
           <>
             <FlatbedPlacementEditor
               imageUrl={preview.imageUrl}
+              glassWidthMm={preview.glassWidthMm}
+              glassHeightMm={preview.glassHeightMm}
+              placement={draftPlacement}
+              onPlacementChange={setDraftPlacement}
+            />
+            <FlatbedPlacementFields
               glassWidthMm={preview.glassWidthMm}
               glassHeightMm={preview.glassHeightMm}
               placement={draftPlacement}

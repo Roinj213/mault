@@ -1,3 +1,4 @@
+import { CompactCount } from "@/components/compact-value";
 import { useCollectionCardsSummary } from "@/features/collections/api/use-collection-cards";
 import { useScannedCards } from "@/features/scanner/api/use-scanned-cards";
 import { useStations } from "@/features/scanner/api/use-stations";
@@ -57,9 +58,9 @@ export function ScannerPip() {
         type="button"
         onClick={() => setMinimized(false)}
         title={t("scannerPip.expand")}
-        className="fixed bottom-8 right-0 z-50 flex items-center gap-2 rounded-l-lg border border-r-0 bg-background py-2 pr-2.5 pl-1.5 text-sm font-medium text-foreground shadow-xl transition-[padding] hover:pl-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="fixed bottom-8 right-0 z-50 flex items-center gap-2 rounded-l-xl bg-popover py-2 pr-2.5 pl-1.5 text-sm font-medium text-popover-foreground shadow-popover ring-1 ring-border transition-[padding] hover:pl-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <IconChevronLeft size={16} className="text-foreground/70" />
+        <IconChevronLeft className="size-4 text-foreground/70" />
         <StationStatusDot
           status={
             anyNeedsAttention
@@ -70,7 +71,7 @@ export function ScannerPip() {
           }
         />
         <span className="sr-only">{`${t("scannerPip.expand")}: ${statusLabel}`}</span>
-        <span className="tabular-nums">{totalCount}</span>
+        <CompactCount value={totalCount} className="tabular-nums" />
       </button>
     );
   }
@@ -78,11 +79,11 @@ export function ScannerPip() {
   return (
     <ScannerPipPreview
       variant="overlay"
-      className="fixed bottom-8 right-4 z-50 w-48 rounded-lg border shadow-xl"
+      className="fixed bottom-8 right-4 z-50 w-48 rounded-xl shadow-popover ring-1 ring-border"
       onOpen={() => navigate(SCANNER_PATH)}
       action={{
         label: t("scannerPip.minimize"),
-        icon: <IconChevronRight size={16} />,
+        icon: <IconChevronRight className="size-4" />,
         onClick: () => setMinimized(true),
       }}
     />

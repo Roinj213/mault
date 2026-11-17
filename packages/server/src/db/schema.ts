@@ -3,6 +3,7 @@ import type { CardPriceDetails } from "../lib/interfaces/card-prices";
 import {
   REPACK_UNIQUE_BY_PRINTING,
   type PrintingMarkGroups,
+  type CsvImportMapping,
 } from "@magic-vault/shared";
 import { sql, type SQL } from "drizzle-orm";
 import { authenticatedRole, crudPolicy } from "drizzle-orm/neon/rls";
@@ -112,10 +113,21 @@ export const cardImageVectors = pgTable(
       .using("hnsw", table.backEmbedding.op("vector_cosine_ops"))
       .where(sql`${table.backEmbedding} IS NOT NULL`),
     index("cards_name_trgm_idx").using("gin", table.name.op("gin_trgm_ops")),
+    index("cards_game_lang_name_idx").on(table.gameKey, table.lang, table.name),
     index("cards_collector_number_idx").on(
       table.gameKey,
       table.lang,
       sql`lower(${table.collectorNumber})`,
+    ),
+    index("cards_collector_number_unpadded_idx").on(
+      table.gameKey,
+      table.lang,
+      sql`ltrim(lower(${table.collectorNumber}), '0')`,
+    ),
+    index("cards_set_code_lower_idx").on(
+      table.gameKey,
+      table.lang,
+      sql`lower(${table.setCode})`,
     ),
     crudPolicy({
       role: authenticatedRole,
@@ -233,6 +245,7 @@ export const binSets = pgTable(
     id: serial().primaryKey(),
     guid: uuid("guid").defaultRandom(),
     name: text("name").notNull(),
+    description: text("description").notNull().default(""),
     isActive: boolean("is_active").notNull().default(false),
     gameId: integer("game_id").references(() => games.id),
     autoAssignField: text("auto_assign_field"),
@@ -384,6 +397,7 @@ export const bins = pgTable(
       .references(() => binSets.id),
     maxCopies: integer("max_copies"),
     maxCopiesBy: text("max_copies_by"),
+    maxCards: integer("max_cards"),
     overflowBin: integer("overflow_bin"),
     isDisabled: boolean("is_disabled").notNull().default(false),
     pickList: jsonb("pick_list"),
@@ -562,6 +576,7 @@ export const storageLocations = pgTable(
     name: text("name").notNull(),
     orgId: text("org_id").notNull(),
     shareLinkVersion: integer("share_link_version").notNull().default(0),
+    labelShortCode: text("label_short_code").notNull(),
     isDeleted: boolean("is_deleted").notNull().default(false),
     lastUsedAt: timestamp("last_used_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -569,6 +584,7 @@ export const storageLocations = pgTable(
   },
   (table) => [
     unique("storage_locations_guid_idx").on(table.guid),
+    unique("storage_locations_label_short_code_idx").on(table.labelShortCode),
     uniqueIndex("storage_locations_org_name_idx")
       .on(table.orgId, table.name)
       .where(sql`${table.isDeleted} = false`),
@@ -769,6 +785,9 @@ export const collectionCards = pgTable(
       table.binNumber,
       table.scannedAt,
     ),
+    index("collection_cards_collection_bin_unemptied_idx")
+      .on(table.collectionId, table.binNumber)
+      .where(sql`${table.binEmptiedAt} IS NULL`),
     index("collection_cards_org_bin_emptied_idx").on(
       table.orgId,
       table.binNumber,
@@ -862,6 +881,32 @@ export const webhookDeliveries = pgTable(
   ],
 ).enableRLS();
 
+export const importTemplates = pgTable(
+  "import_templates",
+  {
+    id: serial().primaryKey(),
+    guid: uuid("guid").defaultRandom().notNull(),
+    orgId: text("org_id").notNull(),
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    mapping: jsonb("mapping").$type<CsvImportMapping>().notNull(),
+    isDeleted: boolean("is_deleted").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    unique("import_templates_guid_idx").on(table.guid),
+    uniqueIndex("import_templates_org_type_name_idx")
+      .on(table.orgId, table.type, sql`lower(${table.name})`)
+      .where(sql`${table.isDeleted} = false`),
+    crudPolicy({
+      role: authenticatedRole,
+      read: orgRls(table.orgId),
+      modify: orgRls(table.orgId),
+    }),
+  ],
+).enableRLS();
+
 export const tradeOffers = pgTable(
   "trade_offers",
   {
@@ -875,17 +920,22 @@ export const tradeOffers = pgTable(
     guestContact: text("guest_contact").notNull(),
     guestNote: text("guest_note"),
     guestKeyHash: text("guest_key_hash").notNull(),
+    guestUserId: text("guest_user_id"),
     wantedCards: jsonb("wanted_cards").notNull(),
     offeredCards: jsonb("offered_cards").notNull(),
+    offeredCashAmount: doublePrecision("offered_cash_amount"),
+    offeredCashCurrency: text("offered_cash_currency"),
     status: text("status").notNull().default("pending"),
     respondedAt: timestamp("responded_at"),
     respondedByUserId: text("responded_by_user_id"),
+    remainingPickScanIds: text("remaining_pick_scan_ids").array(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     unique("trade_offers_guid_idx").on(table.guid),
     index("trade_offers_org_status_idx").on(table.orgId, table.status),
     index("trade_offers_guest_idx").on(table.guestKeyHash),
+    index("trade_offers_guest_user_idx").on(table.guestUserId, table.createdAt),
     crudPolicy({
       role: authenticatedRole,
       read: orgRls(table.orgId),
@@ -903,6 +953,7 @@ export const shareLinks = pgTable(
     linkKind: text("link_kind").notNull(),
     collectionId: integer("collection_id"),
     storageLocationId: integer("storage_location_id"),
+    collectionCardId: integer("collection_card_id"),
     subjectGuid: uuid("subject_guid").notNull(),
     subjectVersion: integer("subject_version").notNull(),
     purpose: text("purpose").notNull(),
@@ -911,9 +962,11 @@ export const shareLinks = pgTable(
     expiresAt: timestamp("expires_at").notNull(),
     createdByUserId: text("created_by_user_id").notNull(),
     revokedAt: timestamp("revoked_at"),
+    shortCode: text("short_code").notNull(),
   },
   (table) => [
     unique("share_links_guid_idx").on(table.guid),
+    unique("share_links_short_code_idx").on(table.shortCode),
     index("share_links_org_expires_idx").on(table.orgId, table.expiresAt),
     index("share_links_subject_idx").on(table.subjectGuid),
     crudPolicy({
@@ -939,12 +992,14 @@ export const shopCatalogs = pgTable(
     showsPrices: boolean("shows_prices").notNull().default(true),
     isPublic: boolean("is_public").notNull().default(false),
     shareLinkVersion: integer("share_link_version").notNull().default(0),
+    shortCode: text("short_code").notNull(),
     isDeleted: boolean("is_deleted").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
     unique("shop_catalogs_guid_idx").on(table.guid),
+    unique("shop_catalogs_short_code_idx").on(table.shortCode),
     index("shop_catalogs_org_idx").on(table.orgId),
     crudPolicy({
       role: authenticatedRole,
@@ -963,6 +1018,7 @@ export const fulfilmentOrders = pgTable(
     source: text("source").notNull().default("generic"),
     status: text("status").notNull().default("open"),
     lines: jsonb("lines").notNull().default([]),
+    orderBins: jsonb("order_bins").notNull().default({}),
     createdByUserId: text("created_by_user_id"),
     closedByUserId: text("closed_by_user_id"),
     closedAt: timestamp("closed_at"),
@@ -991,6 +1047,7 @@ export const cardSales = pgTable(
       onDelete: "set null",
     }),
     scanId: uuid("scan_id"),
+    orderRef: text("order_ref"),
     cardId: text("card_id").notNull(),
     cardName: text("card_name").notNull(),
     setCode: text("set_code"),
@@ -1180,6 +1237,9 @@ export const unmatchedCards = pgTable(
       table.binNumber,
       table.binEmptiedAt,
     ),
+    index("unmatched_cards_collection_bin_unemptied_idx")
+      .on(table.collectionId, table.binNumber)
+      .where(sql`${table.binEmptiedAt} IS NULL AND ${table.isDeleted} = false`),
     crudPolicy({
       role: authenticatedRole,
       read: orgRls(table.orgId),
@@ -1324,6 +1384,8 @@ export const orgSettings = pgTable(
     discordErrorThreadId: text("discord_error_thread_id"),
     discordScanRoleId: text("discord_scan_role_id"),
     discordErrorRoleId: text("discord_error_role_id"),
+    discordTradeChannelId: text("discord_trade_channel_id"),
+    discordTradeRoleId: text("discord_trade_role_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

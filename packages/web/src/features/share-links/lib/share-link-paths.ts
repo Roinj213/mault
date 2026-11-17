@@ -1,9 +1,5 @@
-import { buildMonitorLinkUrl } from "@/features/collections/api/monitor-links";
-import { buildStorageShareLinkUrl } from "@/features/storage/api/storage-share-links";
-import type { OrgShareLink } from "@magic-vault/shared";
+import { buildShareLinkUrl, type ShareableLink } from "@magic-vault/shared";
 
-export function shareLinkUrl(link: OrgShareLink): string {
-  return link.kind === "collection"
-    ? buildMonitorLinkUrl(link.subjectGuid, link.token)
-    : buildStorageShareLinkUrl(link.subjectGuid, link.token);
+export function shareLinkUrl(link: ShareableLink): string {
+  return buildShareLinkUrl(window.location.origin, link);
 }

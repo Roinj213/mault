@@ -25,6 +25,7 @@ import type { SectionNavItem } from "@/lib/interfaces/nav";
 import {
   IconChevronDown,
   IconClipboard,
+  IconCpu,
   IconDeviceUsb,
   IconDeviceUsbFilled,
   IconDownload,
@@ -49,7 +50,7 @@ import {
   DEFAULT_CALIBRATION_SECTION,
 } from "@/lib/constants/calibration";
 import { useIsMobile } from "@/hooks/use-is-mobile";
-import { usePiHost } from "@/hooks/use-pi-host";
+import { usePiHostState } from "@/hooks/use-pi-host";
 import { MOBILE_NAV_SCROLL_PADDING_CLASS } from "@/lib/constants/nav";
 import { cn } from "@/lib/utils";
 import { PageIntro } from "@/components/page-intro";
@@ -61,6 +62,7 @@ export function useCalibrationOutletContext() {
 
 export default function CalibrateLayout() {
   const { t } = useTranslation(["calibration", "common"]);
+  const { t: tScanner } = useTranslation("scanner");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -112,7 +114,7 @@ export default function CalibrateLayout() {
   const isSessionActive = useIsSessionActive();
   const { isImpersonating } = useImpersonation();
   const isMobile = useIsMobile();
-  const piHost = usePiHost();
+  const { piHost, piSorter } = usePiHostState();
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -128,23 +130,37 @@ export default function CalibrateLayout() {
 
         <div
           className={cn(
-            "flex-1 lg:col-span-10 min-h-0 lg:h-full overflow-y-auto @container p-4 pt-0 flex flex-col gap-4",
+            "flex-1 lg:col-span-10 min-h-0 lg:h-full overflow-y-auto @container p-4 pt-0 md:px-3 flex flex-col gap-4 md:gap-2",
             isMobile && piHost && MOBILE_NAV_SCROLL_PADDING_CLASS,
           )}
         >
           <div
             inert={isSessionActive}
             aria-disabled={isSessionActive}
-            className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-2 border-b bg-background/80 p-2 backdrop-blur-md"
+            className="sticky top-0 z-20 -mx-4 md:-mx-3 flex flex-wrap items-center justify-between gap-2 border-b bg-background/80 p-2 backdrop-blur-md"
           >
             {isImpersonating ? (
               <div />
             ) : (
               <div
-                className="flex flex-wrap items-center gap-2"
+                className="flex flex-wrap items-center gap-1.5"
                 data-tour="calibration-connect"
               >
-                {isConnected ? (
+                {piSorter ? (
+                  <Button
+                    variant="outline"
+                    disabled={isConnected}
+                    title={
+                      !isConnected
+                        ? tScanner("serial.piSorterUnavailable")
+                        : undefined
+                    }
+                    onClick={() => void connect()}
+                  >
+                    <IconCpu />
+                    {tScanner("serial.piSorterBuiltIn")}
+                  </Button>
+                ) : isConnected ? (
                   <Button variant="outline" onClick={disconnect}>
                     <IconDeviceUsbFilled />
                     {t("calibratePage.disconnect")}
@@ -202,7 +218,7 @@ export default function CalibrateLayout() {
                   {t("binRoutingControls.retractCard")}
                 </Button>
                 {isUnconfigured ? (
-                  <span className="text-sm text-foreground/70">
+                  <span className="text-xs text-foreground/70">
                     {t("calibratePage.calibrateBeforeTest")}
                   </span>
                 ) : (
@@ -215,7 +231,7 @@ export default function CalibrateLayout() {
                 )}
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <DropdownMenu>
                 <DropdownMenuTrigger render={<Button variant="outline" />}>
                   {isImporting ? (
@@ -279,16 +295,17 @@ export default function CalibrateLayout() {
               {t("common:impersonation.calibrationReadOnly")}
             </Callout>
           )}
-          <SettingsSectionLayoutContext value="flat">
+          <PageIntro
+            isPageHeading
+            title={t(`sections.${section}`)}
+            description={t(`sectionIntros.${section}`)}
+          />
+          <SettingsSectionLayoutContext value="card">
             <div
               inert={isSessionActive || isImpersonating}
               aria-disabled={isSessionActive || isImpersonating}
-              className="flex flex-1 flex-col gap-6 pb-4"
+              className="flex flex-1 flex-col gap-6 md:gap-2 pb-4"
             >
-              <PageIntro
-                title={t(`sections.${section}`)}
-                description={t(`sectionIntros.${section}`)}
-              />
               <Outlet context={calibrationPage} />
             </div>
           </SettingsSectionLayoutContext>

@@ -1,3 +1,4 @@
+import type { IconBadgeTone } from "@/lib/interfaces/icon-badge";
 import type { ComponentProps, ReactNode } from "react";
 import type { THEME_OPTIONS } from "@/lib/constants/nav";
 import type { PlanFeatureKey } from "@magic-vault/shared";
@@ -10,8 +11,11 @@ export interface NavSubItemDef {
   onClick?: () => void;
 }
 
+export type NavSubItemProps = Omit<NavSubItemDef, "key">;
+
 export interface NavItemDef {
   to: string;
+  activePaths?: string[];
   icon: ReactNode;
   label: string;
   end?: boolean;
@@ -21,6 +25,10 @@ export interface NavItemDef {
   lockTag?: string;
   external?: boolean;
   subItems?: NavSubItemDef[];
+}
+
+export interface NavItemWithSubItemsProps extends NavItemDef {
+  subItems: NavSubItemDef[];
 }
 
 export interface SectionNavItem {
@@ -57,6 +65,7 @@ export interface MobileNavTabIconProps {
 
 export interface MobilePageHeaderProps {
   title: ReactNode;
+  titleVisuallyHidden?: boolean;
   subtitle?: string;
   subtitleLeading?: ReactNode;
   backTo?: string;
@@ -66,16 +75,10 @@ export interface MobilePageHeaderProps {
   collapsed?: boolean;
 }
 
-export interface MobileQuickActionProps extends ComponentProps<"button"> {
-  icon: ReactNode;
-  label: string;
-  hint?: ReactNode;
-  to?: string;
-}
 
 export interface MobileIconBadgeProps {
   children: ReactNode;
-  tone?: "neutral" | "primary" | "destructive" | "warning" | "success";
+  tone?: IconBadgeTone;
   className?: string;
 }
 
@@ -101,11 +104,19 @@ export interface MobileListRowProps {
   disabled?: boolean;
 }
 
+export interface PiHostState {
+  piHost: boolean;
+  piSorter: boolean;
+  settled: boolean;
+}
+
 export interface AppVersionResponse {
   success: boolean;
   data: {
     version: string;
     piHost?: boolean;
+    piSorter?: boolean;
+    piController?: boolean;
     latestFirmwareVersion?: string | null;
   };
 }
@@ -144,6 +155,7 @@ export interface PageHeaderProps {
   actions?: ReactNode;
   tabs?: ReactNode;
   children?: ReactNode;
+  spansFullWidth?: boolean;
 }
 
 export interface ViewTabsProps<T extends string> {
@@ -157,7 +169,8 @@ export interface ViewTabsProps<T extends string> {
 
 export interface PageIntroProps {
   title: string;
-  description: string;
+  description?: string;
+  isPageHeading?: boolean;
   className?: string;
 }
 

@@ -1,3 +1,4 @@
+import { LANGUAGE_LABELS } from "@magic-vault/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -24,7 +25,6 @@ import { useActiveOrgId } from "@/hooks/use-org";
 import { useTheme } from "@/hooks/use-theme";
 import { upgradeRequiredMessage } from "@/lib/api/upgrade-required-error";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/constants/collections";
-import { LANGUAGE_LABELS } from "@/lib/constants/languages";
 import { SPACING } from "@/lib/constants/theme";
 import { createCollectionFormSchema, type CreateCollectionFormValues } from "@magic-vault/shared";
 import { translateFormErrorMessage } from "@/lib/form-validation";
@@ -114,7 +114,7 @@ export default function NewCollectionScreen() {
             onPress={() => setSheet("game")}
           />
           {errors.gameGuid ? (
-            <AppText size="xs" style={{ color: colors.destructive }}>
+            <AppText size="xs" tone="destructive" accessibilityLiveRegion="polite">
               {translateFormErrorMessage(t, errors.gameGuid.message)}
             </AppText>
           ) : null}
@@ -151,7 +151,7 @@ export default function NewCollectionScreen() {
             onPress={() => setSheet("lang")}
           />
           {errors.lang ? (
-            <AppText size="xs" style={{ color: colors.destructive }}>
+            <AppText size="xs" tone="destructive" accessibilityLiveRegion="polite">
               {translateFormErrorMessage(t, errors.lang.message)}
             </AppText>
           ) : null}

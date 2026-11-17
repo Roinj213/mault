@@ -22,6 +22,9 @@ export default function GeneralSettingsScreen() {
     <SettingsPage
       title={t("settings.sections.general.title")}
       isLoading={draft.isLoading}
+      isLoadError={draft.isLoadError}
+      isRetryingLoad={draft.isRetryingLoad}
+      onRetryLoad={draft.retryLoad}
       isDirty={draft.isDirty}
       isSaving={draft.isSaving}
       saveError={draft.saveError}
@@ -42,8 +45,8 @@ export default function GeneralSettingsScreen() {
                     <Pressable
                       key={color.name}
                       accessibilityRole="radio"
-                      accessibilityLabel={color.name}
-                      accessibilityState={{ selected, disabled }}
+                      accessibilityLabel={t(`settings.appearance.colors.${color.name.toLowerCase()}`)}
+                      accessibilityState={{ checked: selected, disabled }}
                       disabled={disabled}
                       hitSlop={4}
                       onPress={() => field.onChange(color.name)}

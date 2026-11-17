@@ -1,6 +1,7 @@
 import type {
   PickListEntry,
   PickListEntryInput,
+  ScanCheckCard,
   StorageLocation,
   StorageLocationSearchResult,
   StorageVerifyNameCount,
@@ -21,7 +22,7 @@ export interface StoragePickListState {
   setPicked: (scanId: string, picked: boolean) => void;
   clear: () => void;
   finish: () => void;
-  refetch: () => void;
+  refetch: () => Promise<unknown>;
 }
 
 export interface StorageVerifyState {
@@ -35,7 +36,7 @@ export interface StorageVerifyState {
   setVerified: (scanId: string, verified: boolean) => void;
   addNotInLocation: (cardName: string) => void;
   startOver: () => void;
-  refetch: () => void;
+  refetch: () => Promise<unknown>;
 }
 
 export type CardScanNoticeKind = "checked" | "already-checked" | "not-listed" | "no-match" | "failed";
@@ -68,4 +69,21 @@ export interface StorageLocationActionTarget {
 export interface StorageLocationActionsOptions {
   onDeleted?: () => void;
   shareLinkCountGuid?: string | null;
+}
+
+export interface ScanCheckSourceCard extends ScanCheckCard {
+  locationName: string;
+  position: number;
+}
+
+export interface ScanCheckSource {
+  cards: ScanCheckSourceCard[];
+  checkedScanIds: ReadonlySet<string>;
+  checkedCount: number;
+  setChecked: (scanId: string, checked: boolean) => void;
+  onNotListed: ((cardName: string) => void) | undefined;
+}
+
+export interface OpenStorageLabelOptions {
+  replacesCurrentScreen?: boolean;
 }

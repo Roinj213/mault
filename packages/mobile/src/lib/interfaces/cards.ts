@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import type { ImageProps } from "expo-image";
 import type { CARD_DETAIL_MENU_SHEETS } from "@/lib/constants/cards";
 import type {
   CardCondition,
@@ -10,6 +12,8 @@ import type {
   PriceSource,
   ReviewGridAttributes,
   ReviewGridCard,
+  ScanImageSide,
+  ScanDraftFormValues,
   ScannedCard,
 } from "@magic-vault/shared";
 
@@ -23,7 +27,6 @@ export interface ReviewGridData {
 export interface ReviewGridTileProps {
   card: ReviewGridCard;
   attributes: ReviewGridAttributes;
-  accepting: boolean;
   onAccept: () => void;
   onCorrect: () => void;
   onPickAttribute: (field: ReviewGridAttributeField) => void;
@@ -162,6 +165,32 @@ export interface OcrRegionCropsProps {
 
 export interface CardDetailSkeletonProps {
   showsCapturedScan: boolean;
+  showsAttributePills?: boolean;
+}
+
+export interface CardDetailTitleBlockProps {
+  name: string;
+  subtitle?: string | null;
+  price?: number | null;
+}
+
+export interface CardImageFrameProps {
+  children?: ReactNode;
+}
+
+export interface CardDetailArtProps {
+  card: PlayingCard | undefined;
+  caption?: string;
+}
+
+export interface CardDetailInfoSectionsProps {
+  card: PlayingCard;
+  binNumber?: number;
+  isFoil: boolean;
+  foilType?: string | null;
+  stamp?: string | null;
+  condition?: CardCondition | null;
+  priceExtras?: ReactNode;
 }
 
 export interface SkeletonTextLineProps {
@@ -174,4 +203,50 @@ export interface CardTagToggle {
   tag: CardTag;
   enabled: boolean;
   isUndo?: boolean;
+}
+
+export interface CardReviewAccept {
+  kind: "confirm" | "review";
+  acceptedScanId: string;
+}
+
+export interface CardReviewAcceptState {
+  status: "idle" | "pending" | "success" | "error";
+  variables: CardReviewAccept | undefined;
+}
+
+export interface CardArtImageUrls {
+  normal?: string | null;
+  small?: string | null;
+}
+
+export interface CardArtSources {
+  imageUrl: string | null;
+  placeholderUrl: string | null;
+}
+
+export type CardArtProps = Omit<ImageProps, "source" | "placeholder" | "placeholderContentFit" | "transition"> & {
+  imageUrl: string | null;
+  placeholderUrl?: string | null;
+};
+
+export interface CardThumbnailProps {
+  imageUrl: string | null;
+  placeholderUrl?: string | null;
+  width?: number;
+  accessibilityLabel?: string;
+}
+
+export interface ScanDraftSave {
+  values: ScanDraftFormValues;
+  dirtyFields: Partial<Record<keyof ScanDraftFormValues, boolean>>;
+}
+
+export type { AddCatalogCardInput } from "@magic-vault/shared";
+
+export interface ScanImageShareRequest {
+  collectionGuid: string;
+  scanId: string;
+  side: ScanImageSide;
+  cardName: string | null | undefined;
 }

@@ -16,7 +16,7 @@ Each game is a pluggable adapter (`packages/server/src/lib/adapters/<game>/`) pl
 
 1. The feeder pushes a card from the hopper into the camera's calibrated scan region and waits for it to settle at the IR sensor.
 2. The client finds the card's four corners, dewarps it and embeds it with [CollectorVision](https://github.com/HanClinto/CollectorVision)'s corner detector and Milo embedder (ONNX, in the browser or on the phone). If the client can't run the models, the server embeds the image instead.
-3. The server finds the closest cards with a pgvector HNSW search. When printings look alike, OCR of the name, set and number breaks the tie; weak matches are flagged for review.
+3. The server finds the closest cards by comparing the embedding against its in-memory index of every card vector (stored in Postgres with pgvector). When printings look alike, OCR of the name, set and number breaks the tie; weak matches are flagged for review.
 4. The collection's active bin preset decides the bin (rules, auto-assign, repack, alphabetical, chaos, pick lists, overflow and copy limits), client-side.
 5. The client tells the sorter which module and direction to use, over USB serial, Bluetooth or Wi-Fi, and saves the scan in parallel.
 
@@ -118,7 +118,7 @@ cp .env.docker.example .env    # local
 
 ### Local
 
-1. In `.env`, set `POSTGRES_PASSWORD`, `OWN_AUTH_TOKEN_PEPPER`, `IMPERSONATION_SECRET` and `MONITOR_LINK_SECRET` (`openssl rand -hex 32` each).
+1. In `.env`, set `POSTGRES_PASSWORD`, `OWN_AUTH_TOKEN_PEPPER`, `IMPERSONATION_SECRET`, and `MONITOR_LINK_SECRET` (`openssl rand -hex 32` each).
 2. `docker compose up -d`, then open `http://localhost:8080` and sign up. The first account becomes platform admin with a "Home" organization.
 3. In `/app/admin`, add a game in the Games Manager and sync it. Scans can't match until one has synced.
 
@@ -133,9 +133,9 @@ INSERT INTO platform_user_roles (user_id, role) VALUES ('<own_auth_users.id>', '
 ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
 ```
 
-### Raspberry Pi
+### Raspberry Pi and Orange Pi Zero 4
 
-A Raspberry Pi can host the local-auth app and run the sorter. Postgres is the Pi's own server on port 5432, not Docker. The scanner camera is a USB webcam plugged into the Pi. Use Raspberry Pi OS with the desktop. The examples use `~/mault`, but you can install in another directory; the service paths are configured automatically.
+A Raspberry Pi or Orange Pi Zero 4 can host the local-auth app and run the sorter headlessly. Install from an SSH session as a normal user with sudo access; a desktop and Chromium are optional. Postgres runs locally on port 5432. The scanner camera is a USB webcam plugged into the board, owned by `mault-camera.service`. Phone and computer browsers use the authenticated camera relay; they do not need browser permission to access that webcam. The examples use `~/mault`, but service paths are configured for your checkout directory.
 
 ```bash
 git clone https://github.com/maultxyz/mault.git ~/mault
@@ -143,13 +143,20 @@ cd ~/mault
 scripts/pi/install.sh
 ```
 
-`install.sh` installs Node, pnpm, Postgres with pgvector, ffmpeg, and the webcam tools, then writes `.env` with `AUTH_PROVIDER=local`, `PI_HOST=1`, and a `mault` database on `127.0.0.1:5432`. Run it as the desktop user. It asks for your password when it needs root. If `git` is not installed yet, run `sudo apt install -y git` before the clone. If `.env` already exists and has no `PI_HOST` line, the script appends `PI_HOST=1`. It then creates the `mault` role and database, builds the server and the web app, runs migrations, and enables three user services. Linger is turned on so those services start at boot. It adds the desktop user to the `dialout` group so the API can open the sorter. When this login does not have that group yet, it restarts the user services so the new membership applies.
+`install.sh` installs Node, pnpm, Postgres with pgvector, ffmpeg, and the webcam tools, then writes `.env` with `AUTH_PROVIDER=local` and a `mault` database on `127.0.0.1:5432`. Run it as your normal service user, not root. It asks for your password when it needs root. If `git` is not installed yet, run `sudo apt install -y git` before the clone. The installer always sets `PI_HOST=1`. On the first install without a saved hardware choice, it asks whether this Pi directly controls the sorter (`PI_SORTER=1`) or an Arduino/ESP32 is connected over USB (`PI_SORTER=0`, the default). Reruns preserve that choice and calibration. For a noninteractive install, supply `PI_SORTER=1` or `PI_SORTER=0` in the environment. It then creates the `mault` role and database, builds the app, runs migrations, and enables user services. Linger starts them at boot. Both modes grant `video` access to the camera service user. USB mode also needs `dialout`; direct mode grants `gpio` and `i2c` access and installs the selected board's GPIO/I2C dependencies. Raspberry Pi direct mode enables I2C through `raspi-config`. The user services restart if group membership needs refreshing. If I2C requires a reboot, reboot and rerun the installer.
+
+For a new direct-mode install, select Raspberry Pi or Orange Pi Zero 4 when prompted. The installer saves `PI_SORTER_BOARD=raspberry-pi` or `PI_SORTER_BOARD=orange-pi-zero4`; existing direct installs default to Raspberry Pi. For an unattended Orange Pi hardware selection, run `PI_SORTER=1 PI_SORTER_BOARD=orange-pi-zero4 scripts/pi/install.sh`. Installation is headless by default and skips desktop shortcuts even when display variables are present. Use `scripts/pi/install.sh --desktop` from a graphical session to create the optional shortcuts. The `--headless` flag remains accepted.
+
+Orange Pi Zero 4 direct mode requires a supported Zero 4 system image and the libgpiod v2 Python API (`python3-libgpiod`); the installer checks that API. Enable the image's `i2c0` boot overlay separately and reboot so the header TWI0 adapter is available. GPIO and I2C devices are discovered by their hardware paths.
+
+In direct mode the Pi itself is the sorter. The API sends commands to the local controller process, which operates the PCA9685 and sensors through GPIO/I2C. There is no USB discovery or `/pi-serial` connection. The web app automatically attaches its built-in sorter controls through authenticated `/pi-sorter` access, without a device picker or automatic mechanical test. Multiple browsers share the server's controller connection; commands and replies are coordinated centrally. A scan reserves hardware-changing commands, and competing motion or configuration commands return busy. Viewing the app from another device does not take control away. Calibration is stored in `.pi-controller/calibration.json` under the checkout; the installer writes absolute `PI_CONTROLLER_CONFIG` and `PI_CONTROLLER_SOCKET` paths into `.env`. The Python controller uses the existing serial command protocol and updates with the app; it does not require firmware flashing. Native mobile connections remain BLE or Wi-Fi relay connections.
 
 | Service        | Role                                                                                                       |
 | -------------- | ---------------------------------------------------------------------------------------------------------- |
 | `mault-api`    | API on `127.0.0.1:3001`, accessible through the web app's `/api` proxy                                     |
 | `mault-web`    | Web app on port 8080. Proxies `/api` to the API, including authenticated camera access at `/api/pi-camera` |
 | `mault-camera` | `scripts/pi/camera-ctl.py` on `127.0.0.1:8765`. This process owns the USB webcam                           |
+| `mault-controller` | Direct mode only: local Python GPIO/I2C controller, started and stopped with the API |
 
 Remote browsers use port 8080. The Linux API service binds only to localhost; HTTP and WebSocket requests reach it through the web app's proxy. Other deployments keep the existing API bind address unless `API_HOST` is configured.
 
@@ -173,12 +180,12 @@ tail -n 100 "${XDG_STATE_HOME:-$HOME/.local/state}/mault/api.log"
 ```
 
 ```bash
-scripts/pi/start.sh            # start the services and open Chromium on the Pi desktop
+scripts/pi/start.sh --headless # start services without opening a local browser
 scripts/pi/start.sh --kiosk
 scripts/pi/stop.sh
 ```
 
-Open `http://<the-pi>:8080` from another computer to scan. That browser is not on localhost, so while `PI_HOST` is on it uses the Pi's webcam stream and the sorter plugged into the Pi. The scan loop runs in the API: feed, wait the capture settle delay once, take the photo, match, and route. `start.sh` also opens Chromium on the Pi at `http://127.0.0.1:8080`. The camera helper owns the webcam, and the API owns the sorter during a scan. Camera preview and focus control require signing in to an organization.
+Open `http://<the-pi>:8080` from another computer to scan. That browser is not on localhost, so while `PI_HOST` is on it uses the Pi's webcam stream and the sorter plugged into the Pi. The scan loop runs in the API: feed, wait the capture settle delay once, take the photo, match, and route. `start.sh --headless` starts only the services. Without that flag, `start.sh` can also open Chromium when run in a graphical session. No Chromium camera-permission setup is required. The camera helper owns the webcam, and the API owns the sorter during a scan. Camera preview and focus control require signing in to an organization.
 
 The API reports a Pi host when `PI_HOST=1`, and also when `/proc/device-tree/model` contains `Raspberry Pi` and `PI_HOST` is unset. `PI_HOST=0` turns the remote-browser behavior off. `WEBCAM_DEVICE` selects a specific `/dev/video*` node when the helper should not pick one itself.
 
@@ -236,7 +243,7 @@ Coolify: see step 5 under [Coolify](#coolify). Outside Docker: `pnpm --filter @m
 
 ## Deployment
 
-Four images, built from the repo root and published by CI (`.github/workflows/deploy.yml`) to `ghcr.io/dishwasher-detergent/mault-*`, tagged `vX.Y.Z`, `sha-*` and `:latest` (from `master`) or `:dev`:
+Five images, built from the repo root and published by CI (`.github/workflows/deploy.yml`) to `ghcr.io/maultxyz/mault-*`, tagged `vX.Y.Z`, `sha-*` and `:latest` (from `master`) or `:dev`:
 
 | Dockerfile            | Image            | Notes                                            |
 | --------------------- | ---------------- | ------------------------------------------------ |
@@ -244,6 +251,7 @@ Four images, built from the repo root and published by CI (`.github/workflows/de
 | `Dockerfile.web`      | `mault-web`      | Vite SPA on nginx, proxies `/api` to the server  |
 | `Dockerfile.api-docs` | `mault-api-docs` | Public API reference                             |
 | `Dockerfile.bot`      | `mault-bot`      | Optional Discord bot                             |
+| `Dockerfile.shortener` | `mault-shortener` | Optional link shortener                         |
 
 The images are public, so the web image reads its `VITE_*` settings at container start (`docker/web-env.sh` writes `env.js`). The server reports the bundled firmware's version from `FIRMWARE_VERSION` in `firmware/main/main.ino`, which the server image copies.
 
@@ -253,24 +261,35 @@ The scanner downloads its ONNX weights from `huggingface.co` at runtime (pinned 
 
 ```bash
 docker compose up --build -d                 # postgres, server, web (:8080), api-docs (:8081)
-docker compose --profile bot up --build -d   # + Discord bot (:3002)
+docker compose --profile shortener up --build -d   # + link shortener (:8082)
+docker compose --profile bot up --build -d   # + Discord bot (internal :3002)
 ```
 
 - For production, set `WEB_URL` to your public origin and use real secrets.
 - With `AUTH_PROVIDER=neon`, `.env` must point at a migrated Neon project; the bundled `postgres` then sits unused.
 - Prices need the cron job from [Prices](#prices).
 
+### Link shortener
+
+Short links are optional. Without them, share links and shop catalogs are shared as their full tokenized URLs. To share `https://<short domain>/<code>` instead, run the standalone shortener (`packages/shortener`, image `mault-shortener`) on its own domain:
+
+1. Route the short domain to the shortener on port 3003 and set its `SHORT_LINK_TARGET_ORIGIN` to the web origin. It keeps its table in the database's `shortener` schema, created on start.
+2. On the API, set `SHORT_LINK_BASE_URL` (the short domain), `SHORTENER_URL` (how the API reaches the shortener internally) and `SHORTENER_API_SECRET` (also given to the shortener).
+
+The API then registers each link's code with the shortener and re-registers every live link when it starts, so links created while short links were off also get short URLs. Unknown codes redirect to the web app's `/link-not-found`. Platform admins can also create custom links on the short domain (for example `/discord` to an invite) under Admin > Short links. Mobile builds need `MOBILE_SHORT_LINK_URL` set to the same domain to read those QR codes.
+
 ### Coolify
 
-`docker-compose-coolify.yml` runs the published images (web, API, pgvector Postgres, optional bot), so nothing builds on your server. `MAULT_IMAGE_TAG` picks the tag (default `latest`; set e.g. `v1.2.3` to pin).
+`docker-compose-coolify.yml` runs the published images (web, API, pgvector Postgres, optional bot and link shortener), so nothing builds on your server. `MAULT_IMAGE_TAG` picks the tag (default `latest`; set e.g. `v1.2.3` to pin).
 
-1. **+ New** > **Public Repository** with `https://github.com/dishwasher-detergent/mault`, branch `master`, build pack **Docker Compose** and compose file `/docker-compose-coolify.yml`.
-2. Set `WEB_URL` (public origin, no trailing slash) and give `POSTGRES_PASSWORD`, `IMPERSONATION_SECRET`, `OWN_AUTH_TOKEN_PEPPER` and `MONITOR_LINK_SECRET` each its own `openssl rand -hex 32` value. Everything else is optional (see `.env.docker.example`).
+1. **+ New** > **Public Repository** with `https://github.com/maultxyz/mault`, branch `master`, build pack **Docker Compose** and compose file `/docker-compose-coolify.yml`.
+2. Set `WEB_URL` (public origin, no trailing slash) and give `POSTGRES_PASSWORD`, `IMPERSONATION_SECRET`, `OWN_AUTH_TOKEN_PEPPER`, and `MONITOR_LINK_SECRET` each its own `openssl rand -hex 32` value. Everything else is optional (see `.env.docker.example`).
 3. Route your domain to the **web** service on port 80 (e.g. `https://mault.example.com:80`).
 4. Deploy. The API migrates before starting. To update, redeploy: Coolify fetches the latest compose file and pulls the current images.
 5. Under **Scheduled Tasks**, add the price sync: command `node packages/server/dist/scripts/sync-prices.js`, container `server`, frequency `0 4 * * *`.
 
 - **Neon:** also set `AUTH_PROVIDER` / `VITE_AUTH_PROVIDER` to `neon`, `DATABASE_SSL=true` and the Neon values, and run the migrations from a checkout before each deploy.
+- **Short links:** route a short domain to the **shortener** service on port 3003 and set `SHORT_LINK_BASE_URL`, `SHORT_LINK_TARGET_ORIGIN` and `SHORTENER_API_SECRET` (see [Link shortener](#link-shortener)); without them the shortener idles.
 - **Discord:** set `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID` and `BOT_API_SECRET` and redeploy; without them the bot idles.
 - **Data:** Postgres lives in the `mault-postgres` volume; keep it and back it up. The default `DATABASE_URL` uses `POSTGRES_PASSWORD` unencoded, so keep it URL-safe (hex is). Changing `POSTGRES_PASSWORD` later doesn't change the database's password, and changing `OWN_AUTH_TOKEN_PEPPER` signs everyone out.
 

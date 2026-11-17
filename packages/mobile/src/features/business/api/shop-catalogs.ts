@@ -1,7 +1,6 @@
 import {
-  SHARE_LINK_TOKEN_PARAM,
-  SHOP_CATALOG_PATH_PREFIX,
   SHOP_PHOTO_UPLOAD_FIELD,
+  buildShopCatalogLinkUrl,
   type Result,
   type ShopCatalog,
   type ShopCatalogInput,
@@ -38,10 +37,7 @@ export function deleteShopCatalog(guid: string): Promise<unknown> {
 }
 
 export function buildShopCatalogUrl(catalog: ShopCatalog): string | null {
-  const base = `${WEB_URL}${SHOP_CATALOG_PATH_PREFIX}/${catalog.guid}`;
-  if (catalog.isPublic) return base;
-  if (!catalog.linkToken) return null;
-  return `${base}?${SHARE_LINK_TOKEN_PARAM}=${encodeURIComponent(catalog.linkToken)}`;
+  return buildShopCatalogLinkUrl(WEB_URL, catalog);
 }
 
 export const shopPhotoQueryOptions = (orgId: string | null, enabled: boolean) =>

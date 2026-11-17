@@ -11,6 +11,8 @@ import type { ScanStats, SessionMonitorState } from "@/lib/interfaces/scanner";
 import type { TradeOfferLink } from "@/lib/interfaces/trade-offers";
 import type { ReactNode } from "react";
 
+export type PublicCardsErrorKind = "notFound" | "unavailable";
+
 export interface PublicCardsRequest {
   page: number;
   pageSize: number;
@@ -40,6 +42,7 @@ export interface PublicCardResultsProps {
   page: PublicCardPage | undefined;
   isPending: boolean;
   isError: boolean;
+  onRetry: () => void;
   onPageChange: (page: number) => void;
   onOpenCard: (scanId: string) => void;
 }
@@ -52,7 +55,17 @@ export interface PublicCardTileProps {
 export interface PublicCardDetailViewProps {
   source: PublicCardsSource;
   scanId: string;
-  onClose: () => void;
+  onClose?: () => void;
+}
+
+export interface PoweredByMaultProps {
+  className?: string;
+  isInverted?: boolean;
+}
+
+export interface SharedCardViewProps {
+  token: string;
+  scanId: string;
 }
 
 export interface PublicCardBadgesProps {

@@ -1,15 +1,15 @@
 import { Callout } from "@/components/callout";
 import { MobileListRow } from "@/components/mobile-list-row";
+import { MobileIconBadge } from "@/components/mobile-icon-badge";
 import { MobilePageHeader } from "@/components/mobile-page-header";
 import { MobileSection } from "@/components/mobile-section";
 import { Button } from "@/components/ui/button";
 import { useSerial } from "@/features/scanner/api/use-serial";
 import { MobileRemoteSorters } from "@/features/scanner/components/mobile-remote-sorters";
-import { MobileSorterWifiSection } from "@/features/scanner/components/mobile-sorter-wifi-section";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { usePiHostState } from "@/hooks/use-pi-host";
 import { CALIBRATE_PATH } from "@/lib/constants/calibration";
-import { isRemoteBrowser } from "@/lib/host";
+import { usesHostHardware } from "@/lib/host";
 import {
   MOBILE_CARD_CLASS,
   MOBILE_LIST_CLASS,
@@ -25,7 +25,6 @@ import {
   IconAlertTriangle,
   IconBluetooth,
   IconCpu,
-  IconDeviceUsb,
   IconLoader2,
   IconPlugConnectedX,
   IconStethoscope,
@@ -39,17 +38,16 @@ export default function SorterPage() {
   const { t } = useTranslation("scanner");
   const isMobile = useIsMobile();
   const serial = useSerial();
-  const { piHost, settled } = usePiHostState();
-  const piConnect = settled && piHost && isRemoteBrowser();
+  const { piHost, piSorter, settled } = usePiHostState();
+  const piConnect = settled && piHost && usesHostHardware();
   const [busy, setBusy] = useState<"connect" | "test" | "disconnect" | null>(
     null,
   );
   const [connectTarget, setConnectTarget] = useState<
-    "pi" | "bluetooth" | "usb" | null
+    "pi" | "bluetooth" | null
   >(null);
   const [connectingGuid, setConnectingGuid] = useState<string | null>(null);
   const bluetoothSupported = isWebBluetoothSupported();
-  const usbSupported = typeof navigator !== "undefined" && !!navigator.serial;
 
   if (!isMobile) return <Navigate to={SORTERS_OVERVIEW_PATH} replace />;
 
@@ -63,7 +61,7 @@ export default function SorterPage() {
   };
 
   const connectWith = async (
-    target: "pi" | "bluetooth" | "usb",
+    target: "pi" | "bluetooth",
     fn: () => Promise<unknown>,
   ) => {
     setConnectTarget(target);
@@ -113,9 +111,9 @@ export default function SorterPage() {
       >
         <div className={MOBILE_PAGE_BODY_CLASS}>
           <div className={cn(MOBILE_CARD_CLASS, "flex items-center gap-3 p-3")}>
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-foreground [&_svg]:size-5">
+            <MobileIconBadge className="size-10 [&_svg]:size-5">
               <IconCpu />
-            </span>
+            </MobileIconBadge>
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 font-heading text-sm font-semibold text-foreground">
                 <span className={cn("size-2.5 shrink-0 rounded-full", stateDot)} />
@@ -134,7 +132,7 @@ export default function SorterPage() {
                     ]
                       .filter(Boolean)
                       .join(" · ")
-                  : t("mobileSorter.connectHint")}
+                  : t(piSorter ? "serial.piSorterUnavailable" : "mobileSorter.connectHint")}
               </p>
             </div>
           </div>
@@ -159,7 +157,7 @@ export default function SorterPage() {
 
           {!serial.isConnected ? (
             <div className="flex flex-col gap-2">
-              {piConnect && (
+              {piConnect && !piSorter && (
                 <Button
                   className={MOBILE_PILL_BUTTON_CLASS}
                   disabled={busy !== null}
@@ -175,7 +173,7 @@ export default function SorterPage() {
                   {t("mobileSorter.connectPi")}
                 </Button>
               )}
-              {bluetoothSupported && (
+              {bluetoothSupported && !piSorter && (
                 <Button
                   className={MOBILE_PILL_BUTTON_CLASS}
                   variant={piConnect ? "secondary" : "default"}
@@ -192,24 +190,7 @@ export default function SorterPage() {
                   {t("mobileSorter.connectBluetooth")}
                 </Button>
               )}
-              {usbSupported && !piConnect && (
-                <Button
-                  variant="secondary"
-                  className={MOBILE_PILL_BUTTON_CLASS}
-                  disabled={busy !== null}
-                  onClick={() =>
-                    void connectWith("usb", () => serial.connect())
-                  }
-                >
-                  {connectTarget === "usb" ? (
-                    <IconLoader2 className="animate-spin" />
-                  ) : (
-                    <IconDeviceUsb />
-                  )}
-                  {t("mobileSorter.connectUsb")}
-                </Button>
-              )}
-              {settled && !piConnect && !bluetoothSupported && !usbSupported && (
+              {settled && !piConnect && !bluetoothSupported && (
                 <Callout variant="info">
                   {t("mobileSorter.unsupported")}
                 </Callout>
@@ -236,18 +217,16 @@ export default function SorterPage() {
                   disabled={busy !== null}
                   onClick={() => void run("test", () => serial.runTest())}
                 />
-                <MobileListRow
+                {!piSorter && <MobileListRow
                   icon={<IconPlugConnectedX />}
                   label={t("mobileSorter.disconnect")}
                   destructive
                   disabled={busy !== null}
                   onClick={() => void run("disconnect", () => serial.disconnect())}
-                />
+                />}
               </div>
             </MobileSection>
           )}
-
-          {serial.isConnected && <MobileSorterWifiSection />}
 
           {piConnect ? (
             <div className={MOBILE_LIST_CLASS}>

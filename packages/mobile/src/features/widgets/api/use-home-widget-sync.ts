@@ -1,3 +1,8 @@
+import {
+  TRADE_OFFER_TRAY_MESSAGE_KEYS,
+  tradeOfferMessageValues,
+  tradeOfferOfferKind,
+} from "@magic-vault/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,6 +38,7 @@ import {
   EMPTY_SCANNER_ACTIVITY_WIDGET_PROPS,
   EMPTY_TOTAL_CARDS_WIDGET_PROPS,
   EMPTY_WIDGET_LOGO,
+  HOME_WIDGETS_SUPPORTED,
   NOTIFICATIONS_WIDGET_URL,
   SCANNER_ACTIVITY_WIDGET_REFRESH_MS,
 } from "@/lib/constants/widgets";
@@ -44,15 +50,17 @@ export function useHomeWidgetSync(): void {
   const { status } = useSession();
   const orgId = useActiveOrgId();
   const pricing = usePricing();
-  const { data: overview } = useQuery(orgOverviewQueryOptions(orgId, false));
-  const { data: tradeOffers } = useQuery(pendingTradeOffersQueryOptions(orgId));
+  const isWidgetDataEnabled = HOME_WIDGETS_SUPPORTED && !!orgId;
+  const { data: overview } = useQuery({ ...orgOverviewQueryOptions(orgId, false), enabled: isWidgetDataEnabled });
+  const { data: tradeOffers } = useQuery({ ...pendingTradeOffersQueryOptions(orgId), enabled: isWidgetDataEnabled });
   const alerts = useAppAlerts();
   const { locks } = useAppStream();
-  const { data: collections } = useQuery(collectionsQueryOptions(orgId));
+  const { data: collections } = useQuery({ ...collectionsQueryOptions(orgId), enabled: isWidgetDataEnabled });
   const isAnyScannerRunning = Object.keys(locks).length > 0;
-  const { data: widgetSummary, dataUpdatedAt: widgetSummaryUpdatedAt } = useQuery(
-    widgetSummaryQueryOptions(orgId, isAnyScannerRunning),
-  );
+  const { data: widgetSummary, dataUpdatedAt: widgetSummaryUpdatedAt } = useQuery({
+    ...widgetSummaryQueryOptions(orgId, isAnyScannerRunning),
+    enabled: isWidgetDataEnabled,
+  });
   const [scannerRefreshTick, setScannerRefreshTick] = useState(0);
   const [cardReviewSyncTick, setCardReviewSyncTick] = useState(0);
   const [cardImageUris, setCardImageUris] = useState<Map<string, string>>(() => new Map());
@@ -124,6 +132,7 @@ export function useHomeWidgetSync(): void {
           t,
           locale: i18n.language,
           formatPrice: pricing.format,
+          formatCompactPrice: pricing.formatCompact,
           summary: widgetSummary,
           cardImageUris,
           logo,
@@ -183,10 +192,9 @@ export function useHomeWidgetSync(): void {
     ].filter((part): part is string => part !== null);
     const latestTradeOffer = tradeOffers[0];
     const latestMessage = latestTradeOffer
-      ? t("tradeOffers.trayMessage", {
+      ? t(TRADE_OFFER_TRAY_MESSAGE_KEYS[tradeOfferOfferKind(latestTradeOffer)], {
           name: latestTradeOffer.guestName,
-          wanted: latestTradeOffer.wanted.length,
-          offered: latestTradeOffer.offered.reduce((sum, card) => sum + card.quantity, 0),
+          ...tradeOfferMessageValues(latestTradeOffer),
         })
       : (alerts[0]?.message ?? "");
     const now = Date.now();
@@ -195,6 +203,7 @@ export function useHomeWidgetSync(): void {
           t,
           locale: i18n.language,
           formatPrice: pricing.format,
+          formatCompactPrice: pricing.formatCompact,
           summary: widgetSummary,
           cardImageUris,
           logo,

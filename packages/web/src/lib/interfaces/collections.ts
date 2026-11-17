@@ -1,18 +1,14 @@
+import type { ScanLockInfo } from "@magic-vault/shared";
+import type { CollectionChangeSummary, LibraryValueMode } from "@/lib/interfaces/library";
 import type {
   CreateCollectionFormValues,
   EditCollectionFormValues,
   MonitorLinkInfo,
   Collection,
-  DeployNotice,
-  SyncState,
 } from "@magic-vault/shared";
 import type { ReactElement } from "react";
 
-export interface ScanLockInfo {
-  userId: string;
-  displayName: string;
-  expiresAt: number;
-}
+export type { ScanLockInfo };
 
 export interface SessionViewer {
   userId: string;
@@ -21,17 +17,22 @@ export interface SessionViewer {
 
 export interface ShareMonitorLinkDialogProps {
   collectionGuid: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export type WatchLinkState =
   | { status: "checking" }
   | { status: "invalid" }
+  | { status: "failed" }
   | { status: "valid"; info: MonitorLinkInfo };
 
 export interface CollectionsContextValue {
   collections: Collection[];
   activeCollection: Collection | null;
   isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
   isActivating: boolean;
   isMutating: boolean;
   createCollection: (values: CreateCollectionFormValues) => Promise<boolean>;
@@ -40,8 +41,8 @@ export interface CollectionsContextValue {
     values: EditCollectionFormValues,
   ) => Promise<void>;
   activateCollection: (guid: string) => Promise<void>;
-  deleteCollection: (guid: string) => Promise<void>;
-  emptyCollection: (guid: string) => Promise<void>;
+  deleteCollection: (guid: string) => Promise<boolean>;
+  emptyCollection: (guid: string) => Promise<boolean>;
 }
 
 export interface CreateCollectionDialogProps {
@@ -63,15 +64,14 @@ export interface ActiveCollectionSessionActions {
   releaseScanSession: () => Promise<void>;
 }
 
-export interface AppStreamContextValue {
+export interface AppStreamSourceContextValue {
   eventSource: EventSource | null;
+  watchCollection: (guid: string) => () => void;
+}
+
+export interface CollectionLocksContextValue {
   locks: Record<string, ScanLockInfo>;
   currentUserId: string | undefined;
-  liveCounts: Record<string, number>;
-  viewersByGuid: Record<string, SessionViewer[]>;
-  syncState: SyncState;
-  deployNotice: DeployNotice | null;
-  watchCollection: (guid: string) => () => void;
 }
 
 export interface CollectionPreviewStackProps {
@@ -81,6 +81,10 @@ export interface CollectionPreviewStackProps {
 export interface CollectionTarget {
   guid: string;
   name: string;
+}
+
+export interface MobileCollectionActionsMenuProps {
+  collectionGuid: string;
 }
 
 export interface EmptyCollectionDialogProps {
@@ -103,6 +107,8 @@ export interface CollectionTileProps {
   onEdit: () => void;
   onEmpty: () => void;
   onDelete: () => void;
+  valueMode: LibraryValueMode;
+  change: CollectionChangeSummary | null;
 }
 
 export interface ScanningPillProps {

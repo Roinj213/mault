@@ -1,3 +1,8 @@
+import type {
+  FetchQueryOptions,
+  QueryKey,
+  UseQueryOptions,
+} from "@tanstack/react-query";
 import type { HotkeyId } from "@/lib/interfaces/hotkeys";
 import type {
   CardCondition,
@@ -90,6 +95,42 @@ export interface CardPurchaseLinksProps {
   card: PlayingCard;
 }
 
+export type CardDetailTitleTag = "h1" | "h2" | "p";
+
+export interface CardDetailTitleProps {
+  name: string;
+  price?: number | null;
+  typeLine?: string | null;
+  titleTag?: CardDetailTitleTag;
+  badges?: ReactNode;
+  trailing?: ReactNode;
+}
+
+export interface CardDetailArtProps {
+  card: PlayingCard | undefined;
+  widthClass: string;
+  caption?: string;
+  children?: ReactNode;
+  footer?: ReactNode;
+}
+
+export interface CardRulesSectionProps {
+  card: PlayingCard;
+}
+
+export interface CardPricesSectionProps {
+  card: PlayingCard;
+  isFoil?: boolean;
+  foilType?: string | null;
+  stamp?: string | null;
+  condition?: CardCondition | null;
+  children?: ReactNode;
+}
+
+export interface CardDetailBodySkeletonProps {
+  imageCount: number;
+}
+
 export interface CardPriceDetailsProps {
   card: PlayingCard;
   isFoil?: boolean;
@@ -113,10 +154,18 @@ export interface CardSearchState {
   loadMore: () => void;
 }
 
+export interface ScanImageDownloadRequest {
+  loadImage: () => Promise<Blob>;
+  fileName: string;
+}
+
+export type DownloadScanImageButtonProps = ScanImageDownloadRequest;
+
 export interface CardImageViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   capturedImageUrl: string;
+  download?: ScanImageDownloadRequest;
   showOcrRegions: boolean;
   onShowOcrRegionsChange?: (show: boolean) => void;
   ocrRegions?: OcrOverlayRegion[];
@@ -190,6 +239,7 @@ export interface PendingScanCardItemProps {
 
 export interface CardToolbarProps {
   leading?: ReactNode;
+  extraActions?: ReactNode;
   onAddCard?: () => void;
   onImportScans?: () => void;
   searchQuery: string;
@@ -306,8 +356,10 @@ export interface ScannedCardTableProps {
 
 export interface SelectionActionBarProps {
   selectedCount: number;
+  selectionLabel?: string;
   onClear: () => void;
   children: ReactNode;
+  className?: string;
 }
 
 export interface ScanSelectionOptions<Item> {
@@ -390,6 +442,12 @@ export type WrappedSlide =
       elapsedMs: number;
     }
   | { key: string; type: "outro" };
+
+export interface CardFiltersSearchParamsState {
+  filters: CardFilters;
+  setFilters: (filters: CardFilters) => void;
+  updateFilters: (update: (previous: CardFilters) => CardFilters) => void;
+}
 
 export interface CardFiltersContextValue {
   filters: CardFilters;
@@ -501,6 +559,7 @@ export interface ReviewGridProps {
   total: number;
   isLoading: boolean;
   isError: boolean;
+  onRetry?: () => void;
   onOpenOneByOne: (card: ReviewGridCard) => void;
   onClose: () => void;
   onCorrect?: (card: ReviewGridCard, correctedCard: PlayingCard) => void;
@@ -600,9 +659,23 @@ export interface OpenScanOptions {
   inReviewMode?: boolean;
 }
 
+export interface CardGridLocationState {
+  wasOpenedFromCardGrid?: boolean;
+}
+
+export interface CardQueryStateOptions {
+  persistsSearchAndSortInUrl?: boolean;
+}
+
+export interface DebouncedSearchParamTextOptions {
+  isPersistedInUrl?: boolean;
+  paramNamesClearedOnChange?: readonly string[];
+}
+
 export interface CardThumbnailProps {
   image: PlayingCardImage | null | undefined;
   className?: string;
+  loading?: "lazy" | "eager";
 }
 
 export interface MobileCardDrawerProps {
@@ -656,6 +729,7 @@ export interface ReviewQueueListProps {
   totalCards: number;
   isPending: boolean;
   isError: boolean;
+  onRetry?: () => void;
   currentScanId: string | null;
   reviewedScanIds: ReadonlySet<string>;
   removedScanIds: ReadonlySet<string>;
@@ -706,3 +780,22 @@ export interface CardScanTimelineProps {
     block: ScanTimelineBlock<GroupedScannedCard>,
   ) => ReactNode;
 }
+
+export interface NavigableCardNeighbor {
+  scanId: string;
+  collectionGuid: string;
+}
+
+export interface NavigableCardContext {
+  card: { collectionGuid: string };
+  previous: NavigableCardNeighbor | null;
+  next: NavigableCardNeighbor | null;
+  total: number;
+  index: number;
+}
+
+export type CardContextQueryOptions<
+  TContext,
+  TKey extends QueryKey,
+> = UseQueryOptions<TContext | null, Error, TContext | null, TKey> &
+  FetchQueryOptions<TContext | null, Error, TContext | null, TKey>;

@@ -1,3 +1,4 @@
+import { Progress } from "@/components/ui/progress";
 import type { BarListProps, BarListRowProps } from "@/lib/interfaces/stats";
 
 function BarListRow({ item, max }: BarListRowProps) {
@@ -23,12 +24,7 @@ function BarListRow({ item, max }: BarListRowProps) {
           )}
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-primary dark:bg-sidebar-primary"
-          style={{ width: `${max > 0 ? (item.value / max) * 100 : 0}%` }}
-        />
-      </div>
+      <Progress decorative value={item.value} max={max} />
     </>
   );
 
@@ -38,7 +34,7 @@ function BarListRow({ item, max }: BarListRowProps) {
         <button
           type="button"
           onClick={item.onSelect}
-          className="-mx-2 flex w-[calc(100%+1rem)] flex-col gap-1.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted active:bg-muted"
+          className="-mx-2 flex w-[calc(100%+1rem)] flex-col gap-1.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-foreground/6 active:bg-foreground/6"
         >
           {content}
         </button>

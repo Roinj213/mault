@@ -1,3 +1,4 @@
+import { MARKETING_HERO_TITLE_CLASS } from "@/lib/constants/marketing-pages";
 import { buttonVariants } from "@/components/ui/button";
 import { detectDesktopPlatform } from "@/features/download/lib/detect-platform";
 import { DESKTOP_DOWNLOADS } from "@/lib/constants/download";
@@ -14,10 +15,10 @@ export function DownloadHero() {
 
   return (
     <section className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-16 pb-16 text-center md:pt-24 md:pb-24">
-      <p className="font-heading text-2xs font-medium tracking-widest text-primary uppercase">
+      <p className="font-heading text-sm font-medium tracking-widest text-primary uppercase">
         {t("hero.eyebrow")}
       </p>
-      <h1 className="mt-6 max-w-4xl font-heading text-5xl leading-[1.02] font-semibold tracking-tight text-balance md:text-6xl">
+      <h1 className={cn(MARKETING_HERO_TITLE_CLASS, "mt-6 max-w-4xl")}>
         {t("hero.title")}
       </h1>
       <p className="mt-6 max-w-2xl text-base/relaxed text-balance text-foreground/70 md:text-lg/relaxed">
@@ -25,7 +26,7 @@ export function DownloadHero() {
       </p>
 
       {isDesktopApp ? (
-        <p className="mt-8 flex max-w-2xl items-start gap-3 rounded-lg bg-card p-4 text-left text-sm/relaxed ring-1 ring-border">
+        <p className="mt-8 flex max-w-2xl items-start gap-3 rounded-card bg-card p-4 text-left text-sm/relaxed">
           <IconDeviceDesktopCheck className="mt-0.5 size-4 shrink-0 text-primary" />
           {t("hero.alreadyInstalled")}
         </p>

@@ -1,3 +1,6 @@
+import type { Icon } from "@tabler/icons-react";
+import type { ReactNode } from "react";
+import type { HomeValueChange } from "@/lib/interfaces/home";
 import type {
   STATS_ACTIVITY_METRICS,
   STATS_COLLECTION_METRICS,
@@ -6,7 +9,6 @@ import type {
   STATS_VIEWS,
 } from "@/lib/constants/stats";
 import type {
-  LeaderboardEntry,
   OrgOverviewCard,
   StatsCollectionRow,
   StatsReport,
@@ -38,13 +40,69 @@ export interface ColumnChartDatum {
   key: string;
   label: string;
   value: number;
+  detail?: string;
 }
 
 export interface ColumnChartProps {
   data: ColumnChartDatum[];
   formatValue: (value: number) => string;
+  formatColumnValue?: (value: number) => string;
   ariaLabel: string;
   endLabel?: string;
+  labelEachColumn?: boolean;
+}
+
+export interface AreaChartProps {
+  data: ColumnChartDatum[];
+  formatValue: (value: number) => string;
+  formatAxisValue: (value: number) => string;
+  ariaLabel: string;
+  endLabel?: string;
+}
+
+export interface DonutSegment {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface DonutChartProps {
+  segments: DonutSegment[];
+  centerValue: string;
+  centerLabel: string;
+  formatShare: (value: number, total: number) => string;
+}
+
+export interface ValueHeroStat {
+  label: string;
+  value: ReactNode;
+}
+
+export interface ValueHeroProps {
+  label: string;
+  value: ReactNode;
+  stats: ValueHeroStat[];
+  sparklineValues: number[];
+  change?: HomeValueChange | null;
+}
+
+export interface StatsInsight {
+  key: string;
+  icon: Icon;
+  title: string;
+  detail: string;
+}
+
+export interface StatsSplitEntry {
+  key: string;
+  label: string;
+  count: number;
+  bg: string;
+}
+
+export interface StatsHighlightsProps {
+  insights: StatsInsight[];
 }
 
 export interface BarListItem {
@@ -95,10 +153,7 @@ export interface StatsControlsProps {
   onRangeChange: (range: StatsReport["range"]) => void;
 }
 
-export interface LeaderboardRow {
-  key: string;
-  entry: LeaderboardEntry;
-}
+export type { LeaderboardRow } from "@magic-vault/shared";
 
 export interface StatsLeaderboardButtonProps {
   iconOnly?: boolean;

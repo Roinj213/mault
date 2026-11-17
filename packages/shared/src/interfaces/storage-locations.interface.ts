@@ -3,7 +3,7 @@ import type { PlayingCardWithDistance } from "./card.interface";
 import type { CardCondition, ConditionMultipliers } from "./card-condition.interface";
 import type { CardStatsAggregate } from "./collection-cards.interface";
 import type { FieldMeta } from "./sort-bins.interface";
-import type { PickListEntry, PickListEntryInput } from "./pick-list.interface";
+import type { PickListEntry } from "./pick-list.interface";
 import type { PriceSource } from "./price-source.interface";
 
 export interface StorageLocation {
@@ -13,6 +13,7 @@ export interface StorageLocation {
   totalValue: number;
   lastUsedAt: Date | null;
   createdAt: Date;
+  labelShortUrl?: string | null;
 }
 
 export interface CardStorageLocation {
@@ -63,10 +64,6 @@ export interface StorageLocationCardContext {
   total: number;
   previous: StorageLocationCardNeighbor | null;
   next: StorageLocationCardNeighbor | null;
-}
-
-export interface StoragePickListRequest {
-  entries: PickListEntryInput[];
 }
 
 export interface StoragePickListCard extends StorageLocationSearchResult {
@@ -147,6 +144,8 @@ export interface StorageLocationExportSummary {
 export interface StorageShareLink {
   guid: string;
   token: string;
+  shortCode: string;
+  shortUrl?: string | null;
   expiresAt: string;
 }
 
@@ -166,4 +165,3 @@ export type SharedStorageCard = Pick<
   StorageLocationCard,
   "scanId" | "position" | "card" | "isFoil" | "foilType" | "stamp" | "condition" | "language"
 >;
-

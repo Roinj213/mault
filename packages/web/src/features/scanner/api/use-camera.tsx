@@ -8,14 +8,22 @@ import {
   saveFocus,
 } from "@/features/scanner/lib/camera-focus";
 import {
+  applyZoom,
+  currentZoomLevel,
+  loadSavedZoom,
+  saveZoom,
+} from "@/features/scanner/lib/camera-zoom";
+import {
   acquirePiRelayStream,
   applyTrackFocus,
   applyPiFocus,
+  applyPiZoom,
   browserMustUsePiCamera,
   focusRangeForTrack,
   isPiRelayTrack,
   piCameraDevice,
   readPiCameraHealth,
+  zoomRangeForTrack,
 } from "@/features/scanner/lib/pi-camera";
 import {
   DOCUMENT_SCANNERS_QUERY_KEY,
@@ -58,7 +66,6 @@ import {
 } from "@/features/scanner/lib/camera-stream";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { usePiHost } from "@/hooks/use-pi-host";
-import { isRemoteBrowser } from "@/lib/host";
 import { loadPiHost } from "@/lib/pi-host";
 import type {
   CameraContextValue,
@@ -82,13 +89,14 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 const CameraContext = createContext<CameraContextValue | null>(null);
 
 export function CameraProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation("scanner");
   const isMobile = useIsMobile();
-  const piRemote = usePiHost() && isRemoteBrowser();
+  const piRemote = usePiHost();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<CameraStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -96,6 +104,8 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
   const [focusDistance, setFocusDistanceState] = useState<number | null>(
     null,
   );
+  const [zoomRange, setZoomRange] = useState<CameraRange | null>(null);
+  const [zoomLevel, setZoomLevelState] = useState<number | null>(null);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
 
@@ -413,23 +423,12 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
           setSelectedCameraId(PI_CAMERA_DEVICE_ID);
           stationsRef.current.setStationCamera(stationId, PI_CAMERA_DEVICE_ID);
           const range = health.focus;
-          const saved = loadSavedFocus(PI_CAMERA_DEVICE_ID);
-          const savedFocus =
-            range &&
-            saved !== null &&
-            saved >= range.min &&
-            saved <= range.max
-              ? saved
-              : null;
           setFocusRange(range);
-          setFocusDistanceState(savedFocus);
-          if (savedFocus !== null) {
-            if (!mediaStream) await applyPiFocus(savedFocus).catch(() => {});
-            else {
-              const track = mediaStream.getVideoTracks()[0];
-              if (track) await applyTrackFocus(track, savedFocus).catch(() => {});
-            }
-          }
+          setFocusDistanceState(
+            health.focusMode === "manual" ? health.lensPosition ?? null : null,
+          );
+          setZoomRange(health.zoom);
+          setZoomLevelState(health.zoom ? health.zoomLevel ?? health.zoom.min : null);
           return;
         }
 
@@ -466,6 +465,16 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
               .then(() => applyTrackFocus(track, savedFocus))
               .catch(() => {});
           }
+
+          const trackZoom = zoomRangeForTrack(track);
+          const savedZoom = trackZoom ? loadSavedZoom(activeDeviceId) : null;
+          setZoomRange(trackZoom);
+          setZoomLevelState(trackZoom ? savedZoom ?? trackZoom.min : null);
+          if (trackZoom && savedZoom !== null) {
+            void waitForTrackSetup(track)
+              .then(() => applyZoom(track, savedZoom))
+              .catch(() => {});
+          }
         }
 
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -487,13 +496,13 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setFocusDistance = useCallback((value: number | null) => {
-    if (browserMustUsePiCamera()) {
-      void applyPiFocus(value).catch(() => {});
-      saveFocus(PI_CAMERA_DEVICE_ID, value);
-      setFocusDistanceState(value);
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (browserMustUsePiCamera() || (track && isPiRelayTrack(track))) {
+      void applyPiFocus(value).then(() => {
+        setFocusDistanceState(value);
+      }).catch(() => toast.error(t("cameraAccessError")));
       return;
     }
-    const track = streamRef.current?.getVideoTracks()[0];
     if (!track) return;
     void applyTrackFocus(track, value).catch(() => {});
     saveFocus(
@@ -503,7 +512,24 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
       value,
     );
     setFocusDistanceState(value);
-  }, []);
+  }, [t]);
+
+  const setZoomLevel = useCallback((value: number) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    setZoomLevelState(value);
+    if (browserMustUsePiCamera() || (track && isPiRelayTrack(track))) {
+      void applyPiZoom(value).catch(() => toast.error(t("cameraAccessError")));
+      return;
+    }
+    if (!track) return;
+    void applyZoom(track, value)
+      .then(() => {
+        const applied = currentZoomLevel(track) ?? value;
+        setZoomLevelState(applied);
+        saveZoom(track.getSettings().deviceId ?? null, applied);
+      })
+      .catch(() => toast.error(t("cameraAccessError")));
+  }, [t]);
 
   const {
     status: phonePairingStatus,
@@ -623,10 +649,13 @@ export function CameraProvider({ children }: { children: React.ReactNode }) {
         errorMessage,
         focusRange,
         focusDistance,
+        zoomRange,
+        zoomLevel,
         cameras: availableCameras,
         camerasInUseElsewhere,
         selectedCameraId,
         setFocusDistance,
+        setZoomLevel,
         selectCamera,
         retryCamera,
         stopCamera,

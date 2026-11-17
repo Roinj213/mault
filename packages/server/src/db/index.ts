@@ -11,10 +11,16 @@ export const pool = new Pool({
   connectionTimeoutMillis: parseInt(
     process.env.DB_CONNECTION_TIMEOUT_MS ?? "10000",
   ),
+  keepAlive: true,
 });
 export const db = drizzle(pool, { schema });
 
 export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export function orgIdOfJwtClaims(jwtClaims: string): string | null {
+  const claims = JSON.parse(jwtClaims) as { org_id?: unknown };
+  return typeof claims.org_id === "string" ? claims.org_id : null;
+}
 
 export async function authQuery<T>(
   jwtClaims: string,

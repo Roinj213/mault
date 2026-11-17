@@ -1,9 +1,10 @@
 import { Callout } from "@/components/callout";
 import { DeleteDialog } from "@/components/delete-dialog";
-import { ConfirmDialog } from "@/features/business/components/confirm-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { ListPagination } from "@/components/list-pagination";
 import { ListSkeleton } from "@/components/list-skeleton";
+import { LoadErrorCallout } from "@/components/load-error-callout";
 import { StatGroup } from "@/components/stat-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ import { useCollections } from "@/features/collections/api/use-collections";
 import { usePriceSource } from "@/hooks/use-price-source";
 import { useReviewLayout } from "@/features/cards/api/use-card-view-preferences";
 import { intakeReceiptPath } from "@/lib/constants/business";
+import { priceLabelsPath } from "@/lib/constants/price-labels";
 import { toServerPagination } from "@/lib/pagination";
 import type { IntakeLotDetailProps } from "@/lib/interfaces/business";
 import {
@@ -61,6 +63,7 @@ import {
   IconListCheck,
   IconPrinter,
   IconScan,
+  IconTag,
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
@@ -78,13 +81,19 @@ export function IntakeLotDetail({
   onOpenReviewGrid,
 }: IntakeLotDetailProps) {
   const { t } = useTranslation("business");
-  const DetailHeading = useIsMobile() ? "h2" : "h1";
+  const isMobile = useIsMobile();
+  const DetailHeading = isMobile ? "h2" : "h1";
   const { format } = usePriceSource();
   const navigate = useNavigate();
   const { access, settings } = useBusinessAccess();
   const { activateCollection } = useCollections();
   const run = useBusinessAction();
-  const { data: lot, isLoading } = useQuery(intakeLotQueryOptions(guid));
+  const {
+    data: lot,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(intakeLotQueryOptions(guid));
   const [cardsPage, setCardsPage] = useState(1);
   const { data: cardsPageData } = useQuery(
     intakeLotCardsQueryOptions(guid, cardsPage, lot?.status === "open"),
@@ -136,7 +145,21 @@ export function IntakeLotDetail({
         : undefined,
   });
 
-  if (isLoading || !lot) return <ListSkeleton rows={8} />;
+  if (isLoading || !lot) {
+    return (
+      <>
+        {!isMobile && <h1 className="sr-only">{t("views.intake")}</h1>}
+        {isError ? (
+          <LoadErrorCallout
+            message={t("errors.loadFailed")}
+            onRetry={() => void refetch()}
+          />
+        ) : (
+          <ListSkeleton rows={8} />
+        )}
+      </>
+    );
+  }
 
   const isOpen = lot.status === "open";
   const canRemove = isOpen;
@@ -172,8 +195,8 @@ export function IntakeLotDetail({
     value == null ? null : format(value);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="sticky -top-4 z-10 -mx-4 -mt-4 flex flex-wrap items-center gap-2 border-b bg-background/80 p-2 pl-4 backdrop-blur-2xl">
+    <div className="flex flex-col gap-4 md:gap-2">
+      <div className="sticky -top-4 z-10 -mx-4 -mt-4 flex flex-wrap items-center gap-1.5 border-b bg-background/80 p-2 pl-4 backdrop-blur-2xl md:-top-2 md:-mx-3 md:-mt-2 md:pl-3">
         <div className="mr-auto min-w-0">
           <div className="flex items-center gap-2">
             <DetailHeading className="truncate font-heading text-lg font-semibold">
@@ -222,50 +245,60 @@ export function IntakeLotDetail({
             <HotkeyHint id="intakeOpenScanner" />
           </Button>
         )}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={t("intake.moreActions")}
-                title={t("intake.moreActions")}
-              />
-            }
-          >
-            <IconDots />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => window.open(intakeReceiptPath(lot.guid), "_blank")}
+        {(!isMobile || access?.canAcceptIntake) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t("intake.moreActions")}
+                  title={t("intake.moreActions")}
+                />
+              }
             >
-              <IconPrinter />
-              {t("intake.printReceipt")}
-            </DropdownMenuItem>
-            {access?.canAcceptIntake && (
-              <>
-                <DropdownMenuSeparator />
-                {isOpen ? (
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => setCancelOpen(true)}
-                  >
-                    <IconX />
-                    {t("intake.cancelLot")}
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => setDeleteOpen(true)}
-                  >
-                    <IconTrash />
-                    {t("actions.delete")}
-                  </DropdownMenuItem>
-                )}
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <IconDots />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {!isMobile && (
+                <DropdownMenuItem
+                  onClick={() => window.open(intakeReceiptPath(lot.guid), "_blank")}
+                >
+                  <IconPrinter />
+                  {t("intake.printReceipt")}
+                </DropdownMenuItem>
+              )}
+              {!isMobile && !access?.isLocked && (
+                <DropdownMenuItem onClick={() => navigate(priceLabelsPath("lot", lot.guid))}>
+                  <IconTag />
+                  {t("priceLabels.printForLot")}
+                </DropdownMenuItem>
+              )}
+              {access?.canAcceptIntake && (
+                <>
+                  {!isMobile && <DropdownMenuSeparator />}
+                  {isOpen ? (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setCancelOpen(true)}
+                    >
+                      <IconX />
+                      {t("intake.cancelLot")}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      <IconTrash />
+                      {t("actions.delete")}
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {isOpen && access?.canAcceptIntake && (
           <Button
             disabled={lot.cardCount === 0}
@@ -305,7 +338,7 @@ export function IntakeLotDetail({
           {
             key: "cards",
             label: t("intake.stats.cards"),
-            value: lot.cardCount.toLocaleString(),
+            value: lot.cardCount,
           },
           ...(showMoney
             ? [
@@ -373,7 +406,7 @@ export function IntakeLotDetail({
             </Callout>
           )}
           {canRemove && liveSelected.length > 0 && (
-            <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-1.5 text-sm animate-in fade-in-0 motion-reduce:animate-none">
+            <div className="flex items-center justify-between gap-2 rounded-card bg-card px-3 py-1.5 text-sm animate-in fade-in-0 motion-reduce:animate-none">
               <span className="font-medium">
                 {t("intake.remove.selected", { count: liveSelected.length })}
               </span>
@@ -398,7 +431,7 @@ export function IntakeLotDetail({
             alignsEnd
             pagination={toServerPagination(cardsPageData, setCardsPage)}
           />
-          <div className="overflow-hidden rounded-lg border">
+          <div className="overflow-hidden rounded-card bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -602,7 +635,7 @@ export function IntakeLotDetail({
           setTransferOpen(open);
           if (!open && inAcceptFlow) {
             setInAcceptFlow(false);
-            setReceiptPromptOpen(true);
+            if (!isMobile) setReceiptPromptOpen(true);
           }
         }}
       />

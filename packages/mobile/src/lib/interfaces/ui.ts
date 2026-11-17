@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import type { StyleProp, TextProps, ViewStyle } from "react-native";
+import type { ReactElement, ReactNode } from "react";
+import type { AccessibilityValue, RefreshControlProps, StyleProp, TextProps, ViewStyle } from "react-native";
 import type { CommLogEntry, PlayingCard, ScanRegion } from "@magic-vault/shared";
 import type { ICONS } from "@/lib/constants/icons";
-import type { LiveCorners, MonitorState } from "@/lib/interfaces/scanner";
+import type { LiveCorners } from "@/lib/interfaces/scanner";
 import type { SwipeRowAction } from "@/lib/interfaces/search";
 import type { FontSize, StatusTone } from "@/lib/interfaces/theme";
 
@@ -85,6 +85,13 @@ export interface EmptyStateProps {
   action?: ReactNode;
 }
 
+export interface QueryErrorStateProps {
+  title?: string;
+  description?: string;
+  onRetry: () => void;
+  isRetrying?: boolean;
+}
+
 export interface SkeletonProps {
   width?: number | `${number}%`;
   height: number | `${number}%`;
@@ -102,20 +109,31 @@ export interface ListRowProps {
   right?: ReactNode;
   rightIsInteractive?: boolean;
   onPress?: () => void;
+  onPressIn?: () => void;
   onLongPress?: () => void;
   longPressLabel?: string;
   disabled?: boolean;
   selected?: boolean;
   subtitleNumberOfLines?: number;
   swipeDestructiveAction?: SwipeRowAction;
+  accessibilityHint?: string;
+}
+
+export interface CheckboxIndicatorProps {
+  checked: boolean;
+  disabled?: boolean;
+}
+
+export interface ProgressBarProps {
+  fraction: number;
+  accessibilityValue?: AccessibilityValue;
 }
 
 export interface ScreenProps {
   children: ReactNode;
   scroll?: boolean;
   padded?: boolean;
-  refreshing?: boolean;
-  onRefresh?: () => void;
+  onRefresh?: () => unknown;
   edges?: ("top" | "bottom")[];
   header?: ReactNode;
   contentStartsWithList?: boolean;
@@ -155,6 +173,8 @@ export interface PillButtonProps {
   label: string;
   tone?: PillProps["tone"];
   icon?: IconName;
+  accessibilityLabel?: string;
+  accessibilityRole?: "button" | "link";
   onPress: () => void;
 }
 
@@ -183,15 +203,16 @@ export interface StatGroupProps {
 export interface StatTileProps {
   label: string;
   value: string;
+  exactValue?: string;
   hint?: string;
   icon?: IconName;
 }
-
 
 export interface CardRowProps {
   name: string;
   subtitle: string;
   imageUrl: string | null;
+  placeholderUrl?: string | null;
   quantity?: number;
   price?: string | null;
   binNumber?: number;
@@ -205,11 +226,12 @@ export interface CommLogProps {
   entries: CommLogEntry[];
 }
 
-
 export interface CardTileProps {
   name: string;
   caption: string;
+  captionHighlight?: { text: string; tone: StatusTone } | null;
   imageUrl: string | null;
+  placeholderUrl?: string | null;
   isFoil?: boolean;
   quantity?: number;
   flagged?: boolean;
@@ -238,6 +260,9 @@ export interface HomeCollectionRowProps {
   name: string;
   subtitle: string;
   value?: string | null;
+  exactValue?: string | null;
+  trailing?: ReactNode;
+  trailingAccessibilityLabel?: string;
   isScanTarget: boolean;
   isLive?: boolean;
   onPress: () => void;
@@ -256,7 +281,6 @@ export interface DetailRowProps {
   label: string;
   value: string;
 }
-
 
 export interface BinBadgeProps {
   binNumber: number;
@@ -288,6 +312,7 @@ export interface ShutterButtonProps {
 export interface OptionItem {
   value: string;
   label: string;
+  description?: string;
   badge?: string;
 }
 
@@ -301,6 +326,7 @@ export interface OptionSheetProps {
   searchPlaceholder?: string;
   maxVisibleOptions?: number;
   emptyMessage?: string;
+  description?: string;
 }
 
 export interface SelectFieldProps {
@@ -393,14 +419,21 @@ export interface StepperRowProps {
   onChange: (value: number) => void;
 }
 
-export interface DisplayHeadlineProps {
-  title: string;
-  subtitle?: string;
-}
-
 export interface IconBadgeProps {
   name: IconName;
   tone?: "neutral" | "primary" | "destructive" | "success" | "warning";
+  size?: number;
+}
+
+export interface ListGroupItemProps {
+  index: number;
+  count: number;
+  children: ReactNode;
+}
+
+export interface InitialBadgeProps {
+  initials: string;
+  tone?: "neutral" | "primary" | "solid";
   size?: number;
 }
 
@@ -414,14 +447,7 @@ export interface IconButtonProps {
   selected?: boolean;
 }
 
-export interface TopBarSwitcherProps {
-  initial: string;
-  label: string;
-  accessibilityLabel: string;
-  onPress: () => void;
-}
-
-export type AppTopBarSheet = "alerts" | "organizations";
+export type AppTopBarSheet = "alerts";
 
 export interface AppTopBarProps {
   opensNotificationsFromWidgetLink?: boolean;
@@ -467,7 +493,13 @@ export interface SheetContentProps {
   scrollable?: boolean;
   maxHeightRatio?: number;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  refreshControl?: ReactElement<RefreshControlProps>;
   children: ReactNode;
+}
+
+export interface SheetContentLayoutProps {
+  topPadding: number;
+  contentWidth?: number;
 }
 
 export interface SheetProps extends SheetContentProps {
@@ -504,4 +536,8 @@ export interface ToastContextValue {
 
 export interface ToastProviderProps {
   children: ReactNode;
+}
+
+export interface PullToRefreshControlProps extends Omit<RefreshControlProps, "refreshing" | "onRefresh"> {
+  onRefresh: () => unknown;
 }

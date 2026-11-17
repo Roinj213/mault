@@ -1,5 +1,8 @@
 import {
   WIDGET_SUMMARY_TOP_CARDS_PER_COLLECTION,
+  cardPriceChangeSinceScanOf,
+  formatCompactNumber,
+  valueChangeOf,
   type OrgOverviewCard,
   type WidgetCollectionSummary,
   type WidgetValuePoint,
@@ -26,7 +29,6 @@ import type {
   WidgetSummaryPropsOptions,
 } from "@/lib/interfaces/widgets";
 import { absoluteUrl } from "@/lib/url";
-import { valueChangeOf } from "@/lib/value-change";
 
 function collectionUrl(collectionGuid: string): string {
   return `mault:///collection/${collectionGuid}`;
@@ -60,6 +62,7 @@ function toWidgetCard(
   detail: string,
   { formatPrice, cardImageUris }: WidgetSummaryPropsOptions,
   isReview = false,
+  detailDirection: WidgetCard["detailDirection"] = "",
 ): WidgetCard {
   const imageUrl = widgetCardImageUrl(card);
   const price = card.price == null ? "" : formatPrice(card.price);
@@ -68,6 +71,7 @@ function toWidgetCard(
     collectionGuid: card.collectionGuid,
     name: card.card.name,
     detail,
+    detailDirection,
     price,
     imageUri: imageUrl ? (cardImageUris.get(imageUrl) ?? "") : "",
     url: cardDetailUrl(card, isReview),
@@ -123,9 +127,9 @@ function valueScope(
   history: WidgetValuePoint[],
   options: WidgetSummaryPropsOptions,
 ): CollectionValueWidgetScope {
-  const { t, locale, formatPrice } = options;
-  const numberFormat = new Intl.NumberFormat(locale);
-  const totalValue = formatPrice(trend.totalValue);
+  const { t, locale, formatPrice, formatCompactPrice } = options;
+  const totalValue = formatCompactPrice(trend.totalValue);
+  const exactTotalValue = formatPrice(trend.totalValue);
   const chartValues = chartValuesOf(history);
   if (trend.previousValue === null) {
     return {
@@ -138,17 +142,19 @@ function valueScope(
       changeDirection: "none",
       change: "",
       changePercent: "",
-      cardCount: numberFormat.format(trend.cardCount),
+      cardCount: formatCompactNumber(trend.cardCount, locale),
       previousCardCount: "",
-      accessibilityText: [title, totalValue].join(", "),
+      accessibilityText: [title, exactTotalValue].join(", "),
     };
   }
-  const { direction: changeDirection, change, percent: changePercent } = valueChangeOf(trend, formatPrice, locale) ?? {
+  const { direction: changeDirection, change, percent: changePercent } = valueChangeOf(trend, formatCompactPrice, locale) ?? {
     direction: "flat" as const,
     change: "",
     percent: "",
   };
-  const previousValue = previousLine(trend.previousDay, formatPrice(trend.previousValue), options);
+  const exactChange = valueChangeOf(trend, formatPrice, locale)?.change ?? "";
+  const previousValue = previousLine(trend.previousDay, formatCompactPrice(trend.previousValue), options);
+  const exactPreviousValue = previousLine(trend.previousDay, formatPrice(trend.previousValue), options);
   return {
     title,
     badge: "",
@@ -159,16 +165,16 @@ function valueScope(
     changeDirection,
     change,
     changePercent,
-    cardCount: numberFormat.format(trend.cardCount),
+    cardCount: formatCompactNumber(trend.cardCount, locale),
     previousCardCount:
       trend.previousCardCount === null
         ? ""
-        : previousLine(trend.previousDay, numberFormat.format(trend.previousCardCount), options),
+        : previousLine(trend.previousDay, formatCompactNumber(trend.previousCardCount, locale), options),
     accessibilityText: [
       title,
-      totalValue,
-      t(`widgets.value.direction.${changeDirection}`, { change, percent: changePercent }),
-      previousValue,
+      exactTotalValue,
+      t(`widgets.value.direction.${changeDirection}`, { change: exactChange, percent: changePercent }),
+      exactPreviousValue,
     ].join(", "),
   };
 }
@@ -215,7 +221,10 @@ export function buildTotalCardsWidgetProps(options: WidgetSummaryPropsOptions): 
   const scope = (title: string, url: string, cardCount: number) => ({
     title,
     url,
-    digits: String(cardCount).padStart(TOTAL_CARDS_WIDGET_MIN_DIGITS, "0"),
+    digits:
+      String(cardCount).length > TOTAL_CARDS_WIDGET_MIN_DIGITS
+        ? formatCompactNumber(cardCount, locale)
+        : String(cardCount).padStart(TOTAL_CARDS_WIDGET_MIN_DIGITS, "0"),
     accessibilityText: `${title}: ${t("collection.cardsCount", { count: cardCount })}`,
   });
   return {
@@ -264,6 +273,13 @@ export function buildTopCardsWidgetProps(options: WidgetSummaryPropsOptions): Wi
   };
 }
 
+function toCardOfTheDayWidgetCard(card: OrgOverviewCard, fallbackDetail: string, options: WidgetSummaryPropsOptions): WidgetCard {
+  const priceChange = cardPriceChangeSinceScanOf(card, options.formatPrice, options.locale);
+  return priceChange
+    ? toWidgetCard(card, priceChange.change, options, false, priceChange.direction)
+    : toWidgetCard(card, fallbackDetail, options);
+}
+
 export function buildCardOfTheDayWidgetProps(options: WidgetSummaryPropsOptions): WidgetCardListProps {
   const { t, summary } = options;
   return {
@@ -278,12 +294,12 @@ export function buildCardOfTheDayWidgetProps(options: WidgetSummaryPropsOptions)
       () => ({
         title: t("widgets.allCollections"),
         url: COLLECTION_VALUE_WIDGET_URL,
-        cards: summary.all.cardsOfTheDay.map((card) => toWidgetCard(card, setAndCollection(card), options)),
+        cards: summary.all.cardsOfTheDay.map((card) => toCardOfTheDayWidgetCard(card, setAndCollection(card), options)),
       }),
       (collection) => ({
         title: collection.name,
         url: collectionUrl(collection.guid),
-        cards: collection.cardsOfTheDay.map((card) => toWidgetCard(card, card.card.setName, options)),
+        cards: collection.cardsOfTheDay.map((card) => toCardOfTheDayWidgetCard(card, card.card.setName, options)),
       }),
     ),
   };

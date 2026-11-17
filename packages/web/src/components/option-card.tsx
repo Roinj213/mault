@@ -18,18 +18,18 @@ export function OptionCard({
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        "relative flex w-full items-start gap-3 rounded-lg border bg-background p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        "relative flex w-full items-start gap-3 rounded-lg border bg-card p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         selected
           ? "border-primary bg-primary/5 ring-1 ring-primary dark:bg-primary/10"
-          : "hover:border-foreground/30 hover:bg-secondary/40",
-        disabled && !selected && "cursor-not-allowed opacity-50 hover:border-border hover:bg-background",
+          : "hover:bg-foreground/6",
+        disabled && !selected && "cursor-not-allowed opacity-50 hover:bg-card",
         disabled && selected && "cursor-default",
       )}
     >
       <span
         className={cn(
           "grid size-8 shrink-0 place-items-center rounded-md",
-          selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/70",
+          selected ? "bg-primary text-primary-foreground" : "bg-foreground/6 text-foreground/70",
         )}
       >
         <Icon className="size-4" />
@@ -42,7 +42,7 @@ export function OptionCard({
         aria-hidden
         className={cn(
           "absolute top-3 right-3 grid size-5 place-items-center rounded-full border",
-          selected ? "border-primary bg-primary text-primary-foreground" : "border-foreground/30",
+          selected ? "border-primary bg-primary text-primary-foreground" : "border-border",
         )}
       >
         {selected && <IconCheck size={12} stroke={3} />}

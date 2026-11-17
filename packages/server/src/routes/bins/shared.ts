@@ -5,6 +5,7 @@ import {
   type BinConfig,
   type BinRuleGroup,
   type BinSet,
+  type DefaultBinInit,
   type FieldMeta,
   type RepackSlot,
   REPACK_UNIQUE_BY_PRINTING,
@@ -41,6 +42,11 @@ export function toMaxCopies(
   isCatchAll: boolean | undefined,
 ): number | null {
   if (isCatchAll || value == null) return null;
+  return Number.isInteger(value) && value >= 1 ? value : null;
+}
+
+export function toMaxCards(value: number | null | undefined): number | null {
+  if (value == null) return null;
   return Number.isInteger(value) && value >= 1 ? value : null;
 }
 
@@ -136,6 +142,34 @@ export function fromLegacyCatchAllRules(config: {
     : { rules: { ...config.rules, conditions: [] }, lowMatchPercent: legacy };
 }
 
+export function binInsertValues(
+  b: DefaultBinInit,
+  binSetId: number,
+  orgId: string,
+) {
+  const { rules, lowMatchPercent } = fromLegacyCatchAllRules(b);
+  const maxCopies = toMaxCopies(b.maxCopies, b.isCatchAll);
+  return {
+    binNumber: b.binNumber,
+    rules,
+    isCatchAll: b.isCatchAll,
+    isOverride: !b.isCatchAll && b.isOverride === true,
+    overridePriority: toOverridePriority(
+      b.overridePriority,
+      b.isCatchAll,
+      b.isOverride,
+    ),
+    lowMatchPercent: toLowMatchPercent(lowMatchPercent, b.isCatchAll),
+    maxCopies,
+    maxCopiesBy: toMaxCopiesBy(b.maxCopiesBy, b.isCatchAll, maxCopies),
+    maxCards: toMaxCards(b.maxCards),
+    overflowBin: toOverflowBin(b.overflowBin, b.binNumber),
+    isDisabled: toIsDisabled(b.isDisabled, b.isCatchAll),
+    binSet: binSetId,
+    orgId,
+  };
+}
+
 export function emptyRules(): BinRuleGroup {
   return {
     id: crypto.randomUUID(),
@@ -164,6 +198,7 @@ function toBinSet(row: {
   skipSaving: boolean;
   isResortMode: boolean;
   matchGameKeys: string[];
+  description: string;
   createdAt: Date;
   updatedAt: Date;
   bins: {
@@ -176,6 +211,7 @@ function toBinSet(row: {
     lowMatchPercent: number | null;
     maxCopies: number | null;
     maxCopiesBy: string | null;
+    maxCards: number | null;
     overflowBin: number | null;
     isDisabled: boolean;
     pickList: unknown;
@@ -214,6 +250,7 @@ function toBinSet(row: {
     skipSaving: row.skipSaving,
     isResortMode: row.isResortMode,
     matchGameKeys: row.matchGameKeys,
+    description: row.description,
     bins: row.bins.map((bin) => ({
       guid: bin.guid!,
       binNumber: bin.binNumber,
@@ -224,6 +261,7 @@ function toBinSet(row: {
       lowMatchPercent: bin.lowMatchPercent,
       maxCopies: bin.maxCopies,
       maxCopiesBy: bin.maxCopiesBy,
+      maxCards: bin.maxCards,
       overflowBin: bin.overflowBin,
       isDisabled: bin.isDisabled,
       pickList: bin.isCatchAll ? null : toPickList(bin.pickList),
@@ -270,6 +308,7 @@ const binSetQuery = {
     skipSaving: true,
     isResortMode: true,
     matchGameKeys: true,
+    description: true,
     createdAt: true,
     updatedAt: true,
   },
@@ -286,6 +325,7 @@ const binSetQuery = {
         lowMatchPercent: true,
         maxCopies: true,
         maxCopiesBy: true,
+        maxCards: true,
         overflowBin: true,
         isDisabled: true,
         pickList: true,
@@ -330,6 +370,7 @@ export async function snapshotBinSet(
       lowMatchPercent: true,
       maxCopies: true,
       maxCopiesBy: true,
+      maxCards: true,
       overflowBin: true,
       isDisabled: true,
       pickList: true,
@@ -346,6 +387,7 @@ export async function snapshotBinSet(
     lowMatchPercent: r.lowMatchPercent,
     maxCopies: r.maxCopies,
     maxCopiesBy: r.maxCopiesBy,
+    maxCards: r.maxCards,
     overflowBin: r.overflowBin,
     isDisabled: r.isDisabled,
     pickList: r.isCatchAll ? null : toPickList(r.pickList),

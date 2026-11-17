@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useFoilOptions } from "@/features/cards/api/use-foil-options";
+import { Callout } from "@/components/callout";
 import { HotkeyHint } from "@/components/hotkey-hint";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -40,16 +41,18 @@ import {
   IconBolt,
   IconBorderCorners,
   IconFocus2,
+  IconHandStop,
   IconLoader2,
   IconPlayerPause,
   IconPlayerPlay,
+  IconRefresh,
   IconRosette,
   IconRotateClockwise2,
   IconSparkles,
   IconStackPop,
 } from "@tabler/icons-react";
 import { formatElapsed } from "@/lib/format";
-import { FLATBED_IDLE_STEPS } from "@/lib/constants/scanner";
+import { FLATBED_IDLE_STEPS, FOIL_NONE_VALUE } from "@/lib/constants/scanner";
 import { cn } from "@/lib/utils";
 import {
   CARD_CONDITIONS,
@@ -106,6 +109,10 @@ export function ScannerControls({
   canFeedStandalone = false,
   sessionLive = false,
   onStop,
+  onEmergencyStop,
+  emergencyStopped = false,
+  onResetAfterEmergencyStop,
+  isResettingSorter = false,
   onAutoFeedChange,
   flatbedScan,
   onCalibrateFlatbed,
@@ -154,6 +161,8 @@ export function ScannerControls({
     !isRetracting &&
     retractLockedReason === null;
   const toggleAutoFeed = () => (onAutoFeedChange ?? setAutoFeed)(!autoFeed);
+  const showsEmergencyStop =
+    !!onEmergencyStop && (isConnected || sessionLive) && !emergencyStopped;
   const isVertical = orientation === "vertical";
 
   const [setPickerOpen, setSetPickerOpen] = useState(false);
@@ -174,7 +183,13 @@ export function ScannerControls({
 
   useHotkeys(
     {
-      scanPauseResume: flatbedScan ? undefined : isPaused ? onResume : onPause,
+      scanPauseResume:
+        flatbedScan || emergencyStopped
+          ? undefined
+          : isPaused
+            ? onResume
+            : onPause,
+      scanEmergencyStop: showsEmergencyStop ? onEmergencyStop : undefined,
       scanFlatbedCard: flatbedHotkeyAction,
       scanNow: canForceScan && !sessionFeed ? onForceScan : undefined,
       scanFeed: canFeed && !flatbedScan ? onFeed : undefined,
@@ -201,25 +216,51 @@ export function ScannerControls({
         ? t("scannerControls.start")
         : t("scannerControls.resume");
   const primaryVariant = !isPaused
-    ? isRemoveModeActive
-      ? "outline-destructive"
-      : "outline"
+    ? "outline"
     : isRemoveModeActive
       ? "destructive"
       : "default";
 
   return (
     <div className={cn("flex flex-col gap-2", isVertical ? "w-44" : "w-full")}>
+      {emergencyStopped && (
+        <Callout
+          variant="error"
+          icon={IconHandStop}
+          title={t("emergencyStop.stoppedTitle")}
+        >
+          {t(
+            onResetAfterEmergencyStop
+              ? "emergencyStop.stoppedDescription"
+              : "emergencyStop.stoppedSessionDescription",
+          )}
+        </Callout>
+      )}
       {flatbedScan && (
         <FlatbedScanControls flow={flatbedScan} orientation={orientation} />
       )}
-      <div className={cn("flex gap-2", isVertical ? "flex-col" : "flex-row")}>
+      <div
+        className={cn("flex gap-2", isVertical ? "flex-col" : "flex-row flex-wrap")}
+      >
         {!sessionFeed && <ScanModeSwitch className="shrink-0" />}
         {flatbedScan ? (
           <FlatbedScanButton
             flow={flatbedScan}
             className={cn(!isVertical && "flex-1")}
           />
+        ) : emergencyStopped && onResetAfterEmergencyStop ? (
+          <Button
+            className={cn(!isVertical && "flex-1")}
+            onClick={onResetAfterEmergencyStop}
+            disabled={isResettingSorter}
+          >
+            {isResettingSorter ? (
+              <IconLoader2 className="animate-spin motion-reduce:animate-none" />
+            ) : (
+              <IconRefresh />
+            )}
+            {t("emergencyStop.reset")}
+          </Button>
         ) : (
           <Tooltip>
             <TooltipTrigger
@@ -240,7 +281,27 @@ export function ScannerControls({
             </TooltipContent>
           </Tooltip>
         )}
-        <div className="flex gap-2">
+        {showsEmergencyStop && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="destructive"
+                  className="shrink-0"
+                  onClick={onEmergencyStop}
+                >
+                  <IconHandStop />
+                  {t("emergencyStop.stop")}
+                </Button>
+              }
+            />
+            <TooltipContent>
+              {t("emergencyStop.stopTooltip")}
+              <HotkeyHint id="scanEmergencyStop" />
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <div className="flex gap-1.5">
           <ButtonGroup>
             <ScannerControlButton
               tooltip={
@@ -379,12 +440,12 @@ export function ScannerControls({
           </Tooltip>
           <DropdownMenuContent align="start">
             <DropdownMenuRadioGroup
-              value={forceFoilType ?? "none"}
+              value={forceFoilType ?? FOIL_NONE_VALUE}
               onValueChange={(value: string) =>
-                setForceFoilType(value === "none" ? null : value)
+                setForceFoilType(value === FOIL_NONE_VALUE ? null : value)
               }
             >
-              <DropdownMenuRadioItem value="none">
+              <DropdownMenuRadioItem value={FOIL_NONE_VALUE}>
                 {tCards("foilNone")}
               </DropdownMenuRadioItem>
               {foilOptions.map((type) => (

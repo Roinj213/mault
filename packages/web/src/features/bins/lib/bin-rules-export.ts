@@ -1,3 +1,4 @@
+import { downloadBlob } from "@/lib/download";
 import {
   BIN_RULES_EXPORT_CATCH_ALL_RULES_SINCE,
   BIN_RULES_EXPORT_FORMAT_VERSION,
@@ -34,6 +35,7 @@ export function buildBinRulesExport(
       maxCopies: c.isCatchAll ? null : (c.maxCopies ?? null),
       maxCopiesBy:
         c.isCatchAll || c.maxCopies == null ? null : (c.maxCopiesBy ?? null),
+      maxCards: c.maxCards ?? null,
       overflowBin: c.overflowBin ?? null,
       isDisabled: !c.isCatchAll && !!c.isDisabled,
     })),
@@ -70,15 +72,8 @@ export function downloadBinRulesExport(data: BinRulesExport): void {
   const blob = new Blob([serializeBinRulesExport(data)], {
     type: "application/json",
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
   const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  a.download = `magic-vault-bin-rules-${slug}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `magic-vault-bin-rules-${slug}.json`);
 }
 
 export function uniqueImportedName(

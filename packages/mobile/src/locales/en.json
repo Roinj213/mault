@@ -27,9 +27,11 @@
     "sorter": "Sorter",
     "stats": "Stats",
     "storage": "Storage",
+    "trades": "Trades",
     "more": "More",
     "home": "Home",
-    "library": "Library"
+    "library": "Library",
+    "business": "Buy & sell"
   },
   "auth": {
     "tagline": "Scan, sort and track your cards from your phone.",
@@ -96,7 +98,9 @@
     "shareLinkWithCount_other": "Share live view link ({{count}} active)",
     "scanTarget": "Scanning here",
     "scanInto": "Scan into this collection",
-    "scan": "Scan"
+    "scan": "Scan",
+    "notFoundTitle": "Collection not found",
+    "notFoundDescription": "It may have been deleted, or you no longer have access to it."
   },
   "shareLink": {
     "collectionTitle": "Share live view",
@@ -153,7 +157,16 @@
       "links": "Showing active links",
       "new": "Showing new link form",
       "link": "Showing link and QR code"
-    }
+    },
+    "linksTab": "Links",
+    "sharedCards": "Shared cards",
+    "sharedCardsDescription": "Cards from this collection you shared. Tap one to copy its link, or long press to revoke it.",
+    "sharedCardsEmpty": "No shared cards yet",
+    "sharedCardsEmptyDescription": "Use Copy share link on a card to share it. Its link shows up here so you can revoke it.",
+    "cardLinkCopied": "Link copied.",
+    "cardLinkCopyFailed": "Couldn't copy the link.",
+    "cardLinkCopyHint": "Copies the link",
+    "created": "Created {{date}}"
   },
   "cards": {
     "bin": "Bin {{number}}",
@@ -168,7 +181,6 @@
   },
   "stats": {
     "title": "Stats",
-    "subtitle": "Charts and numbers across your collections",
     "error": "Couldn't load stats. Try again in a moment.",
     "empty": {
       "title": "No cards yet",
@@ -211,8 +223,14 @@
     "activity": {
       "title": "Scanning activity",
       "description": {
-        "day": "Cards scanned each day",
-        "week": "Cards scanned each week"
+        "count": {
+          "day": "Cards scanned each day",
+          "week": "Cards scanned each week"
+        },
+        "value": {
+          "day": "Value of the cards scanned each day",
+          "week": "Value of the cards scanned each week"
+        }
       },
       "metrics": {
         "count": "Cards",
@@ -245,7 +263,8 @@
         "avgValue": "Avg card",
         "scansInRange": "Scanned",
         "lastScanAt": "Last scan"
-      }
+      },
+      "filterHint": "Shows stats for this collection"
     },
     "prices": {
       "title": "Price distribution",
@@ -331,11 +350,7 @@
     },
     "showAll": "Show all ({{count}})",
     "showLess": "Show less",
-    "other": "Other",
-    "headline": {
-      "title": "Your collection",
-      "subtitle": "by the numbers"
-    }
+    "other": "Other"
   },
   "account": {
     "organizations": "Organizations",
@@ -380,7 +395,8 @@
         "confirmationSent": "Confirmation email sent",
         "confirmationSentDescription": "Check {{email}} and click the link to finish changing your email.",
         "updateFailed": "Couldn't update your email",
-        "sameAsCurrent": "That's already your current email"
+        "sameAsCurrent": "That's already your current email",
+        "change": "Change email"
       },
       "password": {
         "heading": "Password",
@@ -390,7 +406,8 @@
         "revokeOtherSessions": "Sign out of all other devices",
         "submit": "Update password",
         "updated": "Password updated",
-        "updateFailed": "Couldn't update your password"
+        "updateFailed": "Couldn't update your password",
+        "change": "Change password"
       },
       "sessions": {
         "heading": "Sessions",
@@ -416,13 +433,16 @@
         "cancel": "Cancel"
       },
       "localSubtitle": "Your account details. Ask an admin on this server to change them.",
-      "nameLabel": "Name"
+      "nameLabel": "Name",
+      "signInHeading": "Sign-in"
     },
     "settingsRow": "Account settings",
     "settingsRowSubtitle": "Name, email, password and sessions",
     "settingsRowSubtitleLocal": "Your name and email",
     "language": "Language",
-    "languageSystem": "Phone language"
+    "languageSystem": "Phone language",
+    "sorterConnection": "Sorter connection",
+    "manageSection": "Manage"
   },
   "sorter": {
     "noSorter": "No sorter connected",
@@ -535,7 +555,9 @@
       "online": "Online",
       "offline": "Offline",
       "inUse": "In use on another device"
-    }
+    },
+    "showCommLog": "Show communication log",
+    "hideCommLog": "Hide communication log"
   },
   "retractCard": {
     "failedTitle": "Couldn't retract the card",
@@ -571,6 +593,10 @@
         "title": "Card missing before sorting",
         "description": "Module 1 no longer detects the scanned card, so nothing was sorted. Check module 1, then tap Resume."
       },
+      "card-stuck-in-module-one": {
+        "title": "Card stuck in module 1",
+        "description": "A card is stuck in module 1. Remove it, then tap Resume."
+      },
       "feed-failed": {
         "title": "Feeder problem",
         "description": "The feeder didn't respond as expected. {{detail}}"
@@ -578,6 +604,14 @@
       "route-failed": {
         "title": "Couldn't sort the card",
         "description": "Check the sorter, then tap Resume. {{detail}}"
+      },
+      "emergency-stop": {
+        "title": "Sorter stopped",
+        "stopped": "Remove any card left in the sorter, then reset it to continue.",
+        "unsupported": "This sorter's firmware can't stop mid-card, so the current card is still sorted. Update the firmware to stop instantly. Then reset the sorter.",
+        "unconfirmed": "The sorter didn't confirm the stop. Switch it off if it is still moving, then check the connection.",
+        "resetFailed": "The sorter didn't confirm the reset. Check the connection and try again.",
+        "reset": "Reset sorter"
       },
       "jam": {
         "title": "Card jammed",
@@ -650,6 +684,10 @@
       "control-card-switch-failed": {
         "title": "Control card not applied",
         "description": "Couldn't switch the collection or rule preset. Check your connection and try again."
+      },
+      "storage-unavailable": {
+        "title": "Couldn't put the card in storage",
+        "description": "{{detail}} Choose another storage location to keep scanning."
       }
     },
     "scanOnce": "Scan one",
@@ -685,8 +723,10 @@
     "handScanBinLabel": "Put in",
     "handScanBin": "Bin {{number}}",
     "pauseAction": "Pause",
-    "sessionChip_one": "{{count}} scanned",
-    "sessionChip_other": "{{count}} scanned",
+    "emergencyStop": "Stop",
+    "emergencyStopHint": "Emergency stop: halts the feeder, paddles and pushers now",
+    "sessionChip_one": "{{count, compact}} scanned",
+    "sessionChip_other": "{{count, compact}} scanned",
     "sessionScans": {
       "title": "This session",
       "empty": "No cards scanned yet this session.",
@@ -719,6 +759,9 @@
       "allowDuplicatesDescription": "Save the same printing more than once",
       "handScan": "Auto-detect cards",
       "handScanDescription": "Scan without a sorter. Press Start, then hold a card still in view and it scans on its own.",
+      "handScanBins": "Sort into bins",
+      "handScanBinsDescription": "Show which bin each card goes in, using your rule preset. Leave off to just save cards to the collection.",
+      "handScanBinsNoPreset": "Choose a rule preset for this game to sort cards into bins.",
       "camera": "Camera",
       "cameraFallback": "Camera {{number}}",
       "cameraPosition": {
@@ -799,7 +842,7 @@
       },
       "qrCode": {
         "title": "Point at a QR code to open it",
-        "description": "Shared collection, storage and trade links open in the app. A desktop camera pairing code connects this phone as the sorter's camera."
+        "description": "Shared collection, storage and trade links open in the app, and so do storage labels you printed. A desktop camera pairing code connects this phone as the sorter's camera."
       },
       "sorter": {
         "title": "Connect a sorter for auto-feed",
@@ -813,7 +856,8 @@
         "scanOnce": "Scan one",
         "removing": "Removing"
       },
-      "saved": "Saved {{name}}"
+      "saved": "Saved {{name}}",
+      "offline": "Offline"
     },
     "unmatchedRecovery": {
       "title": "Couldn't identify that card",
@@ -829,6 +873,25 @@
       "scannedCount_other": "{{count}} scanned",
       "lastCard": "Last: {{name}}",
       "noCardYet": "No cards yet"
+    },
+    "destination": {
+      "title": "Where scanned cards go",
+      "description": "Scanned cards go straight into the storage location you pick. Sorting rules and bins are not used.",
+      "descriptionNoLocations": "You have no storage locations yet. Add one under Library > Storage, or add cards to the collection only. Sorting rules and bins are not used unless you choose Sort with rules.",
+      "descriptionLocked": "Storage locations are not included in your plan. Cards are added to the collection only, and sorting rules and bins are not used unless you choose Sort with rules.",
+      "noLocation": "No storage location",
+      "noLocationDescription": "Add cards to the collection only, without sorting",
+      "sort": "Sort with rules",
+      "sortDescription": "Use your rule preset to pick a bin for each card",
+      "sorterChip": "Sorter sorts with your rules",
+      "sortChip": "Sorting with rules",
+      "storageChip": "Into {{name}} · no sorting",
+      "noLocationChip": "No storage location · no sorting",
+      "collectionAndLocation": "{{collection}} · {{location}}",
+      "batchDescription": "Cards you add from the photo go straight into the storage location you pick.",
+      "batchDescriptionNoLocations": "You have no storage locations yet. Add one under Library > Storage, or add cards to the collection only.",
+      "batchDescriptionLocked": "Storage locations are not included in your plan, so cards are added to the collection only.",
+      "batchNoLocationDescription": "Add cards to the collection only"
     }
   },
   "home": {
@@ -842,30 +905,21 @@
       "title": "{{name}} · {{collection}}",
       "open": "Opens the collection"
     },
-    "subtitle": "Here's how your collection is doing",
     "loadFailed": "Couldn't load your overview. Pull down to try again.",
-    "greeting": {
-      "morning": "Good morning",
-      "afternoon": "Good afternoon",
-      "evening": "Good evening"
+    "firstRun": {
+      "title": "Start your collection",
+      "description": "Create a collection, then scan your first cards to see what they're worth.",
+      "createCollection": "New collection",
+      "startScanning": "Start scanning"
     },
-    "greetingWithName": "{{greeting}}, {{name}}",
     "hero": {
       "value": "Collection value",
       "cards": "Cards",
       "collections": "Collections",
       "scanned": "Scanned all time",
       "sinceYesterday": "since yesterday",
-      "sinceDate": "since {{date}}"
-    },
-    "actions": {
-      "scan": "Scan cards",
-      "newCollection": "New collection",
-      "stats": "Stats"
-    },
-    "welcome": {
-      "title": "Welcome to Mault",
-      "description": "Create a collection, then start scanning to see its value, your top cards and more right here."
+      "sinceDate": "since {{date}}",
+      "openStats": "Opens your stats"
     },
     "review": {
       "title_one": "{{count}} scan needs review",
@@ -873,14 +927,21 @@
       "description": "Check the matches so your collection stays accurate.",
       "open": "Opens the review screen"
     },
+    "trades": {
+      "title_one": "{{count}} trade offer waiting",
+      "title_other": "{{count}} trade offers waiting",
+      "description": "See what was offered and accept or decline.",
+      "open": "Opens trade offers"
+    },
     "cardOfTheDay": "Cards of the day",
     "activity": {
       "title": "Scan activity",
       "today": "Today",
-      "thisWeek": "This week",
       "scans_one": "{{count}} scan",
       "scans_other": "{{count}} scans",
-      "chartLabel": "Scans per day for the last 14 days"
+      "chartLabel": "Scans per day for the last {{count}} days",
+      "lastDays_one": "Last {{count}} day",
+      "lastDays_other": "Last {{count}} days"
     },
     "topCards": "Top cards",
     "recentScans": "Recently scanned",
@@ -911,7 +972,9 @@
       "title": "Sort by",
       "scanOrder": "Scan order (newest first)",
       "ascending": "{{field}}, ascending",
-      "descending": "{{field}}, descending"
+      "descending": "{{field}}, descending",
+      "priceUsd": "Price (USD)",
+      "priceEur": "Price (EUR)"
     },
     "actions": {
       "copies_one": "{{count}} copy",
@@ -1007,7 +1070,15 @@
       "deletedSorter": "{{name}} (deleted)"
     },
     "name": "Name",
-    "actions": "Card actions"
+    "actions": "Card actions",
+    "similarMatchesCount_one": "{{count}} similar match",
+    "similarMatchesCount_other": "{{count}} similar matches",
+    "reviewAcceptFailed": "Couldn't accept the previous card",
+    "share": "Copy share link",
+    "shareLinkCopied": "Share link copied. Anyone with it can see this card.",
+    "shareLinkCopyFailed": "Couldn't copy a share link for this card.",
+    "downloadPhoto": "Download photo",
+    "downloadPhotoFailed": "Couldn't download the photo. Try again."
   },
   "reviewGrid": {
     "title": "Review cards",
@@ -1025,7 +1096,9 @@
     "done": "Done",
     "loadFailed": "Couldn't load the cards to review. Try again.",
     "acceptFailed_one": "Couldn't accept {{count}} card. Try again.",
-    "acceptFailed_other": "Couldn't accept {{count}} cards. Try again."
+    "acceptFailed_other": "Couldn't accept {{count}} cards. Try again.",
+    "accepted_one": "{{count}} card accepted",
+    "accepted_other": "{{count}} cards accepted"
   },
   "rules": {
     "title": "Sorting rules",
@@ -1238,10 +1311,24 @@
     },
     "modeLocked": "Rules don't apply in {{mode}} mode. Change the sorting mode to edit them.",
     "autoAssignLocked": "Auto-detect sets these rules for you. Change the sorting mode to edit them.",
-    "scanOnlyLocked": "Scan only is on. Scanned and unidentified cards go to the bins picked in Sorting mode. Turn it off to configure bins."
+    "scanOnlyLocked": "Scan only is on. Scanned and unidentified cards go to the bins picked in Sorting mode. Turn it off to configure bins.",
+    "description": {
+      "title": "Preset notes",
+      "label": "Description",
+      "placeholder": "Notes about this preset, what it sorts, when to use it...",
+      "add": "Add a description",
+      "edit": "Edit",
+      "save": "Save",
+      "saveFailed": "Couldn't save the description."
+    },
+    "maxCardsLabel": "Max cards",
+    "maxCardsPlaceholder": "No limit",
+    "maxCardsDescription": "This bin counts as full at this many cards, even if it has room: matching cards then go to its overflow bin or pause sorting. Leave empty to use the bin's physical size.",
+    "maxCardsPill_one": "Holds {{count}}",
+    "maxCardsPill_other": "Holds {{count}}"
   },
   "calibration": {
-    "title": "Calibration",
+    "title": "Sorter setup",
     "subtitle": "Tune servos and the feeder",
     "entryTitle": "Calibration",
     "entrySubtitle": "Servo positions, timings and the feeder",
@@ -1251,7 +1338,7 @@
     "msValue": "{{value}} ms",
     "continuous": "Continuous",
     "servos": {
-      "bottom": "Bottom Paddle",
+      "bottom": "Bottom paddle",
       "paddle": "Paddles",
       "pusher": "Pusher"
     },
@@ -1566,11 +1653,16 @@
     },
     "share": "Share location",
     "shareWithCount_one": "Share location ({{count}} active)",
-    "shareWithCount_other": "Share location ({{count}} active)"
+    "shareWithCount_other": "Share location ({{count}} active)",
+    "searchFailed": "Couldn't search your storage locations",
+    "notFoundTitle": "Location not found",
+    "notFoundDescription": "It may have been deleted, or you no longer have access to it.",
+    "printLabel": "Print label"
   },
   "settings": {
     "title": "Settings",
     "subtitle": "Organization-wide settings for every scanner",
+    "loadFailed": "Couldn't load these settings",
     "entrySubtitle": "Pricing, scanning, branding and integrations",
     "sections": {
       "general": {
@@ -1598,11 +1690,11 @@
         "description": "Keys for the public API"
       },
       "notifications": {
-        "title": "Notifications",
+        "title": "Discord",
         "description": "Discord channels, alerts and notification rules"
       },
       "sounds": {
-        "title": "Sounds",
+        "title": "Scan sounds",
         "description": "Play a clip when a sorted card matches a rule"
       },
       "webhooks": {
@@ -1618,7 +1710,26 @@
       "heading": "Appearance",
       "description": "Customize the app's accent color.",
       "primaryColor": "Primary color",
-      "resetColor": "Reset to default"
+      "resetColor": "Reset to default",
+      "colors": {
+        "red": "Red",
+        "orange": "Orange",
+        "amber": "Amber",
+        "yellow": "Yellow",
+        "lime": "Lime",
+        "green": "Green",
+        "emerald": "Emerald",
+        "teal": "Teal",
+        "cyan": "Cyan",
+        "sky": "Sky",
+        "blue": "Blue",
+        "indigo": "Indigo",
+        "violet": "Violet",
+        "purple": "Purple",
+        "fuchsia": "Fuchsia",
+        "pink": "Pink",
+        "rose": "Rose"
+      }
     },
     "leaderboard": {
       "heading": "Leaderboard",
@@ -1633,7 +1744,7 @@
     "ocr": {
       "heading": "Text recognition (OCR)",
       "description": "When a scan isn't a confident match, read the card's name and set line to find it. Applies to every scanner in this organization, for games with text regions set up.",
-      "toggleLabel": "Enable OCR text matching",
+      "toggleLabel": "Enable text recognition",
       "highAccuracyToggleLabel": "Higher accuracy scans",
       "highAccuracyDescription": "Read the text on every card, not only uncertain ones, so the set and number can correct a confident but wrong match. Scans take a little longer."
     },
@@ -1869,14 +1980,16 @@
       },
       "channelSettings": {
         "heading": "Channels",
-        "description": "Where every scan and every error or alert gets posted. Only owners and admins can change these.",
+        "description": "Where every scan, every error or alert and every new trade offer gets posted. Only owners and admins can change these.",
         "scan": "Every scan",
         "error": "Errors and alerts",
+        "trade": "Trade offers",
         "none": "Don't post",
         "sameScan": "Same as every scan",
         "sameError": "Same as errors",
         "scanRole": "Ping role for scans",
         "errorRole": "Ping role for errors",
+        "tradeRole": "Ping role for trade offers",
         "roleHint": "Pick a role to mention with each post, including posts to collection override channels. The role must be mentionable by the bot.",
         "saved": "Channel saved.",
         "saveFailed": "Couldn't save the channel."
@@ -2151,8 +2264,9 @@
     "acrossPrintings": "Range across {{count}} printings"
   },
   "health": {
-    "title": "System Health",
+    "title": "System health",
     "subtitle": "Live status of the database.",
+    "loadFailed": "Couldn't load the system status",
     "refresh": "Refresh",
     "allHealthy": "Everything is operational.",
     "someUnhealthy": "Some services are having trouble.",
@@ -2222,7 +2336,10 @@
     "title": "Notifications",
     "empty": "You're all caught up.",
     "learnMore": "Learn more",
-    "firmwareMissing": "Your sorter's firmware doesn't report a version and can't be used to scan. Re-upload the latest firmware/main/main.ino to enable scanning."
+    "firmwareMissing": "Your sorter's firmware doesn't report a version and can't be used to scan. Re-upload the latest firmware/main/main.ino to enable scanning.",
+    "refresh": "Refresh notifications",
+    "refreshed": "Notifications refreshed",
+    "refreshFailed": "Couldn't refresh notifications"
   },
   "phoneCamera": {
     "title": "Use Phone as Camera",
@@ -2263,6 +2380,7 @@
     "percentAtLeast": "Must be at least {{min}}%.",
     "percentAtMost": "Must be at most {{max}}%.",
     "amountRequired": "Enter an amount.",
+    "amountInvalid": "Enter an amount like 12.50.",
     "percentageRequired": "Enter a percentage.",
     "tiersRequired": "Add at least one tier.",
     "tooManyTiers": "Add no more than {{max}} tiers.",
@@ -2276,9 +2394,15 @@
     "verificationCodeLength": "Enter the {{length}}-digit code.",
     "verificationCodeNumeric": "The code can only contain numbers.",
     "controlCardActionRequired": "Pick at least one thing for the card to change.",
+    "orderBinDuplicate": "Each order needs its own bin.",
+    "shortLinkCodeInvalid": "Use up to {{max}} lowercase letters, numbers and hyphens, starting and ending with a letter or number.",
+    "shortLinkCodeReserved": "That code is reserved. Pick another.",
+    "shortLinkTargetInvalid": "Enter a full http:// or https:// URL.",
+    "orderBinCatchAll": "The last bin catches every other card, so pick another one.",
     "catalogSourcesRequired": "Pick at least one collection or storage location.",
     "contactRequired": "Add a way to reach you.",
-    "textTooLong": "Keep this under {{max}} characters."
+    "textTooLong": "Keep this under {{max}} characters.",
+    "jsonObjectInvalid": "Enter a single JSON object, like {\"neutral\": true}."
   },
   "cardTags": {
     "title": "Tags",
@@ -2552,7 +2676,7 @@
         },
         "repacks": {
           "label": "Repacks",
-          "description": "Build repacks from bin slots. Turning it off only stops presets from switching it on. Presets already in repack mode keep working."
+          "description": "Build repacks from bin slots. Turning it off only stops presets from switching it on. Presets already building repacks keep working."
         },
         "customSounds": {
           "label": "Custom sounds",
@@ -3003,6 +3127,9 @@
   "tradeOffers": {
     "trayHeading": "Trade offers",
     "trayMessage": "{{name}} wants {{wanted}} for {{offered}} of theirs",
+    "trayMessageCash": "{{name}} wants {{wanted}} for {{cash}}",
+    "trayMessageCardsAndCash": "{{name}} wants {{wanted}} for {{offered}} of theirs plus {{cash}}",
+    "trayMessageNothing": "{{name}} asks for {{wanted}} with nothing in return",
     "review": "Review",
     "foil": "Foil",
     "accepted": "Trade offer accepted",
@@ -3015,7 +3142,7 @@
     "title": "Trade offer",
     "reviewTitle": "Offer from {{name}}",
     "respondFailed": "Couldn't answer the trade offer.",
-    "answered": "This trade offer was already answered.",
+    "loadFailed": "Couldn't load the trade offer",
     "reviewDescription": "Sent from {{source}} on {{date}}",
     "unknownSource": "a shared link",
     "contact": "Contact",
@@ -3023,20 +3150,131 @@
     "theyWant_other": "They want {{count}} cards",
     "theyOffer_one": "They offer {{count}} card",
     "theyOffer_other": "They offer {{count}} cards",
+    "theyOfferCash": "They offer cash",
+    "theyOfferNothing": "They offer nothing in return",
+    "cashAmount": "{{amount}} in cash",
+    "nothingOffered": "Nothing offered in return.",
     "acceptTitle": "Accept this trade offer?",
-    "acceptRemovesCards_one": "This removes the {{count}} card they want from your collection.",
-    "acceptRemovesCards_other": "This removes the {{count}} cards they want from your collection.",
     "theyGetValue": "They get",
     "youGetValue": "You get",
     "youGainValue": "Their offer is worth {{amount}} more than what they're asking for.",
     "youLoseValue": "Their offer is worth {{amount}} less than what they're asking for.",
     "evenValue": "Both sides are worth the same.",
     "missingPrices": "Some cards have no price, so the totals may be low.",
-    "noPrice": "No price"
+    "noPrice": "No price",
+    "library": {
+      "subtitle": "Trade offers sent through your trade links",
+      "open": "Open",
+      "answered": "Answered",
+      "unnamedGuest": "Guest",
+      "rowDetails": "{{source}} · {{wanted}} wanted · {{offered}} offered",
+      "loadFailed": "Couldn't load trade offers",
+      "emptyTitle": "No trade offers yet",
+      "emptyDescription": "Offers arrive when someone opens one of your trade links and picks cards. Create a trade link from the share menu of a collection or storage location.",
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "declined": "Declined"
+      },
+      "picking_one": "Picking, {{count}} left",
+      "picking_other": "Picking, {{count}} left"
+    },
+    "cardList": {
+      "cardCount_one": "{{count}} card",
+      "cardCount_other": "{{count}} cards",
+      "uniqueCount_one": "{{count}} unique",
+      "uniqueCount_other": "{{count}} unique",
+      "sortLabel": "Sort by",
+      "sort": {
+        "value": "Value",
+        "name": "Name",
+        "set": "Set"
+      },
+      "groupByLocation": "Group by location",
+      "groupByLocationHint": "Cards in storage are listed in box order, so you can pull them in one pass.",
+      "filterLabel": "Filter cards",
+      "filterPlaceholder": "Name or set",
+      "filterResults_one": "{{count}} card matches",
+      "filterResults_other": "{{count}} cards match",
+      "noFilterResults": "No cards match your filter.",
+      "showAll": "Show all {{count}}",
+      "showLess": "Show less",
+      "unitPrice": "{{price}} each",
+      "foil": "Foil",
+      "noPrice": "No price",
+      "placementStorage": "{{location}} · #{{positions}}",
+      "placementStorageNoPosition": "{{location}}",
+      "placementBin_one": "{{collection}}, bin {{bins}}",
+      "placementBin_other": "{{collection}}, bins {{bins}}",
+      "placementCollection": "In {{collection}}, not in storage",
+      "placementMissing_one": "{{count}} copy is no longer in your collection",
+      "placementMissing_other": "{{count}} copies are no longer in your collection",
+      "sectionBin": "{{collection}}, bin {{bin}}",
+      "sectionCollection": "{{collection}}, not in storage",
+      "sectionMissing": "No longer in your collection"
+    },
+    "notFound": "This trade offer no longer exists.",
+    "sideTabs": {
+      "label": "Trade sides",
+      "wanted": "They want ({{count}})",
+      "offered": "They offer ({{count}})"
+    },
+    "pickList": {
+      "started": "Trade accepted. Tick off the cards they want as you pick them.",
+      "acceptHint": "Accepting gives you a pick list. Each card they want is removed from your inventory when you tick it off.",
+      "acceptDescription_one": "You get a pick list for the {{count}} card they want. It's removed from your inventory when you tick it off, and a tick can't be undone.",
+      "acceptDescription_other": "You get a pick list for the {{count}} cards they want. Each one is removed from your inventory when you tick it off, and a tick can't be undone.",
+      "title": "Pick list",
+      "hint": "Tick each card as you pull it. Ticked cards are removed from your inventory right away.",
+      "progress": "{{picked}} of {{count}} picked",
+      "picked": "Picked and removed",
+      "pickedSection": "Picked",
+      "finish": "Finish",
+      "finishTitle": "Finish picking?",
+      "finishDescription_one": "This removes the {{count}} card you haven't ticked off from your inventory.",
+      "finishDescription_other": "This removes the {{count}} cards you haven't ticked off from your inventory.",
+      "finished_one": "Trade finished. Removed {{count}} card from your inventory.",
+      "finished_other": "Trade finished. Removed {{count}} cards from your inventory.",
+      "pickFailed": "Couldn't remove the picked card. Tick it again to retry.",
+      "finishFailed": "Couldn't finish the pick list."
+    },
+    "boxes": {
+      "received": "Received",
+      "sent": "Sent"
+    },
+    "sent": {
+      "title": "Sent trade offer",
+      "unknownRecipient": "A shared link",
+      "rowDetails": "{{wanted}} asked for · {{offered}} offered",
+      "loadFailed": "Couldn't load your sent offers.",
+      "emptyTitle": "No sent offers yet",
+      "emptyDescription": "Offers you send from someone's trade link show up here.",
+      "detailTitle": "Your offer to {{name}}",
+      "detailDescription": "Sent on {{date}}",
+      "answeredOn": "Answered on {{date}}",
+      "waitingHint": "Waiting for an answer.",
+      "yourDetails": "Your details",
+      "openHint": "Opens the offer",
+      "youWant_one": "You asked for {{count}} card",
+      "youWant_other": "You asked for {{count}} cards",
+      "youOffer_one": "You offered {{count}} card",
+      "youOffer_other": "You offered {{count}} cards",
+      "youOfferCash": "You offered cash",
+      "youOfferNothing": "You offered nothing in return",
+      "sideTabs": {
+        "wanted": "You asked for ({{count}})",
+        "offered": "You offered ({{count}})"
+      },
+      "status": {
+        "pending": "Waiting",
+        "accepted": "Accepted",
+        "declined": "Declined"
+      }
+    }
   },
   "trade": {
     "title": "Trade offer",
-    "description": "Pick cards you want from {{source}}, add cards you'll give in return, and send it. The owner accepts or declines.",
+    "description": "Pick cards you want from {{source}}, add cards or cash you'll give in return (or nothing), and send it. The owner accepts or declines.",
     "sent": "Trade offer sent. The owner will get back to you.",
     "sendFailed": "Couldn't send the trade offer. Try again.",
     "invalidLink": "This trade link isn't available",
@@ -3054,15 +3292,18 @@
     "addMoreCards": "Add more cards",
     "giveTitle_one": "You give ({{count}})",
     "giveTitle_other": "You give ({{count}})",
-    "giveDescription": "Scan your cards or pick them from your collection.",
+    "giveDescription": "Scan your cards, pick them from your collection, or offer cash.",
+    "cashLabel": "Cash in {{currency}} (optional)",
+    "cashHint": "Offer cash with your cards or on its own. Leave both empty to offer nothing in return.",
     "scanCards": "Scan cards",
     "fromCollection": "From collection",
     "editCardHint": "Change quantity, condition or foil",
     "foil": "Foil",
     "removeCard": "Remove {{name}}",
     "summary": "Cards you get: {{get}} · Cards you give: {{give}}",
+    "summaryWithCash": "Cards you get: {{get}} · Cards you give: {{give}} · Cash: {{cash}}",
+    "summaryNothing": "Cards you get: {{get}} · Nothing in return",
     "needGet": "Add a card you want to continue.",
-    "needGive": "Add a card you're giving to continue.",
     "send": "Send trade offer",
     "quantityIncrease": "Quantity: {{count}}",
     "quantityDecrease": "Quantity: {{count}}",
@@ -3082,6 +3323,7 @@
     "selectedCount_other": "{{count}} selected",
     "searchLinkCards": "Search these cards",
     "noLinkCards": "No cards match",
+    "linkCardsLoadFailed": "Couldn't load the cards on this link",
     "tapToAdd": "Adds it to your trade offer",
     "tapToRemove": "Removes it from your trade offer",
     "loadMore": "Load more",
@@ -3096,6 +3338,7 @@
     "added": "Added {{name}} to your offer",
     "noCollections": "You don't have a collection yet",
     "noCollectionCards": "No cards match",
+    "collectionCardsLoadFailed": "Couldn't load the cards in this collection",
     "scanCollectionLabel": "Match cards from",
     "scanHint": "Hold one of your cards in the frame and tap the shutter to add it.",
     "scanButton": "Scan card",
@@ -3190,7 +3433,7 @@
     "open": "Search everything",
     "placeholder": "Search cards, collections, locations and settings",
     "promptTitle": "Search everything",
-    "promptDescription": "Find a card in any collection, a collection, a storage location or a setting.",
+    "promptDescription": "Find any card, in your collections or not, plus collections, storage locations and settings.",
     "emptyTitle": "Nothing found",
     "emptyDescription": "Try a different name or spelling.",
     "loadFailed": "Couldn't search your cards. Pull down to try again.",
@@ -3199,13 +3442,38 @@
     "resultsCount_one": "{{count}} result",
     "resultsCount_other": "{{count}} results",
     "sections": {
-      "cards": "Cards",
+      "cards": "Your cards",
       "collections": "Collections",
       "locations": "Storage locations",
-      "settings": "Settings"
+      "settings": "Settings",
+      "catalog": "All cards"
+    },
+    "catalogLoadFailed": "Couldn't search the card catalog. Pull down to try again.",
+    "showMoreCards": "Show more of your cards",
+    "gameFilterLabel": "Search in",
+    "allGames": "All games",
+    "showMoreCatalogCards": "Show more cards",
+    "loadingMore": "Loading more results",
+    "loadMoreFailed": "Couldn't load more results. Try again.",
+    "printings": {
+      "title": "Printings",
+      "titleWithCount_one": "Printings ({{count}})",
+      "titleWithCount_other": "Printings ({{count}})",
+      "count_one": "{{count}} printing",
+      "count_other": "{{count}} printings",
+      "selected": "Showing the {{printing}} printing",
+      "loadFailed": "Couldn't load the other printings.",
+      "showMore": "Show more printings"
     }
   },
+  "offline": {
+    "title": "You're offline",
+    "description": "Scans are saved once you're back online. Other changes need a connection.",
+    "backOnline": "Back online"
+  },
   "recovery": {
+    "loadFailed": "Couldn't load this",
+    "loadFailedDescription": "Check your connection and try again.",
     "undo": "Undo",
     "retry": "Retry",
     "restored": "Restored",
@@ -3215,6 +3483,270 @@
     "tagAdded": "{{tag}} added",
     "tagRemoved": "{{tag}} removed",
     "movedTo": "Moved to {{name}}",
-    "cardsLoadFailed": "Couldn't load these cards"
+    "cardsLoadFailed": "Couldn't load these cards",
+    "foilChanged": "Foil set to {{value}}",
+    "conditionChanged": "Condition set to {{value}}",
+    "pickListCleared": "Pick list cleared",
+    "verifyProgressCleared": "Verification progress cleared"
+  },
+  "catalogCard": {
+    "title": "Card",
+    "loadFailed": "Couldn't load this card.",
+    "add": "Add to collection",
+    "addTo": "Add to {{collection}}",
+    "chooseCollection": "Add to which collection?",
+    "added": "Added {{name}} to {{collection}}",
+    "view": "View",
+    "addFailed": "Couldn't add the card.",
+    "noCollection": "Create a {{game}} collection to add this card."
+  },
+  "library": {
+    "valueModes": {
+      "value": "Value",
+      "change": "Change"
+    },
+    "noChange": "No history yet",
+    "changeLoadFailed": "Couldn't load value changes"
+  },
+  "business": {
+    "title": "Buy and sell",
+    "subtitle": "Buy collections over the counter and pick orders from your stock.",
+    "locked": "Buy and sell is part of a higher plan",
+    "lockedDescription": "You can look at past intakes and picks. Upgrade on the web to start new ones.",
+    "loadFailed": "Couldn't load this list.",
+    "actionFailed": "That didn't work. Try again.",
+    "showMore": "Show more",
+    "back": "Back",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "views": {
+      "intake": "Intake",
+      "picks": "Picks"
+    },
+    "status": {
+      "open": "Open",
+      "accepted": "Bought",
+      "fulfilled": "Done",
+      "cancelled": "Cancelled"
+    },
+    "intake": {
+      "title": "Intake",
+      "entrySubtitle": "Buy cards from customers with live offers",
+      "new": "New intake",
+      "newDescription": "Cards you scan into the lot's collection are added to it until you accept or cancel it.",
+      "create": "Start intake",
+      "createFailed": "Couldn't start the intake",
+      "customerName": "Customer",
+      "customerContact": "Contact (optional)",
+      "customerContactPlaceholder": "Email or phone",
+      "collectionMode": "Scan into",
+      "collectionModes": {
+        "new": "New collection",
+        "existing": "Existing collection"
+      },
+      "collection": "Collection",
+      "collectionPlaceholder": "Choose a collection",
+      "game": "Game",
+      "gamePlaceholder": "Choose a game",
+      "language": "Language",
+      "languagePlaceholder": "Choose a language",
+      "notes": "Notes (optional)",
+      "emptyTitle": "No intakes yet",
+      "emptyDescription": "Start one when a customer brings cards to sell.",
+      "rowDetails_one": "{{count}} card · {{collection}}",
+      "rowDetails_other": "{{count}} cards · {{collection}}",
+      "openHint": "Opens the intake",
+      "subtitle": "Scanning into {{collection}} · started {{date}}",
+      "notFound": "This intake doesn't exist anymore.",
+      "moreActions": "More intake actions",
+      "openCollection": "Open collection",
+      "collectionDeleted": "The lot's collection was deleted.",
+      "liveOffer": "Live offer",
+      "summary": "Summary",
+      "stats": {
+        "cards": "Cards",
+        "market": "Market value",
+        "cash": "Cash offer",
+        "credit": "Credit offer",
+        "paid": "Paid"
+      },
+      "payout": {
+        "cash": "Cash",
+        "credit": "Store credit"
+      },
+      "payoutMethod": "Pay out as",
+      "payoutTotal": {
+        "cash": "Cash to pay",
+        "credit": "Credit to give"
+      },
+      "belowMinimum_one": "{{count}} card is below your minimum and gets no offer.",
+      "belowMinimum_other": "{{count}} cards are below your minimum and get no offer.",
+      "belowMinimumRow": "Below minimum, no offer",
+      "scanCards": "Scan cards into this lot",
+      "accept": "Accept",
+      "acceptTitle": "Accept this lot",
+      "acceptDescription_one": "Buy {{count}} card from {{name}}. Each card's cost basis is set from its offer.",
+      "acceptDescription_other": "Buy {{count}} cards from {{name}}. Each card's cost basis is set from its offer.",
+      "acceptConfirm": "Accept for {{amount}}",
+      "accepted": "Lot accepted",
+      "overrideLabel": "Use a different total",
+      "overrideAmount": "Cash total",
+      "costBasisNote": "Cost basis recorded: {{amount}}",
+      "transfer": "Move cards to stock",
+      "contact": "Contact",
+      "notesTitle": "Notes",
+      "cardsSection_one": "{{count}} card",
+      "cardsSection_other": "{{count}} cards",
+      "noCardsOpen": "Scan the customer's cards. Offers update as each card is saved.",
+      "noCardsClosed": "This lot was closed without any cards.",
+      "cancelLot": "Cancel lot",
+      "cancelTitle": "Cancel this lot",
+      "cancelDescription": "{{name}} keeps their cards and nothing is paid. Remove the scanned cards too if they leave with the customer.",
+      "cancelKeepCards": "Cancel and keep cards",
+      "cancelRemoveCards_one": "Cancel and remove {{count}} card",
+      "cancelRemoveCards_other": "Cancel and remove {{count}} cards",
+      "cancelled": "Lot cancelled",
+      "deleteTitle": "Delete this lot?",
+      "deleteDescription": "The lot's record is removed. Cards you bought stay in your collection with their cost.",
+      "deleted": "Lot deleted"
+    },
+    "transfer": {
+      "title": "Move the bought cards",
+      "description": "Move the cards from {{name}} into the collection where you keep your stock.",
+      "target": "Move to",
+      "newCollection": "New collection",
+      "noTargets": "No other collection for this game yet, so a new one will be created.",
+      "newName": "Collection name",
+      "newNamePlaceholder": "Inventory",
+      "deleteSource": "Delete {{name}} afterwards",
+      "deleteSourceHint": "Only once it has no cards left.",
+      "move": "Move cards",
+      "moved_one": "Moved {{count}} card",
+      "moved_other": "Moved {{count}} cards"
+    },
+    "picks": {
+      "entrySubtitle": "Pull sold cards from storage, slot by slot",
+      "new": "New pick",
+      "newDescription": "Paste the cards to pull, one per line. MAULT finds copies in your stock and where they are.",
+      "create": "Create pick",
+      "createFailed": "Couldn't create the pick",
+      "nameLabel": "Name",
+      "namePlaceholder": "Order #1234",
+      "cardsLabel": "Cards",
+      "cardsPlaceholder": "4 Lightning Bolt\n1 Sol Ring",
+      "emptyTitle": "No picks yet",
+      "emptyDescription": "Create a pick here, or import orders on the web and scan the pick's QR code from the scan tab.",
+      "openSection": "Open",
+      "closedSection": "Closed",
+      "openHint": "Opens the pick",
+      "rowProgress": "{{picked}} of {{quantity}} picked · {{allocated}} in stock",
+      "rowCards_one": "{{count}} card",
+      "rowCards_other": "{{count}} cards",
+      "pickAllOpen_one": "Pick {{count}} open pick",
+      "pickAllOpen_other": "Pick all {{count}} open picks",
+      "noPermission": "You can see this pick, but your role can't mark cards as picked.",
+      "complete_one": "Complete pick",
+      "complete_other": "Complete {{count}} picks",
+      "completeTitle_one": "Complete this pick?",
+      "completeTitle_other": "Complete {{count}} picks?",
+      "completeDescription_one": "Removes {{count}} card from inventory and records the sale for {{names}}.",
+      "completeDescription_other": "Removes {{count}} cards from inventory and records the sales for {{names}}.",
+      "completed_one": "Pick completed",
+      "completed_other": "{{count}} picks completed",
+      "missing": {
+        "title": "Can't find {{name}}?",
+        "description": "MAULT releases this copy and looks for another one in stock. If none is left, the pick shows the card as short so you can choose a substitute.",
+        "confirm": "Find another copy",
+        "released": "Released {{name}}. Check the pick for its replacement."
+      },
+      "walk": {
+        "title": "Pick",
+        "progress": "{{picked}} of {{total}} picked",
+        "nextUp": "Next card",
+        "slot": "Slot {{position}}",
+        "bin": "Bin {{bin}}",
+        "collectionBin": "{{collection}}, bin {{bin}}",
+        "foil": "Foil",
+        "orderRef": "Order {{order}}",
+        "orderBin": "order bin {{bin}}",
+        "picked": "Picked",
+        "markPicked": "Mark {{name}} from {{spot}} as picked",
+        "cantFind": "Can't find it",
+        "cantFindCard": "Can't find {{name}}",
+        "allPicked": "Every card is picked. Complete the pick to take them out of stock.",
+        "stopProgress": "{{picked}}/{{total}}",
+        "scanToPick": "Scan cards to pick",
+        "closedSkipped_one": "{{count}} pick is already closed and was skipped.",
+        "closedSkipped_other": "{{count}} picks are already closed and were skipped.",
+        "shortPicks_one": "{{count}} pick is missing cards",
+        "shortPicks_other": "{{count}} picks are missing cards",
+        "openShort": "Choose substitutes",
+        "emptyTitle": "Nothing to pick",
+        "emptyDescription": "These picks are closed or have no cards in stock.",
+        "saveFailed": "Couldn't save that pick. The list was refreshed."
+      },
+      "scan": {
+        "title": "Scan to pick",
+        "hint": "Hold a card from the pick in the frame and tap the shutter.",
+        "remaining_one": "{{count}} left to pick",
+        "remaining_other": "{{count}} left to pick",
+        "picked": "Picked {{name}} from {{spot}}",
+        "alreadyPicked": "Every copy of {{name}} on this pick is already picked.",
+        "notOnPick": "{{name}} isn't left on this pick."
+      }
+    },
+    "order": {
+      "title": "Pick",
+      "subtitle": "{{source}} · {{date}}",
+      "sources": {
+        "tcgplayer": "TCGplayer",
+        "shopify": "Shopify",
+        "generic": "List"
+      },
+      "notFound": "This pick doesn't exist anymore.",
+      "moreActions": "More pick actions",
+      "stats": {
+        "quantity": "Cards",
+        "allocated": "In stock",
+        "picked": "Picked",
+        "revenue": "Revenue"
+      },
+      "shortLines_one": "{{count}} card on this pick isn't fully in stock.",
+      "shortLines_other": "{{count}} cards on this pick aren't fully in stock.",
+      "startPicking": "Start picking",
+      "continuePicking": "Continue picking",
+      "lines": "Cards to pull",
+      "linePicked": "{{picked}}/{{quantity}} picked",
+      "lineQuantity_one": "{{count}} card",
+      "lineQuantity_other": "{{count}} cards",
+      "inStock_one": "only {{count}} in stock",
+      "inStock_other": "only {{count}} in stock",
+      "substitute": "Substitute",
+      "reallocate": "Reallocate",
+      "reallocated": "Pick reallocated",
+      "cancel": "Cancel pick",
+      "cancelTitle": "Cancel this pick?",
+      "cancelDescription": "Its cards stay in stock and become available to other picks.",
+      "cancelConfirm": "Cancel pick",
+      "cancelled": "Pick cancelled",
+      "deleteTitle": "Delete this pick?",
+      "deleteDescription": "The pick's record is removed. Cards already taken out of stock stay removed.",
+      "deleted": "Pick deleted"
+    },
+    "substitute": {
+      "title": "Substitutes",
+      "description": "Copies in stock that could fill the {{missing}} missing for {{name}}. The closest matches come first.",
+      "added": "Substitute added to the pick",
+      "emptyTitle": "No other copies in stock",
+      "emptyDescription": "No unreserved copy of this card is in inventory right now.",
+      "exactMatch": "Matches the order",
+      "useCopy": "Use",
+      "useCopyHint": "Adds this copy to the pick",
+      "differences": {
+        "printing": "Other printing",
+        "condition": "Other condition",
+        "finish": "Other finish"
+      }
+    }
   }
 }

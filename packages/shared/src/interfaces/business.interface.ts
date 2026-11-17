@@ -1,10 +1,15 @@
 import type {
+  ORDER_BULK_ACTIONS,
+  ORDER_SUBSTITUTE_DIFFERENCES,
+} from "../constants/business.constant";
+import type {
   ACTIVITY_ACTIONS,
   BUSINESS_PERMISSION_KEYS,
   DEVICE_ALERT_TYPES,
 } from "../constants/business.constant";
 import type { PlayingCard, PlayingCardWithDistance } from "./card.interface";
 import type { CardCondition } from "./card-condition.interface";
+import type { PickList } from "./pick-list.interface";
 import type { PriceSource } from "./price-source.interface";
 import type { StatsRange } from "./stats.interface";
 
@@ -179,6 +184,7 @@ export interface OrderLineInput {
   collectorNumber?: string | null;
   condition?: CardCondition | null;
   isFoil?: boolean | null;
+  language?: string | null;
   quantity: number;
   unitPrice?: number | null;
   orderRef?: string | null;
@@ -234,11 +240,72 @@ export interface PullSheetEntry {
   locationName: string | null;
   locationPosition: number | null;
   picked: boolean;
+  orderRef: string | null;
+  gameKey: string | null;
 }
+
+export interface OrderPickedInput {
+  scanIds: string[];
+  isPicked: boolean;
+}
+
+export interface OrderPickLinkTarget {
+  orderGuids: string[];
+  orgId: string | null;
+}
+
+export interface PickWalkEntry extends PullSheetEntry {
+  orderGuid: string;
+  orderName: string;
+  orderBin: number | null;
+}
+
+export interface PickWalkStop {
+  stopKey: string;
+  locationName: string | null;
+  collectionName: string;
+  binNumber: number | null;
+  entries: PickWalkEntry[];
+}
+
+export type OrderBins = Record<string, number>;
 
 export interface FulfilmentOrderDetail extends FulfilmentOrder {
   lines: OrderLine[];
   pullSheet: PullSheetEntry[];
+  orderBins: OrderBins;
+  binCount: number;
+}
+
+export interface OrderBinsInput {
+  orderBins: OrderBins;
+}
+
+export type OrderBinsError = "duplicate" | "outOfRange" | "catchAll";
+
+export interface PickOrderGroup {
+  orderRef: string | null;
+  binNumber: number | null;
+  lineIndexes: number[];
+  entries: PullSheetEntry[];
+  quantity: number;
+  allocated: number;
+}
+
+export interface OrderSortPreset {
+  guid: string;
+  name: string;
+  gameKey: string;
+}
+
+export interface OrderSortPresetBin {
+  binNumber: number;
+  isCatchAll: boolean;
+  pickList: PickList | null;
+}
+
+export interface OrderSortPresetResult {
+  presets: OrderSortPreset[];
 }
 
 export interface OrderFulfilInput {
@@ -291,13 +358,6 @@ export interface InventoryTotals {
 export interface InventoryCollectionRow extends InventoryTotals {
   guid: string;
   name: string;
-}
-
-export interface InventorySnapshotPoint {
-  day: string;
-  cardCount: number;
-  marketValue: number;
-  costBasis: number;
 }
 
 export interface CollectionCostInput {
@@ -424,4 +484,36 @@ export interface AccuracyCheckInput {
 export interface AccuracySampleInput {
   scanId: string;
   result: AccuracySampleResult | null;
+}
+
+export type OrderBulkAction = (typeof ORDER_BULK_ACTIONS)[number];
+
+export interface OrderBulkActionInput {
+  action: OrderBulkAction;
+  orderGuids: string[];
+}
+
+export interface OrderBulkActionResult {
+  updated: number;
+  skipped: number;
+}
+
+export type OrderSubstituteDifference = (typeof ORDER_SUBSTITUTE_DIFFERENCES)[number];
+
+export interface OrderLineSubstitute {
+  entry: PullSheetEntry;
+  differences: OrderSubstituteDifference[];
+}
+
+export interface OrderLineSubstituteInput {
+  lineIndex: number;
+  scanId: string;
+}
+
+export interface OrderSubstituteCandidate {
+  setCode: string | null;
+  setName: string | null;
+  collectorNumber: string | null;
+  condition: CardCondition;
+  isFoil: boolean;
 }

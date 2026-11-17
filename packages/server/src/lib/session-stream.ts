@@ -1,4 +1,8 @@
 import { COLLECTION_CARDS_CHANGED_THROTTLE_MS } from "./constants/timing";
+import {
+  invalidateOrgReadCaches,
+  invalidateOrgReadCachesForEvent,
+} from "./org-read-cache";
 import type { SseWriter } from "./interfaces/sse";
 import type {
   SessionEntry,
@@ -7,7 +11,7 @@ import type {
 } from "./interfaces/session-stream";
 
 const sessions = new Map<string, SessionEntry>();
-const orgCountWriters = new Map<string, Set<SseWriter>>();
+const orgWriters = new Map<string, Set<SseWriter>>();
 const lastCollectionCardsChangedAt = new Map<string, number>();
 const pendingCollectionCardsChanged = new Map<
   string,
@@ -15,7 +19,8 @@ const pendingCollectionCardsChanged = new Map<
 >();
 
 export function emitToOrg(orgId: string, event: string, data: unknown) {
-  const writers = orgCountWriters.get(orgId);
+  invalidateOrgReadCachesForEvent(orgId, event);
+  const writers = orgWriters.get(orgId);
   if (!writers) return;
   for (const writer of writers) {
     try {
@@ -25,6 +30,7 @@ export function emitToOrg(orgId: string, event: string, data: unknown) {
 }
 
 export function emitCollectionCardsChanged(orgId: string, guid: string) {
+  invalidateOrgReadCaches(orgId);
   if (pendingCollectionCardsChanged.has(orgId)) return;
   const sinceLastEmit =
     Date.now() - (lastCollectionCardsChangedAt.get(orgId) ?? 0);
@@ -68,6 +74,7 @@ export function subscribeSession(
     session = { orgId, viewers: new Set() };
     sessions.set(guid, session);
   }
+  if (session.orgId !== orgId) return () => {};
   const entry: ViewerEntry = { userId, displayName, writer };
   session.viewers.add(entry);
   broadcastViewers(guid, session);
@@ -85,12 +92,13 @@ export function subscribeSession(
 }
 
 export function emitToSession(
+  orgId: string,
   guid: string,
   event: string,
   data: unknown,
 ): void {
   const session = sessions.get(guid);
-  if (!session) return;
+  if (!session || session.orgId !== orgId) return;
   for (const entry of session.viewers) {
     try {
       entry.writer(event, data);
@@ -128,18 +136,18 @@ export function getSessionViewersForGuids(
   return result;
 }
 
-export function subscribeOrgLiveCounts(
+export function subscribeOrgEvents(
   orgId: string,
   writer: SseWriter,
 ): () => void {
-  let writers = orgCountWriters.get(orgId);
+  let writers = orgWriters.get(orgId);
   if (!writers) {
     writers = new Set();
-    orgCountWriters.set(orgId, writers);
+    orgWriters.set(orgId, writers);
   }
   writers.add(writer);
   return () => {
     writers!.delete(writer);
-    if (writers!.size === 0) orgCountWriters.delete(orgId);
+    if (writers!.size === 0) orgWriters.delete(orgId);
   };
 }

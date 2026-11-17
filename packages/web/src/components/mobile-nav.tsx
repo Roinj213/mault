@@ -1,4 +1,5 @@
 import {
+  LIBRARY_PATH,
   MOBILE_ACCOUNT_PATH,
   MOBILE_ACCOUNT_TAB_PATHS,
   MOBILE_HOME_PATH,
@@ -9,25 +10,32 @@ import {
   MOBILE_SORTER_PATH,
 } from "@/lib/constants/nav";
 import { SORTING_RULES_PATH } from "@/lib/constants/bins";
+import {
+  INTAKE_PATH,
+  LEGACY_INTAKE_PATH,
+  ORDERS_PATH,
+} from "@/lib/constants/business";
 import { STORAGE_PATH } from "@/lib/constants/storage";
-import { usePlanLockedPath } from "@/hooks/use-plan-locked-path";
+import { TRADES_PATH } from "@/lib/constants/trade-offers";
 import type {
   MobileNavTabIconProps,
   MobileNavTabProps,
 } from "@/lib/interfaces/nav";
 import { cn } from "@/lib/utils";
 import {
-  IconArrowsSplit2,
-  IconBox,
+  IconAlbum,
+  IconBuildingStore,
   IconHome,
+  IconMenu2,
   IconScan,
-  IconUserCircle,
 } from "@tabler/icons-react";
+import { useHasBusinessTools } from "@/features/business/api/use-has-business-tools";
 import { usePiHost } from "@/hooks/use-pi-host";
-import { isRemoteBrowser } from "@/lib/host";
+import { usesHostHardware } from "@/lib/host";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useCollectionLocks, useLiveSessionCounts } from "@/lib/app-stream";
+import { SEARCH_PATH } from "@/lib/constants/search";
 
 function TabIcon({ icon, dot, active }: MobileNavTabIconProps) {
   return (
@@ -79,12 +87,13 @@ function MobileNavTab({
 export function MobileNav() {
   const { t } = useTranslation("common");
   const { pathname } = useLocation();
-  const piRemote = usePiHost() && isRemoteBrowser();
+  const piRemote = usePiHost() && usesHostHardware();
   const scanPath = piRemote ? "/app" : MOBILE_SCAN_PATH;
   const { locks, currentUserId } = useCollectionLocks();
   const liveCounts = useLiveSessionCounts();
-  const { planLockFor } = usePlanLockedPath();
-  const storageLock = planLockFor(STORAGE_PATH);
+  const hasBusinessTools = useHasBusinessTools();
+  const isBusinessPath =
+    pathname.startsWith(ORDERS_PATH) || pathname.startsWith(LEGACY_INTAKE_PATH);
 
   const hasLiveSessions = !!(
     currentUserId &&
@@ -96,13 +105,19 @@ export function MobileNav() {
   return (
     <nav
       aria-label={t("a11y.mainNavigation")}
-      className="absolute inset-x-0 bottom-0 z-40 grid grid-cols-5 bg-sidebar pb-[env(safe-area-inset-bottom)]"
+      className={cn(
+        "absolute inset-x-0 bottom-0 z-40 grid bg-sidebar pb-[env(safe-area-inset-bottom)]",
+        hasBusinessTools ? "grid-cols-5" : "grid-cols-4",
+      )}
     >
       <MobileNavTab
         to={MOBILE_HOME_PATH}
         icon={<IconHome size={22} />}
         label={t("mobileTabs.home")}
-        active={pathname.startsWith(MOBILE_HOME_PATH)}
+        active={
+          pathname.startsWith(MOBILE_HOME_PATH) ||
+          pathname.startsWith(SEARCH_PATH)
+        }
         badge={hasLiveSessions}
       />
       <MobileNavTab
@@ -117,26 +132,33 @@ export function MobileNav() {
         }
       />
       <MobileNavTab
-        to={SORTING_RULES_PATH}
-        icon={<IconArrowsSplit2 size={22} />}
-        label={t("mobileTabs.rules")}
-        active={pathname.startsWith(SORTING_RULES_PATH)}
+        to={LIBRARY_PATH}
+        icon={<IconAlbum size={22} />}
+        label={t("mobileTabs.library")}
+        active={
+          pathname.startsWith(LIBRARY_PATH) ||
+          pathname.startsWith(STORAGE_PATH) ||
+          pathname.startsWith(TRADES_PATH) ||
+          pathname.startsWith("/app/monitor/")
+        }
       />
-      <MobileNavTab
-        to={STORAGE_PATH}
-        icon={<IconBox size={22} />}
-        label={t("mobileTabs.storage")}
-        active={pathname.startsWith(STORAGE_PATH)}
-        lockTag={storageLock && t("nav.upgradeShort")}
-        disabled={storageLock?.isDisabled}
-      />
+      {hasBusinessTools && (
+        <MobileNavTab
+          to={INTAKE_PATH}
+          icon={<IconBuildingStore size={22} />}
+          label={t("mobileTabs.business")}
+          active={isBusinessPath}
+        />
+      )}
       <MobileNavTab
         to={MOBILE_ACCOUNT_PATH}
-        icon={<IconUserCircle size={22} />}
-        label={t("mobileTabs.account")}
-        active={MOBILE_ACCOUNT_TAB_PATHS.some((path) =>
-          pathname.startsWith(path),
-        )}
+        icon={<IconMenu2 size={22} />}
+        label={t("mobileTabs.more")}
+        active={
+          !(hasBusinessTools && isBusinessPath) &&
+          (MOBILE_ACCOUNT_TAB_PATHS.some((path) => pathname.startsWith(path)) ||
+            pathname.startsWith(SORTING_RULES_PATH))
+        }
       />
     </nav>
   );

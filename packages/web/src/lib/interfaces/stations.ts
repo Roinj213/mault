@@ -13,6 +13,7 @@ export type StationAttentionKind =
   | "hopperEmpty"
   | "feederError"
   | "noCardDetected"
+  | "cardStuckInModuleOne"
   | "sorterNotResponding"
   | "routingFailed"
   | "binLimit"
@@ -22,7 +23,8 @@ export type StationAttentionKind =
   | "scanLimit"
   | "sorterLimit"
   | "collectionLocked"
-  | "scannerError";
+  | "scannerError"
+  | "emergencyStopped";
 
 export type StationAttentionFix = "resume" | "emptyBin" | "openSorter";
 

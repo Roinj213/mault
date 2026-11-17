@@ -1,3 +1,4 @@
+import { IconBadge } from "@/components/icon-badge";
 import { SeasonalPumpkin } from "@/components/halloween-decor";
 import type { EmptyStateProps } from "@/lib/interfaces/empty-state";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ export function EmptyState({
   description,
   action,
   size = "default",
+  titleAs: TitleElement = "p",
   className,
 }: EmptyStateProps) {
   const compact = size === "compact";
@@ -20,12 +22,7 @@ export function EmptyState({
       )}
     >
       {Icon && (
-        <div
-          className={cn(
-            "relative flex items-center justify-center rounded-full bg-muted text-foreground/70",
-            compact ? "size-10" : "size-14",
-          )}
-        >
+        <IconBadge size={compact ? "lg" : "2xl"} className="relative">
           <Icon className={compact ? "size-5" : "size-7"} />
           <SeasonalPumpkin
             className={cn(
@@ -33,10 +30,10 @@ export function EmptyState({
               compact ? "size-3.5" : "size-4",
             )}
           />
-        </div>
+        </IconBadge>
       )}
       <div className="flex max-w-sm flex-col gap-1">
-        <p className="text-sm font-medium">{title}</p>
+        <TitleElement className="text-sm font-medium">{title}</TitleElement>
         {description && (
           <p className="text-xs text-foreground/70">{description}</p>
         )}

@@ -1,8 +1,13 @@
 import { Callout } from "@/components/callout";
 import {
+  SettingsSection,
+  SettingsSections,
+} from "@/components/settings-section";
+import {
   MOBILE_ACCOUNT_PATH,
   MOBILE_ICON_BUTTON_CLASS,
   MOBILE_NAV_SCROLL_PADDING_CLASS,
+  PAGE_TITLE_CLASS,
 } from "@/lib/constants/nav";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -69,13 +74,13 @@ export default function HealthPage() {
           MOBILE_NAV_SCROLL_PADDING_CLASS,
         )}
       >
-        <div className="flex flex-col p-4 md:p-6 max-w-2xl mx-auto w-full gap-5">
+        <div className="flex flex-col p-4 md:px-3 md:py-2 max-w-2xl mx-auto w-full gap-5 md:gap-2">
           {isMobile ? (
             syncNote
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-lg font-semibold font-heading">
+                <h1 className={PAGE_TITLE_CLASS}>
                   {t("title")}
                 </h1>
                 <p className="text-xs text-foreground/70">{t("subtitle")}</p>
@@ -99,7 +104,7 @@ export default function HealthPage() {
             </Callout>
           )}
 
-          <div className="rounded-lg border divide-y">
+          <div className="divide-y divide-border overflow-hidden rounded-card bg-card">
             {isLoading && (
               <div className="p-4 text-sm text-foreground/70">
                 {t("loading")}
@@ -120,7 +125,7 @@ export default function HealthPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {check.status === "error" && check.message && (
-                    <span className="text-sm text-destructive">
+                    <span role="alert" className="text-sm text-destructive">
                       {check.message}
                     </span>
                   )}
@@ -137,35 +142,26 @@ export default function HealthPage() {
             ))}
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold font-heading">
-              {tGames("gameCoverage.heading")}
-            </h2>
-            <p className="text-sm text-foreground/70 mt-0.5">
-              {tGames("gameCoverage.description")}
-            </p>
-          </div>
-          <GameCoverageList />
-
-          <div>
-            <h2 className="text-sm font-semibold font-heading">
-              {t("cardLookup.heading")}
-            </h2>
-            <p className="text-sm text-foreground/70 mt-0.5">
-              {t("cardLookup.description")}
-            </p>
-          </div>
-          <CardLookup />
-
-          <div>
-            <h2 className="text-sm font-semibold font-heading">
-              {t("ocrRegions.heading")}
-            </h2>
-            <p className="text-sm text-foreground/70 mt-0.5">
-              {t("ocrRegions.description")}
-            </p>
-          </div>
-          <OcrRegionGallery />
+          <SettingsSections>
+            <SettingsSection
+              heading={tGames("gameCoverage.heading")}
+              description={tGames("gameCoverage.description")}
+            >
+              <GameCoverageList />
+            </SettingsSection>
+            <SettingsSection
+              heading={t("cardLookup.heading")}
+              description={t("cardLookup.description")}
+            >
+              <CardLookup />
+            </SettingsSection>
+            <SettingsSection
+              heading={t("ocrRegions.heading")}
+              description={t("ocrRegions.description")}
+            >
+              <OcrRegionGallery />
+            </SettingsSection>
+          </SettingsSections>
         </div>
       </div>
     </div>

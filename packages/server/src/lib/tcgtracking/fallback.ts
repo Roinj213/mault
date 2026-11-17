@@ -44,6 +44,16 @@ export function extValues(
   return [];
 }
 
+export function htmlToPlainText(html: string | undefined): string | undefined {
+  return (
+    html
+      ?.replace(/\r/g, "")
+      .replace(/<br\s*\/?>\n?/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .trim() || undefined
+  );
+}
+
 export function extText(
   ext: Record<string, unknown>,
   keys: readonly string[],
@@ -157,7 +167,7 @@ export function toTcgtrackingFallbackSyncCard(
   const data = toTcgtrackingFallbackData(entry, primarySet, config);
   return {
     id: tcgtrackingFallbackId(entry.product.id),
-    name: entry.product.name,
+    name: config.storedNameOf?.(entry.product.name) ?? entry.product.name,
     setCode: fallbackSetCode(entry.set, primarySet?.code),
     imageUrl: tcgtrackingCardImage(entry.product.id).normal,
     data: JSON.stringify(data),

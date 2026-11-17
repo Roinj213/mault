@@ -1,3 +1,4 @@
+import { getCalibrationKey } from "@magic-vault/shared";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 import { AppText } from "@/components/ui/app-text";
@@ -5,14 +6,13 @@ import { Callout } from "@/components/ui/callout";
 import { Icon } from "@/components/ui/icon";
 import { Slider } from "@/components/ui/slider";
 import { StepperRow } from "@/components/ui/stepper-row";
-import { getCalibrationKey } from "@/features/calibration/lib/calibration-keys";
 import { useTheme } from "@/hooks/use-theme";
 import {
   PUSHER_NEUTRAL_OFFSET_WARNING_THRESHOLD,
   PUSHER_NEUTRAL_OFFSET_WARNING_THRESHOLD_PERCENT,
 } from "@/lib/constants/calibration";
 import { CONTROL_RADIUS, RADIUS, SPACING } from "@/lib/constants/theme";
-import { DISABLED_OPACITY } from "@/lib/constants/ui";
+import { DISABLED_OPACITY, MIN_TOUCH_TARGET } from "@/lib/constants/ui";
 import type { ServoControlProps } from "@/lib/interfaces/calibration";
 import {
   percentToPulse,
@@ -75,7 +75,7 @@ export function ServoControl({
           {servo.positions.map((position) => {
             const key = getCalibrationKey(servo.name, position);
             return key ? (
-              <AppText key={position} weight="bold" style={{ flex: 1, textAlign: "center", fontVariant: ["tabular-nums"] }}>
+              <AppText key={position} weight="bold" style={{ flex: 1, textAlign: "center" }}>
                 {showRaw ? String(calibration[key]) : `${pulseToPercent(calibration[key])}%`}
               </AppText>
             ) : null;
@@ -84,32 +84,35 @@ export function ServoControl({
       ) : null}
 
       <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t(`calibration.servos.${servo.name}`)}
         style={{
           flexDirection: "row",
           borderRadius: RADIUS.md,
-          borderWidth: 1,
-          borderColor: colors.border,
+          backgroundColor: colors.muted,
+          padding: 2,
+          gap: 2,
           overflow: "hidden",
           opacity: canCalibrate ? 1 : DISABLED_OPACITY,
         }}
       >
-        {servo.positions.map((position, index) => {
+        {servo.positions.map((position) => {
           const selected = activePosition === position;
           return (
             <Pressable
               key={position}
-              accessibilityRole="button"
-              accessibilityState={{ selected, disabled: !canCalibrate }}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected, disabled: !canCalibrate }}
               disabled={!canCalibrate}
               onPress={() => onControl(module, servo.name, position)}
               style={({ pressed }) => ({
                 flex: 1,
-                height: 36,
+                minHeight: MIN_TOUCH_TARGET,
+                paddingVertical: SPACING.xs,
                 alignItems: "center",
                 justifyContent: "center",
-                borderLeftWidth: index > 0 ? 1 : 0,
-                borderLeftColor: colors.border,
-                backgroundColor: selected ? colors.primarySelected : pressed ? colors.muted : "transparent",
+                borderRadius: RADIUS.md - 2,
+                backgroundColor: selected ? colors.primarySelected : pressed ? colors.tonal : "transparent",
               })}
             >
               <AppText size="xs" weight="semibold" style={{ color: selected ? colors.primaryText : colors.foreground }}>
@@ -134,7 +137,7 @@ export function ServoControl({
               ? t("calibration.editingPosition", { position: positionLabel(activePosition) })
               : t("calibration.noPositionSelected")}
           </AppText>
-          <AppText weight="bold" style={{ fontVariant: ["tabular-nums"] }}>
+          <AppText weight="bold">
             {`${pulseToPercent(sliderValue)}%`}
           </AppText>
         </View>

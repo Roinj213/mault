@@ -39,8 +39,8 @@ const statusPill = cva(
         "strip-touching-panel-edges": "min-h-8 border-x-0 border-t-0",
       },
       variant: {
-        default: "bg-background border-border",
-        loading: "bg-background border-border",
+        default: "bg-card border-border",
+        loading: "bg-card border-border",
         warning: "bg-warning-strong border-warning-strong text-white",
         error: "bg-destructive-strong border-destructive-strong text-white",
       },
@@ -156,10 +156,8 @@ export function ScannerOverlay({
           <div className="text-center text-sm text-foreground/70 max-w-56 flex flex-col items-center gap-2">
             <IconAlertTriangle className="mx-auto size-5 text-destructive" />
             <p>{t("scannerOverlay.dailyLimitReached")}</p>
-            <Button nativeButton={false}>
-              <Link to={SETTINGS_PATHS.billing}>
-                {t("scannerOverlay.upgradeButton")}
-              </Link>
+            <Button render={<Link to={SETTINGS_PATHS.billing} />}>
+              {t("scannerOverlay.upgradeButton")}
             </Button>
           </div>
         </div>
@@ -167,6 +165,13 @@ export function ScannerOverlay({
     }
 
     if (!isCameraActive && !sessionLive) {
+      if (cameraMenu.hostControlled) {
+        return (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/80 p-4 text-center text-sm">
+            {t("camera.piUnavailable")}
+          </div>
+        );
+      }
       return (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg p-4">
           <div className="flex flex-col items-center gap-3 text-center max-w-56">
@@ -347,7 +352,7 @@ export function ScannerOverlay({
           ) : (
             <IconScan className="size-3.5 shrink-0" />
           )}
-          <span aria-live="polite">{flatbedInstruction(t, flatbedScan)}</span>
+          <span>{flatbedInstruction(t, flatbedScan)}</span>
         </StatusPill>
       );
     }
@@ -369,15 +374,18 @@ export function ScannerOverlay({
       case "error":
         return (
           <StatusPill placement={pillPlacement} variant="error">
-            <span className="flex-1">{errorMessage}</span>
+            <IconAlertTriangle className="size-3.5 shrink-0" />
+            <span className="flex-1">
+              {errorMessage || t("mobileScan.phase.error")}
+            </span>
             <Button
               aria-label={t("common:a11y.retry")}
               variant="outline"
               size="icon"
               onClick={onRetryError}
-              className="size-6 shrink-0"
+              className="shrink-0"
             >
-              <IconRefresh className="size-3" />
+              <IconRefresh />
             </Button>
           </StatusPill>
         );

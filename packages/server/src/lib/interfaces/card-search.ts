@@ -77,7 +77,10 @@ export interface CardSearchAdapter {
   normalizeStored(raw: unknown, id: string, lang: string): PlayingCard | null;
   rarePrintingSql?: SQL;
   promoPrintingSql?: SQL;
+  printedLanguageCodeSql?: SQL;
   printedSetTotalSql?: SQL;
+  releasedAtSql?: SQL;
+  releaseSequenceSql?: SQL;
   excludedFromMatchingSql?: SQL;
   ocrMatchesByPrintedSetAndNumber?: boolean;
   readPrintedPromoMarker?(setLine: string): boolean | null;
@@ -89,6 +92,41 @@ export interface CardSearchAdapter {
   cardmarket?: CardmarketPricing;
   cardkingdom?: CardKingdomPricing;
 }
+
+export interface GroupedCatalogSearchSqlParams {
+  adapter: CardSearchAdapter;
+  gameKey: string;
+  preferredLang: string;
+  matchFilter: SQL;
+  printingFilter: SQL;
+  printingMatch: SQL | undefined;
+  exactName: string;
+  offset: number;
+  limit: number;
+}
+
+export interface CardPrintingsSqlParams {
+  adapter: CardSearchAdapter;
+  gameKey: string;
+  lang: string;
+  cardName: string;
+  offset: number;
+  limit: number;
+}
+
+export type GroupedCatalogSearchRow = {
+  card_id: string;
+  lang: string;
+  data: unknown;
+  printing_count: number;
+};
+
+export type CardPrintingRow = {
+  card_id: string;
+  lang: string;
+  data: unknown;
+  total_count: number;
+};
 
 export interface ResolvedCardSearch {
   adapter: CardSearchAdapter;
@@ -142,6 +180,7 @@ export interface SyncSource {
 export interface TextRankedPrintingEvidence {
   isPreferredSet: boolean;
   matchesPrintedPromo: boolean;
+  matchesPrintedLanguageCode: boolean;
   setLineMatch: boolean;
   letteredNumberMatch: boolean;
   numberMatch: boolean;
@@ -177,6 +216,7 @@ export interface CardTextMatchParams {
   readout: OcrReadout;
   preferredSetCodes?: string[];
   printedPromo?: boolean | null;
+  printedLanguageCode?: boolean | null;
   printingMarkGrids?: PrintingMarkScanGrids | null;
 }
 

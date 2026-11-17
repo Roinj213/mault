@@ -5,7 +5,7 @@ export const IOS_BUTTON_ICON_SIZE = 17;
 export const IOS_BUTTON_STYLES = {
   primary: "glassProminent",
   secondary: "glass",
-  destructive: "glass",
+  destructive: "glassProminent",
   ghost: "borderless",
 } as const;
 export const IOS_ICON_BUTTON_STYLES = {
@@ -15,14 +15,17 @@ export const IOS_ICON_BUTTON_STYLES = {
   camera: "glass",
 } as const;
 export const MIN_TOUCH_TARGET = 44;
+export const CHIP_MIN_HEIGHT = 36;
+export const COMPACT_CONTROL_MIN_HEIGHT = 32;
+export const COUNT_BADGE_MIN_SIZE = 16;
+export const COUNT_BADGE_LINE_HEIGHT = 14;
 export const TOP_BAR_HEIGHT = 44;
 export const TOP_BAR_BRAND_ICON_SIZE = 34;
-export const TOP_BAR_INITIAL_SIZE = 18;
 export const TOP_BAR_SWITCHER_HEIGHT = 32;
 export const INPUT_HEIGHT = 48;
 export const SEARCH_INPUT_HEIGHT = 44;
 export const LIST_ROW_MIN_HEIGHT = 48;
-export const LIST_ROW_ICON_SIZE = 32;
+export const LIST_ROW_ICON_SIZE = 36;
 export const PAGE_HEADER_ICON_BUTTON_SIZE = 40;
 export const IOS_HEADER_BAR_ICON_BUTTON_SIZE = 36;
 export const SKELETON_PULSE_MS = 900;
@@ -31,7 +34,7 @@ export const PILL_STATUS_LETTER_SPACING = 0.3;
 export const SLIDER_THUMB_SIZE = 24;
 export const SLIDER_TRACK_HEIGHT = 4;
 export const SLIDER_HIT_HEIGHT = 40;
-export const ICON_BADGE_SIZE = 40;
+export const ICON_BADGE_SIZE = 36;
 
 export const GRADIENT_BURST_SIZE = 360;
 export const GRADIENT_BURST_CENTER = 32;
@@ -60,3 +63,6 @@ export const TOAST_UNDO_DURATION_MS = 6000;
 export const TOAST_SCREEN_READER_DURATION_MULTIPLIER = 3;
 export const TOAST_BOTTOM_OFFSET = 72;
 export const TOAST_FADE_MS = 160;
+export const EMPTY_STATE_ICON_SIZE = 56;
+export const PROGRESS_BAR_HEIGHT = 6;
+export const CHECKBOX_INDICATOR_SIZE = 24;

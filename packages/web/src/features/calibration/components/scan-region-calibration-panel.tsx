@@ -19,6 +19,7 @@ import {
 } from "@/features/calibration/lib/scan-region-geometry";
 import { useCameraContext } from "@/features/scanner/api/use-camera";
 import { CameraFocusControl } from "@/features/scanner/components/camera-focus-control";
+import { CameraZoomControl } from "@/features/scanner/components/camera-zoom-control";
 import { PhoneCameraPairingDialog } from "@/features/scanner/components/phone-camera-pairing-dialog";
 import { drawDetectionOverlay } from "@/features/scanner/lib/card-detection";
 import { getDefaultCardContour } from "@magic-vault/shared";
@@ -40,7 +41,7 @@ import {
   IconDeviceMobile,
   IconRotate,
 } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OnnxExecutionProviderPreference } from "@/lib/interfaces/scanner";
 import type {
@@ -177,6 +178,8 @@ export function ScanRegionCalibrationPanel({
           )
         : null;
 
+  const regionKeyboardHintId = useId();
+
   const {
     handleBoxKeyDown,
     handleBoxPointerDown,
@@ -310,6 +313,7 @@ export function ScanRegionCalibrationPanel({
             region={region}
             checkBothOrientations={checkBothOrientations}
             canCapture={isCameraActive || !!phonePhotoUrl}
+            showCameraControls={isCameraActive}
           />
 
           {cameraSource === "local" && cameras.length > 0 && (
@@ -379,10 +383,12 @@ export function ScanRegionCalibrationPanel({
             </Button>
           )}
           {phoneCaptureError && (
-            <p className="text-sm text-destructive">{phoneCaptureError}</p>
+            <p role="alert" className="text-sm text-destructive">
+              {phoneCaptureError}
+            </p>
           )}
 
-          <div className="relative overflow-hidden bg-background w-full rounded-lg border aspect-[2.5/3.5]">
+          <div className="relative aspect-[2.5/3.5] w-full overflow-hidden rounded-lg bg-muted">
             <video ref={videoRef} className="hidden" playsInline muted />
             <div ref={frameRef} className="absolute">
               <canvas
@@ -396,7 +402,8 @@ export function ScanRegionCalibrationPanel({
               {box && (
                 <button
                   type="button"
-                  aria-label={t("scanRegionCalibrationPanel.regionKeyboardLabel")}
+                  aria-label={t("scanRegionCalibrationPanel.regionLabel")}
+                  aria-describedby={regionKeyboardHintId}
                   className="absolute rounded-xl border-[6px] border-dashed border-muted-foreground/70 cursor-move touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   style={{
                     left: `${box.left * 100}%`,
@@ -411,6 +418,7 @@ export function ScanRegionCalibrationPanel({
                   onPointerCancel={handlePointerUp}
                 >
                   <div
+                    aria-hidden="true"
                     className="absolute -right-2.5 -bottom-2.5 size-5 rounded-full bg-muted-foreground border-2 border-background cursor-nwse-resize touch-none"
                     onPointerDown={handleResizePointerDown}
                   />
@@ -436,6 +444,9 @@ export function ScanRegionCalibrationPanel({
                   </div>
                 )}
           </div>
+          <p id={regionKeyboardHintId} className="text-xs text-foreground/70">
+            {t("scanRegionCalibrationPanel.regionKeyboardHint")}
+          </p>
 
           <div className="flex items-center gap-2">
             <Button
@@ -444,7 +455,7 @@ export function ScanRegionCalibrationPanel({
               onClick={onResetRegion}
               title={t("scanRegionCalibrationPanel.resetToDefault")}
             >
-              <IconRotate size={14} />
+              <IconRotate />
               <span className="sr-only">
                 {t("scanRegionCalibrationPanel.resetToDefault")}
               </span>
@@ -487,6 +498,8 @@ export function ScanRegionCalibrationPanel({
             onValueChange={onCaptureSettleChange}
           />
 
+          {isCameraActive && <CameraZoomControl className="pt-2 border-t" />}
+
           {isCameraActive && <CameraFocusControl className="pt-2 border-t" />}
 
           <SliderField
@@ -523,7 +536,7 @@ export function ScanRegionCalibrationPanel({
                 />
               )}
             </label>
-            <p className="text-2xs text-foreground/70">
+            <p className="text-xs text-foreground/70">
               {t("scanRegionCalibrationPanel.flipCameraDescription")}
             </p>
           </div>
@@ -545,7 +558,7 @@ export function ScanRegionCalibrationPanel({
                 />
               )}
             </label>
-            <p className="text-2xs text-foreground/70">
+            <p className="text-xs text-foreground/70">
               {t("scanRegionCalibrationPanel.checkBothOrientationsDescription")}
             </p>
           </div>
@@ -554,7 +567,7 @@ export function ScanRegionCalibrationPanel({
             <p className="text-xs font-medium">
               {t("scanRegionCalibrationPanel.executionProviderLabel")}
             </p>
-            <p className="text-2xs text-foreground/70">
+            <p className="text-xs text-foreground/70">
               {t("scanRegionCalibrationPanel.executionProviderDescription")}
             </p>
             <Select

@@ -1,29 +1,41 @@
+import { useOrg } from "@/features/companies/api/use-organization";
+import { createPiScanPendingSaveObserver } from "@/features/scanner/lib/pi-scan-pending-save";
+import type { PiScanPendingSave } from "@magic-vault/shared";
+import { usePiHost } from "@/hooks/use-pi-host";
+import { usePiScanSound } from "@/features/sounds/api/use-pi-scan-sound";
 import { Button } from "@/components/ui/button";
 import { useDevice } from "@/features/calibration/api/use-device";
 import { useCollections } from "@/features/collections/api/use-collections";
 import { invalidateCollectionCards } from "@/features/collections/lib/card-page-cache";
 import {
+  emergencyStopPiScanSession,
   pausePiScanSession,
   piScanHoldsPort,
   resumePiScanSession,
   stopPiScanSession,
 } from "@/features/scanner/api/pi-scan-session";
-import { useStation, useStations } from "@/features/scanner/api/use-stations";
+import { useStations } from "@/features/scanner/api/use-stations";
 import { PiCameraPreview } from "@/features/scanner/components/pi-camera-preview";
+import { StationStatusDot } from "@/features/scanner/components/station-status-dot";
+import { settlePiScanSessionRequest } from "@/features/scanner/lib/pi-scan-session-result";
 import {
-  applyPiScanState,
   getPiScanState,
   subscribePiScan,
   takePiScanAnnouncement,
 } from "@/features/scanner/lib/pi-scan-store";
 import { piScanStatusText } from "@/features/scanner/lib/pi-scan-status";
-import { useCollectionStream } from "@/lib/app-stream";
+import { useAppStreamSource, useCollectionStream } from "@/lib/app-stream";
 import { PI_SCAN_CARD_EVENTS } from "@/lib/constants/scanner";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { IconPlayerPause, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-react";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import {
+  IconHandStop,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconPlayerStop,
+} from "@tabler/icons-react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
@@ -33,11 +45,49 @@ export function PiScanStatusBar() {
   const { pathname } = useLocation();
   const queryClient = useQueryClient();
   const state = useSyncExternalStore(subscribePiScan, getPiScanState);
+  const piHost = usePiHost();
+  usePiScanSound(state, piHost);
+  const { activeOrg } = useOrg();
+  const appStream = useAppStreamSource();
+  const pendingSaveObserver = useMemo(
+    () =>
+      createPiScanPendingSaveObserver(activeOrg?.id ?? null, (guid) => {
+        void invalidateCollectionCards(queryClient, guid);
+      }),
+    [activeOrg?.id, queryClient],
+  );
+  useEffect(() => () => pendingSaveObserver.clear(), [pendingSaveObserver]);
+  useEffect(() => {
+    if (
+      !piHost ||
+      (!state.pendingSave &&
+        state.phase !== "running" &&
+        state.phase !== "paused")
+    ) {
+      pendingSaveObserver.clear();
+      return;
+    }
+    if (state.pendingSave) pendingSaveObserver.apply(state.pendingSave);
+  }, [pendingSaveObserver, piHost, state.pendingSave, state.phase]);
+  useEffect(() => {
+    if (!piHost || !appStream) return;
+    const receive = (event: Event) => {
+      try {
+        pendingSaveObserver.apply(
+          JSON.parse((event as MessageEvent).data) as PiScanPendingSave,
+        );
+      } catch {}
+    };
+    appStream.addEventListener("pi_scan_pending_save", receive);
+    return () => appStream.removeEventListener("pi_scan_pending_save", receive);
+  }, [pendingSaveObserver, piHost, appStream]);
   const { collections } = useCollections();
-  const { station } = useStation();
-  const { claimStationCollection } = useStations();
+  const { stations, claimStationCollection } = useStations();
+  const hostStationId = stations[0]?.id;
   const sessionLive = piScanHoldsPort(state);
-  const watchGuid = sessionLive ? (state.collectionGuid ?? undefined) : undefined;
+  const watchGuid = sessionLive
+    ? (state.collectionGuid ?? undefined)
+    : undefined;
   const eventSource = useCollectionStream(watchGuid);
   const followed = useRef<string | null>(null);
   const onScanner = pathname === "/app" || pathname === "/app/";
@@ -50,20 +100,25 @@ export function PiScanStatusBar() {
         duration: Infinity,
         dismissible: true,
       });
-    }
-    else if (kind === "info" && state.message) toast.info(state.message);
+    } else if (kind === "info" && state.message) toast.info(state.message);
   }, [state, t]);
 
   useEffect(() => {
-    if (!sessionLive || !state.collectionGuid) {
+    if (!sessionLive || !state.collectionGuid || !hostStationId) {
       followed.current = null;
       return;
     }
-    if (followed.current === state.collectionGuid) return;
-    if (claimStationCollection(station.id, state.collectionGuid)) {
-      followed.current = state.collectionGuid;
+    const followKey = `${hostStationId}:${state.collectionGuid}`;
+    if (followed.current === followKey) return;
+    if (claimStationCollection(hostStationId, state.collectionGuid)) {
+      followed.current = followKey;
     }
-  }, [sessionLive, state.collectionGuid, claimStationCollection, station.id]);
+  }, [
+    sessionLive,
+    state.collectionGuid,
+    claimStationCollection,
+    hostStationId,
+  ]);
 
   useEffect(() => {
     if (!eventSource || !watchGuid) return;
@@ -80,24 +135,35 @@ export function PiScanStatusBar() {
 
   if (!sessionLive) return null;
 
-  const collection = collections.find((item) => item.guid === state.collectionGuid);
+  const collection = collections.find(
+    (item) => item.guid === state.collectionGuid,
+  );
   const status = piScanStatusText(t, state);
   const paused = state.phase === "paused";
 
   const onPause = () => {
-    void (paused ? resumePiScanSession() : pausePiScanSession()).then((result) => {
-      if (result.data) applyPiScanState(result.data);
-    });
+    void settlePiScanSessionRequest(
+      paused ? resumePiScanSession() : pausePiScanSession(),
+      t("piScan.requestFailed"),
+    );
   };
 
   const onStop = () => {
-    void stopPiScanSession().then((result) => {
-      if (result.data) applyPiScanState(result.data);
-    });
+    void settlePiScanSessionRequest(
+      stopPiScanSession(),
+      t("piScan.requestFailed"),
+    );
+  };
+
+  const onEmergencyStop = () => {
+    void settlePiScanSessionRequest(
+      emergencyStopPiScanSession(),
+      t("piScan.requestFailed"),
+    );
   };
 
   return (
-    <div className="flex items-center gap-2 border-b bg-background px-3 py-1.5 text-xs">
+    <div className="flex items-center gap-2 border-b bg-card px-3 py-1.5 text-xs">
       {!onScanner && (
         <PiCameraPreview
           alt={t("piScan.preview")}
@@ -107,12 +173,7 @@ export function PiScanStatusBar() {
           )}
         />
       )}
-      <span
-        className={cn(
-          "size-2 shrink-0 rounded-full",
-          paused ? "bg-warning" : "bg-success",
-        )}
-      />
+      <StationStatusDot status={paused ? "paused" : "sorting"} />
       <div className="min-w-0 flex-1">
         <p
           role="status"
@@ -126,7 +187,11 @@ export function PiScanStatusBar() {
         </p>
       </div>
       {!onScanner && (
-        <Button variant="ghost" nativeButton={false} render={<Link to="/app" />}>
+        <Button
+          variant="ghost"
+          nativeButton={false}
+          render={<Link to="/app" />}
+        >
           {t("piScan.openScanner")}
         </Button>
       )}
@@ -137,6 +202,10 @@ export function PiScanStatusBar() {
       <Button variant="outline" onClick={onStop} disabled={state.stopping}>
         <IconPlayerStop />
         {t("piScan.stop")}
+      </Button>
+      <Button variant="destructive" onClick={onEmergencyStop}>
+        <IconHandStop />
+        {t("emergencyStop.stop")}
       </Button>
     </div>
   );

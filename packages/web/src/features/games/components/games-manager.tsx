@@ -65,7 +65,7 @@ export function GamesManager() {
         </div>
       }
     >
-      <div className="divide-y rounded-lg border empty:hidden">
+      <div className="divide-y divide-border empty:hidden">
         {gamesQuery.isLoading && (
           <p className="text-sm text-foreground/70 text-center py-6">
             {t("gamesManager.loading")}
@@ -111,7 +111,7 @@ export function GamesManager() {
               </Button>
               <Button
                 size="icon"
-                variant="outline-destructive"
+                variant="destructive"
                 onClick={() => setDeleteTarget(game)}
                 aria-label={t("gamesManager.deleteTitle")}
                 title={t("gamesManager.deleteTitle")}

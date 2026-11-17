@@ -1,15 +1,11 @@
+import type { ScanLockInfo } from "@magic-vault/shared";
 import type { TradeOffer } from "@magic-vault/shared";
 import type { AnnouncementSeverity, DeployNotice } from "@magic-vault/shared";
 
-export interface ScanLockInfo {
-  userId: string;
-  displayName: string;
-  expiresAt: number;
-}
+export type { ScanLockInfo };
 
 export interface AppStreamValue {
   locks: Record<string, ScanLockInfo>;
-  liveCounts: Record<string, number>;
   deployNotice: DeployNotice | null;
 }
 
@@ -28,3 +24,8 @@ export interface AlertsSheetProps {
   onClose: () => void;
 }
 
+
+export interface AlertsRefresh {
+  refresh: () => Promise<boolean>;
+  isRefreshing: boolean;
+}
